@@ -3207,9 +3207,9 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCheckButton" id="neverallow checkbutton">
+			<widget class="GtkCheckButton" id="auditallow checkbutton">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes" context="yes">Access vector rules: neverallow</property>
+			  <property name="label" translatable="yes" context="yes">Access vector rules: auditallow</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
@@ -3243,9 +3243,9 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCheckButton" id="auditallow checkbutton">
+			<widget class="GtkCheckButton" id="neverallow checkbutton">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes" context="yes">Access vector rules: auditallow</property>
+			  <property name="label" translatable="yes" context="yes">Access vector rules: neverallow</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
@@ -3261,9 +3261,9 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCheckButton" id="transition checkbutton">
+			<widget class="GtkCheckButton" id="type_change checkbutton">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes" context="yes">Type rules: transition</property>
+			  <property name="label" translatable="yes" context="yes">Type rules: type__change</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
@@ -3279,9 +3279,9 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCheckButton" id="member checkbutton">
+			<widget class="GtkCheckButton" id="type_member checkbutton">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes" context="yes">Type rules: member</property>
+			  <property name="label" translatable="yes" context="yes">Type rules: type__member</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>
@@ -3297,9 +3297,9 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkCheckButton" id="change checkbutton">
+			<widget class="GtkCheckButton" id="type_transition checkbutton">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes" context="yes">Type rules: change</property>
+			  <property name="label" translatable="yes" context="yes">Type rules: type__transition</property>
 			  <property name="use_underline">True</property>
 			  <property name="relief">GTK_RELIEF_NORMAL</property>
 			  <property name="focus_on_click">True</property>

@@ -61,13 +61,13 @@ extern "C"
 	int avrule_reset_allow(poldiff_t * diff);
 
 /**
- * Reset the state of AV neverallow rule differences.
+ * Reset the state of AV auditallow rule differences.
  * @param diff The policy difference structure containing the differences
  * to reset.
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-	int avrule_reset_neverallow(poldiff_t * diff);
+	int avrule_reset_auditallow(poldiff_t * diff);
 
 /**
  * Reset the state of AV dontaudit rule differences.
@@ -79,13 +79,13 @@ extern "C"
 	int avrule_reset_dontaudit(poldiff_t * diff);
 
 /**
- * Reset the state of AV auditallow rule differences.
+ * Reset the state of AV neverallow rule differences.
  * @param diff The policy difference structure containing the differences
  * to reset.
  * @return 0 on success and < 0 on error; if the call fails,
  * errno will be set and the user should call poldiff_destroy() on diff.
  */
-	int avrule_reset_auditallow(poldiff_t * diff);
+	int avrule_reset_neverallow(poldiff_t * diff);
 
 /**
  * Get a vector of AV allow rules from the given policy, sorted.  This
@@ -95,27 +95,12 @@ extern "C"
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
  *
- * @return A newly allocated vector of all av rules (of type
+ * @return A newly allocated vector of av allow rules (of type
  * pseudo_avrule_t).  The caller is responsible for calling
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
  */
 	apol_vector_t *avrule_get_items_allow(poldiff_t * diff, const apol_policy_t * policy);
-
-/**
- * Get a vector of AV neverallow rules from the given policy, sorted.
- * This function will remap source and target types to their
- * pseudo-type value equivalents.
- *
- * @param diff Policy diff error handler.
- * @param policy The policy from which to get the items.
- *
- * @return A newly allocated vector of all av rules (of type
- * pseudo_avrule_t).  The caller is responsible for calling
- * apol_vector_destroy() afterwards.  On error, return NULL and set
- * errno.
- */
-	apol_vector_t *avrule_get_items_neverallow(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Get a vector of AV auditallow rules from the given policy, sorted.
@@ -125,7 +110,7 @@ extern "C"
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
  *
- * @return A newly allocated vector of all av rules (of type
+ * @return A newly allocated vector of av auditallow rules (of type
  * pseudo_avrule_t).  The caller is responsible for calling
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
@@ -140,12 +125,27 @@ extern "C"
  * @param diff Policy diff error handler.
  * @param policy The policy from which to get the items.
  *
- * @return A newly allocated vector of all av rules (of type
+ * @return A newly allocated vector of av dontaudit rules (of type
  * pseudo_avrule_t).  The caller is responsible for calling
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
  */
 	apol_vector_t *avrule_get_items_dontaudit(poldiff_t * diff, const apol_policy_t * policy);
+
+/**
+ * Get a vector of AV neverallow rules from the given policy, sorted.
+ * This function will remap source and target types to their
+ * pseudo-type value equivalents.
+ *
+ * @param diff Policy diff error handler.
+ * @param policy The policy from which to get the items.
+ *
+ * @return A newly allocated vector of av neverallow rules (of type
+ * pseudo_avrule_t).  The caller is responsible for calling
+ * apol_vector_destroy() afterwards.  On error, return NULL and set
+ * errno.
+ */
+	apol_vector_t *avrule_get_items_neverallow(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two pseudo_avrule_t objects, determining if they have the
@@ -177,7 +177,7 @@ extern "C"
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
- * a pseudo-av rule that was originally a neverallow rule.
+ * a pseudo-av rule that was originally an auditallow rule.
  *
  * @param diff The policy difference structure to which to add the entry.
  * @param form The form of the difference.
@@ -186,7 +186,7 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int avrule_new_diff_neverallow(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -203,7 +203,7 @@ extern "C"
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
- * a pseudo-av rule that was originally an auditallow rule.
+ * a pseudo-av rule that was originally a neverallow rule.
  *
  * @param diff The policy difference structure to which to add the entry.
  * @param form The form of the difference.
@@ -212,7 +212,7 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void *item);
+	int avrule_new_diff_neverallow(poldiff_t * diff, poldiff_form_e form, const void *item);
 
 /**
  * Compute the semantic difference of two pseudo-av rules (that were
@@ -231,10 +231,10 @@ extern "C"
 	int avrule_deep_diff_allow(poldiff_t * diff, const void *x, const void *y);
 
 /**
- * Compute the semantic difference of two pseudo-av rules for which
- * the compare callback returns 0.  If a difference is found then
- * allocate, initialize, and insert a new semantic difference entry
- * for that pseudo-av rule.
+ * Compute the semantic difference of two pseudo-av rules (that were
+ * auditallow rules) for which the compare callback returns 0.  If a
+ * difference is found then allocate, initialize, and insert a new
+ * semantic difference entry for that pseudo-av rule.
  *
  * @param diff The policy difference structure associated with both
  * pseudo-av rules and to which to add an entry if needed.
@@ -244,13 +244,13 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int avrule_deep_diff_neverallow(poldiff_t * diff, const void *x, const void *y);
+	int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y);
 
 /**
- * Compute the semantic difference of two pseudo-av rules for which
- * the compare callback returns 0.  If a difference is found then
- * allocate, initialize, and insert a new semantic difference entry
- * for that pseudo-av rule.
+ * Compute the semantic difference of two pseudo-av rules (that were
+ * dontaudit rules) for which the compare callback returns 0.  If a
+ * difference is found then allocate, initialize, and insert a new
+ * semantic difference entry for that pseudo-av rule.
  *
  * @param diff The policy difference structure associated with both
  * pseudo-av rules and to which to add an entry if needed.
@@ -263,10 +263,10 @@ extern "C"
 	int avrule_deep_diff_dontaudit(poldiff_t * diff, const void *x, const void *y);
 
 /**
- * Compute the semantic difference of two pseudo-av rules for which
- * the compare callback returns 0.  If a difference is found then
- * allocate, initialize, and insert a new semantic difference entry
- * for that pseudo-av rule.
+ * Compute the semantic difference of two pseudo-av rules (that were
+ * neverallow rules) for which the compare callback returns 0.  If a
+ * difference is found then allocate, initialize, and insert a new
+ * semantic difference entry for that pseudo-av rule.
  *
  * @param diff The policy difference structure associated with both
  * pseudo-av rules and to which to add an entry if needed.
@@ -276,7 +276,7 @@ extern "C"
  * @return 0 on success and < 0 on error; if the call fails, set errno
  * and leave the policy difference structure unchanged.
  */
-	int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y);
+	int avrule_deep_diff_neverallow(poldiff_t * diff, const void *x, const void *y);
 
 /**
  * Iterate through an AV rule difference, filling in its line numbers.

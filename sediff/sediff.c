@@ -41,7 +41,7 @@ enum opt_values
 {
 	DIFF_LEVEL = 256, DIFF_CATEGORY,
 	DIFF_AUDITALLOW, DIFF_DONTAUDIT, DIFF_NEVERALLOW,
-	DIFF_TYPE_TRANS, DIFF_TYPE_MEMBER, DIFF_TYPE_CHANGE,
+	DIFF_TYPE_CHANGE, DIFF_TYPE_MEMBER, DIFF_TYPE_TRANS,
 	DIFF_ROLE_TRANS, DIFF_ROLE_ALLOW, DIFF_RANGE_TRANS,
 	OPT_STATS
 };
@@ -60,9 +60,9 @@ static struct option const longopts[] = {
 	{"auditallow", no_argument, NULL, DIFF_AUDITALLOW},
 	{"dontaudit", no_argument, NULL, DIFF_DONTAUDIT},
 	{"neverallow", no_argument, NULL, DIFF_NEVERALLOW},
+	{"type_change", no_argument, NULL, DIFF_TYPE_CHANGE},
 	{"type_trans", no_argument, NULL, DIFF_TYPE_TRANS},
 	{"type_member", no_argument, NULL, DIFF_TYPE_MEMBER},
-	{"type_change", no_argument, NULL, DIFF_TYPE_CHANGE},
 	{"role_trans", no_argument, NULL, DIFF_ROLE_TRANS},
 	{"role_allow", no_argument, NULL, DIFF_ROLE_ALLOW},
 	{"range_trans", no_argument, NULL, DIFF_RANGE_TRANS},
@@ -95,9 +95,9 @@ static void usage(const char *prog_name, int brief)
 	printf("  --auditallow       auditallow rules\n");
 	printf("  --dontaudit        dontaudit rules\n");
 	printf("  --neverallow       neverallow rules\n");
-	printf("  --type_trans       type_transition rules\n");
-	printf("  --type_member      type_member rules\n");
 	printf("  --type_change      type_change rules\n");
+	printf("  --type_member      type_member rules\n");
+	printf("  --type_trans       type_transition rules\n");
 	printf("  --role_trans       role_transition rules\n");
 	printf("  --role_allow       role allow rules\n");
 	printf("  --range_trans      range_transition rules\n");
@@ -263,9 +263,9 @@ static void print_avallow_diffs(const poldiff_t * diff, int stats_only)
 	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_AVALLOW), stats_only, "AV-Allow Rules", PRINT_ALL, NULL);
 }
 
-static void print_avneverallow_diffs(const poldiff_t * diff, int stats_only)
+static void print_avauditallow_diffs(const poldiff_t * diff, int stats_only)
 {
-	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_AVNEVERALLOW), stats_only, "AV-Never Allow Rules",
+	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_AVAUDITALLOW), stats_only, "AV-Audit Allow Rules",
 			 PRINT_ALL, NULL);
 }
 
@@ -275,9 +275,9 @@ static void print_avdontaudit_diffs(const poldiff_t * diff, int stats_only)
 			 PRINT_ALL, NULL);
 }
 
-static void print_avauditallow_diffs(const poldiff_t * diff, int stats_only)
+static void print_avneverallow_diffs(const poldiff_t * diff, int stats_only)
 {
-	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_AVAUDITALLOW), stats_only, "AV-Audit Allow Rules",
+	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_AVNEVERALLOW), stats_only, "AV-Never Allow Rules",
 			 PRINT_ALL, NULL);
 }
 
@@ -285,21 +285,18 @@ static void print_role_allow_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_ROLE_ALLOWS), stats_only, "Role Allow Rules",
 			 PRINT_MODIFIED, NULL);
-	return;
 }
 
 static void print_role_trans_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_ROLE_TRANS), stats_only, "Role Transitions", PRINT_ALL,
 			 NULL);
-	return;
 }
 
 static void print_range_trans_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_RANGE_TRANS), stats_only, "Range Transitions",
 			 PRINT_MODIFIED, NULL);
-	return;
 }
 
 /** compare the names for two poldiff_type_t objects.
@@ -317,13 +314,11 @@ static void print_type_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_TYPES), stats_only, "Types", PRINT_MODIFIED,
 			 type_name_cmp);
-	return;
 }
 
 static void print_attrib_diffs(const poldiff_t * diff, int stats_only)
 {
 	print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_ATTRIBS), stats_only, "Attributes", PRINT_MODIFIED, NULL);
-	return;
 }
 
 static size_t get_diff_total(const poldiff_t * diff, uint32_t flags)
@@ -378,25 +373,23 @@ static void print_diff(const poldiff_t * diff, uint32_t flags, int stats, int qu
 	if (flags & POLDIFF_DIFF_AVALLOW && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVALLOW))) {
 		print_avallow_diffs(diff, stats);
 	}
-	if (flags & POLDIFF_DIFF_AVNEVERALLOW && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVNEVERALLOW))) {
-		print_avneverallow_diffs(diff, stats);
+	if (flags & POLDIFF_DIFF_AVAUDITALLOW && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVAUDITALLOW))) {
+		print_avauditallow_diffs(diff, stats);
 	}
 	if (flags & POLDIFF_DIFF_AVDONTAUDIT && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVDONTAUDIT))) {
 		print_avdontaudit_diffs(diff, stats);
 	}
-	if (flags & POLDIFF_DIFF_AVAUDITALLOW && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVAUDITALLOW))) {
-		print_avauditallow_diffs(diff, stats);
+	if (flags & POLDIFF_DIFF_AVNEVERALLOW && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_AVNEVERALLOW))) {
+		print_avneverallow_diffs(diff, stats);
+	}
+	if (flags & POLDIFF_DIFF_TECHANGE && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TECHANGE))) {
+		print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_TECHANGE), stats, "TE type_change", PRINT_ALL,
+				 NULL);
 	}
 	if (flags & POLDIFF_DIFF_TEMEMBER && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TEMEMBER))) {
 		print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_TEMEMBER), stats, "TE type_member", PRINT_ALL,
 				 NULL);
 	}
-
-	if (flags & POLDIFF_DIFF_TECHANGE && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TECHANGE))) {
-		print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_TECHANGE), stats, "TE type_change", PRINT_ALL,
-				 NULL);
-	}
-
 	if (flags & POLDIFF_DIFF_TETRANS && !(quiet && !get_diff_total(diff, POLDIFF_DIFF_TETRANS))) {
 		print_rule_diffs(diff, poldiff_get_component_record(POLDIFF_DIFF_TETRANS), stats, "TE type_trans", PRINT_ALL, NULL);
 	}
@@ -458,20 +451,20 @@ int main(int argc, char **argv)
 		case 'A':
 			flags |= POLDIFF_DIFF_AVALLOW;
 			break;
-		case DIFF_NEVERALLOW:
-			flags |= POLDIFF_DIFF_AVNEVERALLOW;
+		case DIFF_AUDITALLOW:
+			flags |= POLDIFF_DIFF_AVAUDITALLOW;
 			break;
 		case DIFF_DONTAUDIT:
 			flags |= POLDIFF_DIFF_AVDONTAUDIT;
 			break;
-		case DIFF_AUDITALLOW:
-			flags |= POLDIFF_DIFF_AVAUDITALLOW;
-			break;
-		case DIFF_TYPE_MEMBER:
-			flags |= POLDIFF_DIFF_TEMEMBER;
+		case DIFF_NEVERALLOW:
+			flags |= POLDIFF_DIFF_AVNEVERALLOW;
 			break;
 		case DIFF_TYPE_CHANGE:
 			flags |= POLDIFF_DIFF_TECHANGE;
+			break;
+		case DIFF_TYPE_MEMBER:
+			flags |= POLDIFF_DIFF_TEMEMBER;
 			break;
 		case DIFF_TYPE_TRANS:
 			flags |= POLDIFF_DIFF_TETRANS;

@@ -965,9 +965,9 @@ result_item_t *result_item_create_avrules_allow(GtkTextTagTable * table)
 	return result_item_create_from_flag(table, POLDIFF_DIFF_AVALLOW);
 }
 
-result_item_t *result_item_create_avrules_neverallow(GtkTextTagTable * table)
+result_item_t *result_item_create_avrules_auditallow(GtkTextTagTable * table)
 {
-	return result_item_create_from_flag(table, POLDIFF_DIFF_AVNEVERALLOW);
+	return result_item_create_from_flag(table, POLDIFF_DIFF_AVAUDITALLOW);
 }
 
 result_item_t *result_item_create_avrules_dontaudit(GtkTextTagTable * table)
@@ -975,9 +975,9 @@ result_item_t *result_item_create_avrules_dontaudit(GtkTextTagTable * table)
 	return result_item_create_from_flag(table, POLDIFF_DIFF_AVDONTAUDIT);
 }
 
-result_item_t *result_item_create_avrules_auditallow(GtkTextTagTable * table)
+result_item_t *result_item_create_avrules_neverallow(GtkTextTagTable * table)
 {
-	return result_item_create_from_flag(table, POLDIFF_DIFF_AVAUDITALLOW);
+	return result_item_create_from_flag(table, POLDIFF_DIFF_AVNEVERALLOW);
 }
 
 static int result_item_terule_comp(const void *a, const void *b, void *data)
@@ -1111,14 +1111,14 @@ static result_item_t *result_item_create_terules_from_flag(GtkTextTagTable * tab
 	return item;
 }
 
-result_item_t *result_item_create_terules_member(GtkTextTagTable * table)
-{
-	return result_item_create_terules_from_flag(table, POLDIFF_DIFF_TEMEMBER);
-}
-
 result_item_t *result_item_create_terules_change(GtkTextTagTable * table)
 {
 	return result_item_create_terules_from_flag(table, POLDIFF_DIFF_TECHANGE);
+}
+
+result_item_t *result_item_create_terules_member(GtkTextTagTable * table)
+{
+	return result_item_create_terules_from_flag(table, POLDIFF_DIFF_TEMEMBER);
 }
 
 result_item_t *result_item_create_terules_trans(GtkTextTagTable * table)

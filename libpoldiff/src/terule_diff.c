@@ -122,14 +122,14 @@ static void poldiff_terule_get_stats(const poldiff_t * diff, size_t stats[5], un
 	stats[4] = diff->terule_diffs[idx]->num_removed_type;
 }
 
-void poldiff_terule_get_stats_member(const poldiff_t * diff, size_t stats[5])
-{
-	poldiff_terule_get_stats(diff, stats, TERULE_OFFSET_MEMBER);
-}
-
 void poldiff_terule_get_stats_change(const poldiff_t * diff, size_t stats[5])
 {
 	poldiff_terule_get_stats(diff, stats, TERULE_OFFSET_CHANGE);
+}
+
+void poldiff_terule_get_stats_member(const poldiff_t * diff, size_t stats[5])
+{
+	poldiff_terule_get_stats(diff, stats, TERULE_OFFSET_MEMBER);
 }
 
 void poldiff_terule_get_stats_trans(const poldiff_t * diff, size_t stats[5])
@@ -952,11 +952,6 @@ static apol_vector_t *terule_get_items(poldiff_t * diff, const apol_policy_t * p
 	return v;
 }
 
-apol_vector_t *terule_get_items_trans(poldiff_t * diff, const apol_policy_t * policy)
-{
-	return terule_get_items(diff, policy, QPOL_RULE_TYPE_TRANS);
-}
-
 apol_vector_t *terule_get_items_change(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return terule_get_items(diff, policy, QPOL_RULE_TYPE_CHANGE);
@@ -965,6 +960,11 @@ apol_vector_t *terule_get_items_change(poldiff_t * diff, const apol_policy_t * p
 apol_vector_t *terule_get_items_member(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return terule_get_items(diff, policy, QPOL_RULE_TYPE_MEMBER);
+}
+
+apol_vector_t *terule_get_items_trans(poldiff_t * diff, const apol_policy_t * policy)
+{
+	return terule_get_items(diff, policy, QPOL_RULE_TYPE_TRANS);
 }
 
 int terule_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
@@ -1142,14 +1142,14 @@ static int terule_new_diff(poldiff_t * diff, poldiff_form_e form, const void *it
 	return retval;
 }
 
-int terule_new_diff_member(poldiff_t * diff, poldiff_form_e form, const void *item)
-{
-	return terule_new_diff(diff, form, item, TERULE_OFFSET_MEMBER);
-}
-
 int terule_new_diff_change(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	return terule_new_diff(diff, form, item, TERULE_OFFSET_CHANGE);
+}
+
+int terule_new_diff_member(poldiff_t * diff, poldiff_form_e form, const void *item)
+{
+	return terule_new_diff(diff, form, item, TERULE_OFFSET_MEMBER);
 }
 
 int terule_new_diff_trans(poldiff_t * diff, poldiff_form_e form, const void *item)
@@ -1241,14 +1241,14 @@ static int terule_deep_diff(poldiff_t * diff, const void *x, const void *y, teru
 	return retval;
 }
 
-int terule_deep_diff_member(poldiff_t * diff, const void *x, const void *y)
-{
-	return terule_deep_diff(diff, x, y, TERULE_OFFSET_MEMBER);
-}
-
 int terule_deep_diff_change(poldiff_t * diff, const void *x, const void *y)
 {
 	return terule_deep_diff(diff, x, y, TERULE_OFFSET_CHANGE);
+}
+
+int terule_deep_diff_member(poldiff_t * diff, const void *x, const void *y)
+{
+	return terule_deep_diff(diff, x, y, TERULE_OFFSET_MEMBER);
 }
 
 int terule_deep_diff_trans(poldiff_t * diff, const void *x, const void *y)

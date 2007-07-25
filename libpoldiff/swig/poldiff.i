@@ -375,14 +375,14 @@ typedef struct poldiff {} poldiff_t;
 	const apol_vector_t *get_avrule_vector_allow() {
 		return poldiff_get_avrule_vector_allow(self);
 	};
-	const apol_vector_t *get_avrule_vector_neverallow() {
-		return poldiff_get_avrule_vector_neverallow(self);
+	const apol_vector_t *get_avrule_vector_auditallow() {
+		return poldiff_get_avrule_vector_auditallow(self);
 	};
 	const apol_vector_t *get_avrule_vector_dontaudit() {
 		return poldiff_get_avrule_vector_dontaudit(self);
 	};
-	const apol_vector_t *get_avrule_vector_auditallow() {
-		return poldiff_get_avrule_vector_auditallow(self);
+	const apol_vector_t *get_avrule_vector_neverallow() {
+		return poldiff_get_avrule_vector_neverallow(self);
 	};
 	const apol_vector_t *get_bool_vector() {
 		return poldiff_get_bool_vector(self);

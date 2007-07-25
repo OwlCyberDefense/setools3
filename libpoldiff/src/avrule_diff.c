@@ -147,7 +147,7 @@ void poldiff_avrule_get_stats_dontaudit(const poldiff_t * diff, size_t stats[5])
 
 void poldiff_avrule_get_stats_auditallow(const poldiff_t * diff, size_t stats[5])
 {
-	poldiff_avrule_get_stats(diff, stats, AVRULE_OFFSET_NEVERALLOW);
+	poldiff_avrule_get_stats(diff, stats, AVRULE_OFFSET_AUDITALLOW);
 }
 
 char *poldiff_avrule_to_string(const poldiff_t * diff, const void *avrule)
@@ -305,9 +305,9 @@ const apol_vector_t *poldiff_get_avrule_vector_allow(const poldiff_t * diff)
 	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_ALLOW);
 }
 
-const apol_vector_t *poldiff_get_avrule_vector_neverallow(const poldiff_t * diff)
+const apol_vector_t *poldiff_get_avrule_vector_auditallow(const poldiff_t * diff)
 {
-	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_NEVERALLOW);
+	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_AUDITALLOW);
 }
 
 const apol_vector_t *poldiff_get_avrule_vector_dontaudit(const poldiff_t * diff)
@@ -315,9 +315,9 @@ const apol_vector_t *poldiff_get_avrule_vector_dontaudit(const poldiff_t * diff)
 	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_DONTAUDIT);
 }
 
-const apol_vector_t *poldiff_get_avrule_vector_auditallow(const poldiff_t * diff)
+const apol_vector_t *poldiff_get_avrule_vector_neverallow(const poldiff_t * diff)
 {
-	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_AUDITALLOW);
+	return poldiff_get_avrule_vector(diff, AVRULE_OFFSET_NEVERALLOW);
 }
 
 poldiff_form_e poldiff_avrule_get_form(const void *avrule)
@@ -596,9 +596,9 @@ int avrule_reset_allow(poldiff_t * diff)
 	return avrule_reset(diff, AVRULE_OFFSET_ALLOW);
 }
 
-int avrule_reset_neverallow(poldiff_t * diff)
+int avrule_reset_auditallow(poldiff_t * diff)
 {
-	return avrule_reset(diff, AVRULE_OFFSET_NEVERALLOW);
+	return avrule_reset(diff, AVRULE_OFFSET_AUDITALLOW);
 }
 
 int avrule_reset_dontaudit(poldiff_t * diff)
@@ -606,9 +606,9 @@ int avrule_reset_dontaudit(poldiff_t * diff)
 	return avrule_reset(diff, AVRULE_OFFSET_DONTAUDIT);
 }
 
-int avrule_reset_auditallow(poldiff_t * diff)
+int avrule_reset_neverallow(poldiff_t * diff)
 {
-	return avrule_reset(diff, AVRULE_OFFSET_AUDITALLOW);
+	return avrule_reset(diff, AVRULE_OFFSET_NEVERALLOW);
 }
 
 static void avrule_free_item(void *item)
@@ -1153,11 +1153,6 @@ apol_vector_t *avrule_get_items_allow(poldiff_t * diff, const apol_policy_t * po
 	return avrule_get_items(diff, policy, QPOL_RULE_ALLOW);
 }
 
-apol_vector_t *avrule_get_items_neverallow(poldiff_t * diff, const apol_policy_t * policy)
-{
-	return avrule_get_items(diff, policy, QPOL_RULE_NEVERALLOW);
-}
-
 apol_vector_t *avrule_get_items_auditallow(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return avrule_get_items(diff, policy, QPOL_RULE_AUDITALLOW);
@@ -1166,6 +1161,11 @@ apol_vector_t *avrule_get_items_auditallow(poldiff_t * diff, const apol_policy_t
 apol_vector_t *avrule_get_items_dontaudit(poldiff_t * diff, const apol_policy_t * policy)
 {
 	return avrule_get_items(diff, policy, QPOL_RULE_DONTAUDIT);
+}
+
+apol_vector_t *avrule_get_items_neverallow(poldiff_t * diff, const apol_policy_t * policy)
+{
+	return avrule_get_items(diff, policy, QPOL_RULE_NEVERALLOW);
 }
 
 int avrule_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
@@ -1380,17 +1380,20 @@ int avrule_new_diff_allow(poldiff_t * diff, poldiff_form_e form, const void *ite
 {
 	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_ALLOW);
 }
-int avrule_new_diff_neverallow(poldiff_t * diff, poldiff_form_e form, const void *item)
+
+int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_NEVERALLOW);
+	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_AUDITALLOW);
 }
+
 int avrule_new_diff_dontaudit(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_DONTAUDIT);
 }
-int avrule_new_diff_auditallow(poldiff_t * diff, poldiff_form_e form, const void *item)
+
+int avrule_new_diff_neverallow(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
-	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_AUDITALLOW);
+	return avrule_new_diff(diff, form, item, AVRULE_OFFSET_NEVERALLOW);
 }
 
 /**
@@ -1545,17 +1548,20 @@ int avrule_deep_diff_allow(poldiff_t * diff, const void *x, const void *y)
 {
 	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_ALLOW);
 }
-int avrule_deep_diff_neverallow(poldiff_t * diff, const void *x, const void *y)
+
+int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y)
 {
-	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_NEVERALLOW);
+	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_AUDITALLOW);
 }
+
 int avrule_deep_diff_dontaudit(poldiff_t * diff, const void *x, const void *y)
 {
 	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_DONTAUDIT);
 }
-int avrule_deep_diff_auditallow(poldiff_t * diff, const void *x, const void *y)
+
+int avrule_deep_diff_neverallow(poldiff_t * diff, const void *x, const void *y)
 {
-	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_AUDITALLOW);
+	return avrule_deep_diff(diff, x, y, AVRULE_OFFSET_NEVERALLOW);
 }
 
 int avrule_enable_line_numbers(poldiff_t * diff, avrule_offset_e idx)

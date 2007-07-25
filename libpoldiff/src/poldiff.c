@@ -81,19 +81,6 @@ static const poldiff_component_record_t component_records[] = {
 	 avrule_deep_diff_allow,
 	 },
 	{
-	 "AVrule neverallow",
-	 POLDIFF_DIFF_AVNEVERALLOW,
-	 poldiff_avrule_get_stats_neverallow,
-	 poldiff_get_avrule_vector_neverallow,
-	 poldiff_avrule_get_form,
-	 poldiff_avrule_to_string,
-	 avrule_reset_neverallow,
-	 avrule_get_items_neverallow,
-	 avrule_comp,
-	 avrule_new_diff_neverallow,
-	 avrule_deep_diff_neverallow,
-	 },
-	{
 	 "AVrule auditallow",
 	 POLDIFF_DIFF_AVAUDITALLOW,
 	 poldiff_avrule_get_stats_auditallow,
@@ -118,6 +105,19 @@ static const poldiff_component_record_t component_records[] = {
 	 avrule_comp,
 	 avrule_new_diff_dontaudit,
 	 avrule_deep_diff_dontaudit,
+	 },
+	{
+	 "AVrule neverallow",
+	 POLDIFF_DIFF_AVNEVERALLOW,
+	 poldiff_avrule_get_stats_neverallow,
+	 poldiff_get_avrule_vector_neverallow,
+	 poldiff_avrule_get_form,
+	 poldiff_avrule_to_string,
+	 avrule_reset_neverallow,
+	 avrule_get_items_neverallow,
+	 avrule_comp,
+	 avrule_new_diff_neverallow,
+	 avrule_deep_diff_neverallow,
 	 },
 	{
 	 "bool",
@@ -237,20 +237,7 @@ static const poldiff_component_record_t component_records[] = {
 	 role_trans_deep_diff,
 	 },
 	{
-	 "TErule transition",
-	 POLDIFF_DIFF_TETRANS,
-	 poldiff_terule_get_stats_trans,
-	 poldiff_get_terule_vector_trans,
-	 poldiff_terule_get_form,
-	 poldiff_terule_to_string,
-	 terule_reset_trans,
-	 terule_get_items_trans,
-	 terule_comp,
-	 terule_new_diff_trans,
-	 terule_deep_diff_trans,
-	 },
-	{
-	 "TErule change",
+	 "TErule type_change",
 	 POLDIFF_DIFF_TECHANGE,
 	 poldiff_terule_get_stats_change,
 	 poldiff_get_terule_vector_change,
@@ -263,7 +250,7 @@ static const poldiff_component_record_t component_records[] = {
 	 terule_deep_diff_change,
 	 },
 	{
-	 "TErule member",
+	 "TErule type_member",
 	 POLDIFF_DIFF_TEMEMBER,
 	 poldiff_terule_get_stats_member,
 	 poldiff_get_terule_vector_member,
@@ -274,6 +261,19 @@ static const poldiff_component_record_t component_records[] = {
 	 terule_comp,
 	 terule_new_diff_member,
 	 terule_deep_diff_member,
+	 },
+	{
+	 "TErule type_transition",
+	 POLDIFF_DIFF_TETRANS,
+	 poldiff_terule_get_stats_trans,
+	 poldiff_get_terule_vector_trans,
+	 poldiff_terule_get_form,
+	 poldiff_terule_to_string,
+	 terule_reset_trans,
+	 terule_get_items_trans,
+	 terule_comp,
+	 terule_new_diff_trans,
+	 terule_deep_diff_trans,
 	 },
 	{
 	 "type",
@@ -353,9 +353,9 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 
 	if ((diff->attrib_diffs = attrib_summary_create()) == NULL ||
 	    (diff->avrule_diffs[AVRULE_OFFSET_ALLOW] = avrule_create()) == NULL ||
-	    (diff->avrule_diffs[AVRULE_OFFSET_NEVERALLOW] = avrule_create()) == NULL ||
-	    (diff->avrule_diffs[AVRULE_OFFSET_DONTAUDIT] = avrule_create()) == NULL ||
 	    (diff->avrule_diffs[AVRULE_OFFSET_AUDITALLOW] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_DONTAUDIT] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_NEVERALLOW] = avrule_create()) == NULL ||
 	    (diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->cat_diffs = cat_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
@@ -365,8 +365,8 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
-	    (diff->terule_diffs[TERULE_OFFSET_MEMBER] = terule_create()) == NULL ||
 	    (diff->terule_diffs[TERULE_OFFSET_CHANGE] = terule_create()) == NULL ||
+	    (diff->terule_diffs[TERULE_OFFSET_MEMBER] = terule_create()) == NULL ||
 	    (diff->terule_diffs[TERULE_OFFSET_TRANS] = terule_create()) == NULL ||
 	    (diff->type_diffs = type_summary_create()) == NULL || (diff->user_diffs = user_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
@@ -392,9 +392,9 @@ void poldiff_destroy(poldiff_t ** diff)
 	type_map_destroy(&(*diff)->type_map);
 	attrib_summary_destroy(&(*diff)->attrib_diffs);
 	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_ALLOW]);
-	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_NEVERALLOW]);
-	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_DONTAUDIT]);
 	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_AUDITALLOW]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_DONTAUDIT]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_NEVERALLOW]);
 	bool_destroy(&(*diff)->bool_diffs);
 	cat_destroy(&(*diff)->cat_diffs);
 	class_destroy(&(*diff)->class_diffs);
@@ -405,8 +405,8 @@ void poldiff_destroy(poldiff_t ** diff)
 	role_allow_destroy(&(*diff)->role_allow_diffs);
 	role_trans_destroy(&(*diff)->role_trans_diffs);
 	user_destroy(&(*diff)->user_diffs);
-	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_MEMBER]);
 	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_CHANGE]);
+	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_MEMBER]);
 	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_TRANS]);
 	type_summary_destroy(&(*diff)->type_diffs);
 	free(*diff);
@@ -631,19 +631,19 @@ int poldiff_enable_line_numbers(poldiff_t * diff)
 		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_ALLOW)) < 0) {
 			return retval;
 		}
-		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_NEVERALLOW)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_AUDITALLOW)) < 0) {
 			return retval;
 		}
 		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_DONTAUDIT)) < 0) {
 			return retval;
 		}
-		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_AUDITALLOW)) < 0) {
-			return retval;
-		}
-		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_MEMBER)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_NEVERALLOW)) < 0) {
 			return retval;
 		}
 		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_CHANGE)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_MEMBER)) < 0) {
 			return retval;
 		}
 		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_TRANS)) < 0) {
