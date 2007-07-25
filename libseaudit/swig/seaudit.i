@@ -847,13 +847,6 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	const char *get_netif() {
 		return seaudit_filter_get_netif(self);
 	};
-	void set_message_type(seaudit_message_type_e mtype) {
-		if (seaudit_filter_set_message_type(self, mtype)) {
-			SWIG_exception(SWIG_RuntimeError, "Could not set message type for filter");
-		}
-	fail:
-		return;
-	};
 	void set_key(int key) {
 		seaudit_filter_set_key(self, key);
 	};
@@ -865,6 +858,13 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	};
 	int get_cap() {
 		return seaudit_filter_get_cap(self);
+	};
+	void set_message_type(seaudit_avc_message_type_e mtype) {
+		if (seaudit_filter_set_message_type(self, mtype)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set message type for filter");
+		}
+	fail:
+		return;
 	};
 	seaudit_message_type_e get_message_type() {
 		return seaudit_filter_get_message_type(self);
