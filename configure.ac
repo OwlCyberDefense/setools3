@@ -377,13 +377,13 @@ selinux_devel_incdir="${selinux_devel}/include"
 dnl if /lib64 exists then use that directory, otherwise revert to just /lib
 for dir in lib64 lib ; do
   sepol_devel_libdir="${sepol_devel}/${dir}"
-  if test -d ${sepol_devel_libdir} ; then
+  if test -f ${sepol_devel_libdir}/libsepol.so ; then
     break
   fi
 done
 for dir in lib64 lib ; do
   selinux_devel_libdir="${selinux_devel}/${dir}"
-  if test -d ${selinux_devel_libdir} ; then
+  if test -f ${selinux_devel_libdir}/libselinux.so ; then
     break
   fi
 done
@@ -410,6 +410,8 @@ AC_ARG_ENABLE(sepol-src,
               sepol_srcdir="")
 if test "x${sepol_srcdir}" = "x"; then
    sepol_srcdir=${sepol_devel_libdir}
+   AC_CHECK_FILE([${sepol_srcdir}/libsepol.a],,
+      AC_MSG_ERROR([make sure libsepol-devel is installed]))
 else
    AC_MSG_CHECKING([for compatible sepol source tree])
    sepol_version=${sepol_srcdir}/VERSION
@@ -444,9 +446,8 @@ else
    AC_CHECK_HEADER([sepol/policydb/policydb.h], , AC_MSG_ERROR([could not find sepol source tree]))
    CFLAGS="${sepol_src_save_CFLAGS}"
    CPPFLAGS="${sepol_src_save_CPPFLAGS}"
-   if test ! -f "${sepol_srcdir}/libsepol.a"; then
-      AC_MSG_ERROR([could not find precompiled libsepol.a])
-   fi
+   AC_CHECK_FILE([${sepol_srcdir}/libsepol.a],,
+      AC_MSG_ERROR([could not find precompiled libsepol.a]))
    sepol_devel_incdir="${sepol_srcdir}/../include"
 fi
 SELINUX_CFLAGS="-I${sepol_devel_incdir} -I${selinux_devel_incdir}"
