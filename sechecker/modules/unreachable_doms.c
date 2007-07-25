@@ -209,7 +209,7 @@ int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *ar
 		errno = ENOENT;
 		return -1;
 	} else {
-		int retv = parse_default_contexts(ctx_file_path, datum->ctx_vector, policy);
+		bool retv = parse_default_contexts(ctx_file_path, datum->ctx_vector, policy);
 		if (!retv) {
 			ERR(policy, "%s", "Unable to parse default contexts file");
 			errno = EIO;
