@@ -658,7 +658,7 @@ proc Apol_Analysis_transflow::_analyze {} {
     set threshold {}
     if {$vals(advanced:enable)} {
         set intermed $vals(intermed:inc_all)
-        set classes {}
+        set classperms {}
         foreach perm_key [array names vals perms:*] {
             if {$vals($perm_key)} {
                 foreach {foo class perm} [split $perm_key :] {break}
@@ -670,7 +670,7 @@ proc Apol_Analysis_transflow::_analyze {} {
         }
     } else {
         set intermed {}
-        set classes {}
+        set classperms {}
     }
 
     set q [new_apol_infoflow_analysis_t]
@@ -680,7 +680,7 @@ proc Apol_Analysis_transflow::_analyze {} {
     foreach i $intermed {
         $q append_intermediate $::ApolTop::policy $i
     }
-    foreach {c p} $classes {
+    foreach {c p} $classperms {
         $q append_class_perm $::ApolTop::policy $c $p
     }
     if {$threshold != {}} {

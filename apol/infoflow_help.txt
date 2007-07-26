@@ -140,9 +140,8 @@ this way, apol continues its tradition of supporting old and new
 versions of policies (see below for more on managing permission maps).
 
 Apol provides mechanisms to manage and customize permission mappings
-that best suit the analyst's needs.  These tools, including a
-permission map editor, are all available under the Advanced menu (see
-more on this topic below).
+that best suit the analyst's needs.  Use the Tools menu (see below) to
+modify permission mappings.
 
 
 Permission weighting
@@ -289,6 +288,7 @@ to the default permission file.
    information flow analysis, the default permission map will be
    loaded automatically unless a permission map was previously loaded.
    Closing the policy will also close any existing permission mapping.
+   Unsaved changes will be lost.
 
 
 Finding more flows
