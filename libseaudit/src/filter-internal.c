@@ -1013,27 +1013,38 @@ static const struct filter_criteria_t filter_criteria[] = {
 
 int filter_is_accepted(const seaudit_filter_t * filter, const seaudit_message_t * msg)
 {
-	int tried_test = 0, acceptval;
+	bool tried_test = false;
+	int acceptval;
 	size_t i;
 	for (i = 0; i < sizeof(filter_criteria) / sizeof(filter_criteria[0]); i++) {
 		if (filter_criteria[i].support(filter, msg)) {
-			tried_test = 1;
+			tried_test = true;
 			acceptval = filter_criteria[i].accept(filter, msg);
-			if (filter->match == SEAUDIT_FILTER_MATCH_ANY && acceptval) {
-				return 1;
-			}
-			if (filter->match == SEAUDIT_FILTER_MATCH_ALL && !acceptval) {
-				return 0;
-			}
+		} else if (filter->strict) {
+			/* if filter is being strict, then any unsupported
+			   criterion is assumed to not match */
+			acceptval = 0;
+		} else {
+			/* for unstrict filters, unsupported criterion is
+			   assumed to be a don't care state */
+			acceptval = -1;
+		}
+		if (filter->match == SEAUDIT_FILTER_MATCH_ANY && acceptval == 1) {
+			return 1;
+		}
+		if (filter->match == SEAUDIT_FILTER_MATCH_ALL && acceptval == 0) {
+			return 0;
 		}
 	}
 	if (!tried_test) {
-		/* if got here, then the filter had no criteria --
-		 * empty filters implicitly accept all */
+		/* if got here, then the filter had no supported criterion */
+		if (filter->strict) {
+			return 0;
+		}
 		return 1;
 	}
 	if (filter->match == SEAUDIT_FILTER_MATCH_ANY) {
-		/* if got here, then no criteria were met */
+		/* if got here, then no criterion was met */
 		return 0;
 	}
 	/* if got here, then all criteria were met */
@@ -1094,6 +1105,7 @@ static void filter_parse_start_element(void *user_data, const xmlChar * name, co
 		/* create a new filter and set it to be the one that is currently being parsed */
 		char *filter_name = NULL;
 		seaudit_filter_match_e match = SEAUDIT_FILTER_MATCH_ALL;
+		bool strict = false;
 		for (i = 0; attrs[i] != NULL && attrs[i + 1] != NULL; i += 2) {
 			if (xmlStrcmp(attrs[i], (xmlChar *) "name") == 0) {
 				free(filter_name);
@@ -1104,6 +1116,12 @@ static void filter_parse_start_element(void *user_data, const xmlChar * name, co
 				} else if (xmlStrcmp(attrs[i + 1], (xmlChar *) "any") == 0) {
 					match = SEAUDIT_FILTER_MATCH_ANY;
 				}
+			} else if (xmlStrcmp(attrs[i], (xmlChar *) "strict") == 0) {
+				if (xmlStrcmp(attrs[i + 1], (xmlChar *) "true") == 0) {
+					strict = true;
+				} else if (xmlStrcmp(attrs[i + 1], (xmlChar *) "false") == 0) {
+					strict = false;
+				}
 			}
 		}
 		if ((state->cur_filter = seaudit_filter_create(filter_name)) != NULL) {
@@ -1111,6 +1129,7 @@ static void filter_parse_start_element(void *user_data, const xmlChar * name, co
 				seaudit_filter_destroy(&state->cur_filter);
 			} else {
 				seaudit_filter_set_match(state->cur_filter, match);
+				seaudit_filter_set_strict(state->cur_filter, strict);
 			}
 		}
 		free(filter_name);
@@ -1205,7 +1224,8 @@ void filter_append_to_file(const seaudit_filter_t * filter, FILE * file, int tab
 	escaped = xmlURIEscapeStr(str_xml, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(file, "\t");
-	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", escaped, filter->match == SEAUDIT_FILTER_MATCH_ALL ? "all" : "any");
+	fprintf(file, "<filter name=\"%s\" match=\"%s\" strict=\"%s\">\n", escaped,
+		filter->match == SEAUDIT_FILTER_MATCH_ALL ? "all" : "any", filter->strict ? "true" : "false");
 	free(escaped);
 	free(str_xml);
 

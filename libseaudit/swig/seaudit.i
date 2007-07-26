@@ -619,6 +619,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	const char *get_description() {
 		return seaudit_filter_get_description(self);
 	};
+	void set_strict(bool is_strict) {
+		seaudit_filter_set_strict(self, is_strict);
+	};
+	bool get_strict() {
+		return seaudit_filter_get_strict(self);
+	};
 	void set_source_user(apol_string_vector_t *v) {
 		if (seaudit_filter_set_source_user(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source user list for filter");

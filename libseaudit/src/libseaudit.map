@@ -14,6 +14,8 @@ VERS_4.1{
 VERS_4.2{
 	global:
 		seaudit_avc_message_get_port;
+		seaudit_filter_get_strict;
+		seaudit_filter_set_strict;
 		seaudit_filter_get_anyaddr;
 		seaudit_filter_set_anyaddr;
 		seaudit_filter_get_anyport;

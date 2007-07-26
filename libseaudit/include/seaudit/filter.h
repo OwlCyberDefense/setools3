@@ -35,6 +35,7 @@ extern "C"
 #include <seaudit/avc_message.h>
 
 #include <apol/vector.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -195,6 +196,37 @@ extern "C"
  * been set.  Do not free() or otherwise modify this string.
  */
 	extern const char *seaudit_filter_get_description(const seaudit_filter_t * filter);
+
+/**
+ * Set the strictness of this filter.  By default, the filter's
+ * criteria are not "strict", meaning if a message does not have a
+ * field then the criterion will match it.  For example, an AVC denied
+ * message might not have an 'laddr' field in it.  If a filter was
+ * created with seaudit_filter_set_laddr(), the filter would still
+ * accept the message.
+ *
+ * If instead a filter is set as strict, then messages that do not
+ * have the field in question will be rejected.  For the example
+ * above, a strict filter would eliminate that AVC message.  In
+ * addition, an empty filter (i.e., one without any criterion set)
+ * does not match any messages if it is set to strict.
+ *
+ * @param filter Filter to modify.
+ * @param strict If true, enable strict matching.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_strict(seaudit_filter_t * filter, bool is_strict);
+
+/**
+ * Get the strictness of this filter.
+ *
+ * @param filter Filter from which to get strictness.
+ *
+ * @return True if the filter will reject messages that do not contain
+ * fields being filtered, false if they are accepted.
+ */
+	extern bool seaudit_filter_get_strict(const seaudit_filter_t * filter);
 
 /**
  * Set the list of source users.  A message is accepted if its source

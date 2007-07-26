@@ -32,6 +32,7 @@ struct seaudit_filter
 	seaudit_filter_match_e match;
 	char *name;
 	char *desc;
+	bool strict;
 	/** model that is watching this filter */
 	seaudit_model_t *model;
 	/** vector of strings, for source users */

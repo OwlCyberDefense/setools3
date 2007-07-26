@@ -4,13 +4,15 @@
  *
  * If adding new filter criteria, make sure you do the following:
  *
- * 0. add field(s) to seaudit_filter_t
- * 1. update filter constructor, seaudit_filter_create()
- * 2. update copy-constructor, seaudit_filter_create_from_filter()
- * 3. update destructor, seaudit_filter_destroy()
- * 4. add accessor(s) and modifier(s) as necessary
- * 5. add a record to filter_criteria table, implementing the four
- *    necessary functions.
+ * <ol>
+ *   <li>add field(s) to seaudit_filter_t</li>
+ *   <li>update filter constructor, seaudit_filter_create()</li>
+ *   <li>update copy-constructor, seaudit_filter_create_from_filter()</li>
+ *   <li>update destructor, seaudit_filter_destroy()</li>
+ *   <li>add accessor(s) and modifier(s) as necessary</li>
+ *   <li>add a record to filter_criteria table, implementing the four
+ *       necessary functions</li>
+ * </ol>
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -72,6 +74,7 @@ seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * fil
 		error = errno;
 		goto cleanup;
 	}
+	f->strict = filter->strict;
 	if ((filter->src_users != NULL
 	     && (f->src_users = apol_vector_create_from_vector(filter->src_users, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->src_roles != NULL
@@ -218,6 +221,10 @@ int seaudit_filter_set_match(seaudit_filter_t * filter, seaudit_filter_match_e m
 
 seaudit_filter_match_e seaudit_filter_get_match(const seaudit_filter_t * filter)
 {
+	if (filter == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
 	return filter->match;
 }
 
@@ -240,6 +247,10 @@ int seaudit_filter_set_name(seaudit_filter_t * filter, const char *name)
 
 const char *seaudit_filter_get_name(const seaudit_filter_t * filter)
 {
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return filter->name;
 }
 
@@ -262,7 +273,30 @@ int seaudit_filter_set_description(seaudit_filter_t * filter, const char *desc)
 
 const char *seaudit_filter_get_description(const seaudit_filter_t * filter)
 {
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
 	return filter->desc;
+}
+
+int seaudit_filter_set_strict(seaudit_filter_t * filter, bool is_strict)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	filter->strict = is_strict;
+	return 0;
+}
+
+bool seaudit_filter_get_strict(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return false;
+	}
+	return filter->strict;
 }
 
 /**
