@@ -1,3 +1,11 @@
+2007-07-26  M. Goldman <mgoldman@tresys.com>
+	* Added tooltip to glade interface noting that diffing never
+	  allow rules could dramaticly increase run time
+	
+	* Fixed names in sediffx to be more descriptive (the tree view
+	  in the upper left hand corner).  Names changed from
+	  AVRules auditallow to Audit Allow Rules as an example.
+
 2007-07-24  J. Tang  <jtang@tresys.com>
 
 	* Added framework for CUnit tests for libapol.

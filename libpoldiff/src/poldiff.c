@@ -68,7 +68,7 @@ static const poldiff_component_record_t component_records[] = {
 	 attrib_deep_diff,
 	 },
 	{
-	 "AVrule allow",
+	 "Allow Rules",
 	 POLDIFF_DIFF_AVALLOW,
 	 poldiff_avrule_get_stats_allow,
 	 poldiff_get_avrule_vector_allow,
@@ -81,7 +81,7 @@ static const poldiff_component_record_t component_records[] = {
 	 avrule_deep_diff_allow,
 	 },
 	{
-	 "AVrule auditallow",
+	 "Audit Allow Rules",
 	 POLDIFF_DIFF_AVAUDITALLOW,
 	 poldiff_avrule_get_stats_auditallow,
 	 poldiff_get_avrule_vector_auditallow,
@@ -94,7 +94,7 @@ static const poldiff_component_record_t component_records[] = {
 	 avrule_deep_diff_auditallow,
 	 },
 	{
-	 "AVrule dontaudit",
+	 "Don't Audit Rules",
 	 POLDIFF_DIFF_AVDONTAUDIT,
 	 poldiff_avrule_get_stats_dontaudit,
 	 poldiff_get_avrule_vector_dontaudit,
@@ -107,7 +107,7 @@ static const poldiff_component_record_t component_records[] = {
 	 avrule_deep_diff_dontaudit,
 	 },
 	{
-	 "AVrule neverallow",
+	 "Never Allow Rules",
 	 POLDIFF_DIFF_AVNEVERALLOW,
 	 poldiff_avrule_get_stats_neverallow,
 	 poldiff_get_avrule_vector_neverallow,
@@ -237,7 +237,7 @@ static const poldiff_component_record_t component_records[] = {
 	 role_trans_deep_diff,
 	 },
 	{
-	 "TErule type_change",
+	 "Type Change rules",
 	 POLDIFF_DIFF_TECHANGE,
 	 poldiff_terule_get_stats_change,
 	 poldiff_get_terule_vector_change,
@@ -250,7 +250,7 @@ static const poldiff_component_record_t component_records[] = {
 	 terule_deep_diff_change,
 	 },
 	{
-	 "TErule type_member",
+	 "Type Member Rules",
 	 POLDIFF_DIFF_TEMEMBER,
 	 poldiff_terule_get_stats_member,
 	 poldiff_get_terule_vector_member,
@@ -263,7 +263,7 @@ static const poldiff_component_record_t component_records[] = {
 	 terule_deep_diff_member,
 	 },
 	{
-	 "TErule type_transition",
+	 "Type Transition Rules",
 	 POLDIFF_DIFF_TETRANS,
 	 poldiff_terule_get_stats_trans,
 	 poldiff_get_terule_vector_trans,
