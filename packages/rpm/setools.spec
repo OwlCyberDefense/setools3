@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.3
-Release: pre7
+Release: pre8
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL

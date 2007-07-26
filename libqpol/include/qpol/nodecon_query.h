@@ -60,12 +60,12 @@ extern "C"
  *  Get an iterator for the nodecon statements in a policy.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator over items of type qpol_nodecon_t returned.
- *  The caller is responsible for calling qpol_iterator_destroy 
+ *  The caller is responsible for calling qpol_iterator_destroy
  *  to free memory used by this iterator. The caller must also call free()
  *  on items returned by qpol_iterator_get_item() when using this iterator.
- *  It is important to note that this iterator is only valid as long 
+ *  It is important to note that this iterator is only valid as long
  *  as the policy is unmodified.
- *  @return 0 on success and < 0 on failure; if the call fails, 
+ *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
 	extern int qpol_policy_get_nodecon_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
@@ -83,8 +83,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set, addr will be NULL, and protocol will be 0.
  */
-	int qpol_nodecon_get_addr(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** addr,
-				  unsigned char *protocol);
+	extern int qpol_nodecon_get_addr(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** addr,
+					 unsigned char *protocol);
 
 /**
  *  Get the net mask from a nodecon statement. Sets protocol to indicate
@@ -99,8 +99,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set, mask will be NULL, and protocol will be 0.
  */
-	int qpol_nodecon_get_mask(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** mask,
-				  unsigned char *protocol);
+	extern int qpol_nodecon_get_mask(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** mask,
+					 unsigned char *protocol);
 
 /**
  *  Get the protocol from a nodecon statement.
@@ -111,7 +111,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and protocol will be 0.
  */
-	int qpol_nodecon_get_protocol(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, unsigned char *protocol);
+	extern int qpol_nodecon_get_protocol(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, unsigned char *protocol);
 
 /**
  *  Get the context from a nodecon statement.

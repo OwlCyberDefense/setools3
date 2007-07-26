@@ -819,6 +819,15 @@ typedef struct poldiff_range {} poldiff_range_t;
 	const apol_mls_range_t *get_modified_range() {
 		return poldiff_range_get_modified_range(self);
 	};
+	const apol_string_vector_t *get_min_added_cats() {
+		return (apol_string_vector_t*)poldiff_range_get_min_added_cats(self);
+	};
+	const apol_string_vector_t *get_min_removed_cats() {
+		return (apol_string_vector_t*)poldiff_range_get_min_removed_cats(self);
+	};
+	const apol_string_vector_t *get_min_unmodified_cats() {
+		return (apol_string_vector_t*)poldiff_range_get_min_unmodified_cats(self);
+	};
 };
 %inline %{
 	poldiff_range_t *poldiff_range_from_void(void *x) {

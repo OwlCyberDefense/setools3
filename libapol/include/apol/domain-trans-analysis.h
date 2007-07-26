@@ -201,41 +201,43 @@ extern "C"
 								const char *class_name, const char *perm_name)
 		__attribute__ ((deprecated));
 
-	/**
-	 *  Set the analysis to return only types having access (via allow
-	 *  rules) to this class. <b>This is only valid for forward analysis.</b>
-	 *  If more than one class is appended to the query, the resulting type
-	 *  must have access to at least one of the appended classes.
-	 *  Pass a NULL to clear all previously appended classes.
-	 *  <b>If access classes are appended, the caller must also call
-	 *  apol_domain_trans_analysis_append_access_type() at least once with
-	 *  a valid type and apol_domain_trans_analysis_append_access_perm()
-	 *  with a valid permission.</b>
-	 *  @param policy Policy handler, to report errors.
-	 *  @param dta Domain transition analysis to set.
-	 *  @param class_name The class to which a result must have access.
-	 *  @return 0 on success, and < 0 on error; if the call fails,
-	 *  errno will be set and dta will be unchanged.
-	 */
+/**
+ *  Set the analysis to return only types having access (via allow
+ *  rules) to this class. <b>This is only valid for forward
+ *  analysis.</b> If more than one class is appended to the query, the
+ *  resulting type must have access to at least one of the appended
+ *  classes.  Pass a NULL to clear all previously appended classes.
+ *  <b>If access classes are appended, the caller must also call
+ *  apol_domain_trans_analysis_append_access_type() at least once with
+ *  a valid type and apol_domain_trans_analysis_append_access_perm()
+ *  with a valid permission.</b>
+ *  @param policy Policy handler, to report errors.
+ *  @param dta Domain transition analysis to set.
+ *  @param class_name The class to which a result must have access.
+ *  @return 0 on success, and < 0 on error; if the call fails,
+ *  errno will be set and dta will be unchanged.
+ */
 	extern int apol_domain_trans_analysis_append_class(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
 							   const char *class_name);
 
-	/**
-	 *  Set the analysis to return only types having access (via allow
-	 *  rules) to at least one class given by apol_domain_trans_analysis_append_class ()
-	 *  with the given permission. <b>This is only valid for forward analysis.</b>
-	 *  If more than one permission is appended the resulting type must have
-	 *  at least one of the appended permissions.  Pass a NULL to clear all
-	 *  previously appended permissions. <b>If access permissions are appended,
-	 *  the caller must also call apol_domain_trans_analysis_append_access_type()
-	 *  at least once with a valid type and apol_domain_trans_analysis_append_class ()
-	 *  at least once with a valid class.</b>
-	 *  @param policy Policy handler, to report errors.
-	 *  @param dta Domain transition analysis to set.
-	 *  @param perm_name The permission which a result must have.
-	 *  @return 0 on success, and < 0 on error; if the call fails,
-	 *  errno will be set and dta will be unchanged.
-	 */
+/**
+ *  Set the analysis to return only types having access (via allow
+ *  rules) to at least one class given by
+ *  apol_domain_trans_analysis_append_class () with the given
+ *  permission. <b>This is only valid for forward analysis.</b> If
+ *  more than one permission is appended the resulting type must have
+ *  at least one of the appended permissions.  Pass a NULL to clear
+ *  all previously appended permissions. <b>If access permissions are
+ *  appended, the caller must also call
+ *  apol_domain_trans_analysis_append_access_type() at least once with
+ *  a valid type and apol_domain_trans_analysis_append_class () at
+ *  least once with a valid class.</b>
+ *  @param policy Policy handler, to report errors.
+ *  @param dta Domain transition analysis to set.
+ *  @param perm_name The permission which a result must have.
+ *  @return 0 on success, and < 0 on error; if the call fails,
+ *  errno will be set and dta will be unchanged.
+ */
 	extern int apol_domain_trans_analysis_append_perm(const apol_policy_t * policy, apol_domain_trans_analysis_t * dta,
 							  const char *perm_name);
 

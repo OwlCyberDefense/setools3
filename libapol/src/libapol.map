@@ -50,12 +50,15 @@ VERS_4.0{
 		libapol_get_version;
 	local: *;
 };
+
 VERS_4.1{
 	global:
 		apol_avrule_query_set_all_perms;
 		apol_bst_inorder_map;
 		apol_context_convert;
 		apol_context_create_from_literal;
+		apol_domain_trans_analysis_append_class;
+		apol_domain_trans_analysis_append_perm;
 		apol_mls_level_convert;
 		apol_mls_level_create_from_literal;
 		apol_mls_level_is_literal;

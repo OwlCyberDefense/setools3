@@ -28,6 +28,23 @@ VERS_1.2{
 
 VERS_1.3{
 	global:
+		poldiff_avrule_get_stats_allow;
+		poldiff_avrule_get_stats_auditallow;
+		poldiff_avrule_get_stats_dontaudit;
+		poldiff_avrule_get_stats_neverallow;
+		poldiff_get_avrule_vector_allow;
+		poldiff_get_avrule_vector_auditallow;
+		poldiff_get_avrule_vector_dontaudit;
+		poldiff_get_avrule_vector_neverallow;
 		poldiff_component_record_*;
-	local: *;
-};
+		poldiff_range_get_min_added_cats;
+		poldiff_range_get_min_removed_cats;
+		poldiff_range_get_min_unmodified_cats;
+		poldiff_role_allow_get_unmodified_roles;
+		poldiff_terule_get_stats_change;
+		poldiff_terule_get_stats_member;
+		poldiff_terule_get_stats_trans;
+		poldiff_get_terule_vector_change;
+		poldiff_get_terule_vector_member;
+		poldiff_get_terule_vector_trans;
+} VERS_1.2;

@@ -51,4 +51,3 @@ VERS_1.3{
 		qpol_policy_open_from_memory;
 		qpol_policy_rebuild;
 } VERS_1.2;
- 

@@ -522,21 +522,21 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return str;
 	};
-	void open_permmap(char *path) {
+	void open_permmap(const char *path) {
 		if (apol_policy_open_permmap(self, path) < 0) {
 			SWIG_exception(SWIG_RuntimeError, "Error loading permission map");
 		}
 	fail:
 		return;
 	};
-	void save_permmap(char *path) {
+	void save_permmap(const char *path) {
 		if (apol_policy_save_permmap(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not save permission map");
 		}
 	fail:
 		return;
 	};
-	int get_permmap_weight(char *class_name, char *perm_name) {
+	int get_permmap_weight(const char *class_name, const char *perm_name) {
 		int dir, weight;
 		if (apol_policy_get_permmap(self, class_name, perm_name, &dir, &weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not get permission map weight");
@@ -552,7 +552,7 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return dir;
 	};
-	void set_permmap(char *class_name, char *perm_name, int direction, int weight) {
+	void set_permmap(const char *class_name, const char *perm_name, int direction, int weight) {
 		if (apol_policy_set_permmap(self, class_name, perm_name, direction, weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set permission mapping");
 		}
@@ -1261,7 +1261,16 @@ typedef struct apol_context {} apol_context_t;
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 	fail:
-	return ctx;
+		return ctx;
+	};
+	apol_context_t(const char *str) {
+		apol_context_t *ctx;
+		ctx = apol_context_create_from_literal(str);
+		if (!ctx) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+	fail:
+		return ctx;
 	};
 	~apol_context_t() {
 		apol_context_destroy(&self);

@@ -1,3 +1,13 @@
+2007-07-26  J. Tang  <jtang@tresys.com>
+
+	* Updated all linker map and SWIG interface files to match
+	exported library headers.
+
+	* libseaudit/src/filter.c (seaudit_filter_set_match): Added
+	ability to set strictness of libseaudit filters.  Be default,
+	filters are not strict; this matches previous libseaudit behavior.
+	See seaudit_filter_set_match() for definition of "strictness".
+
 2007-07-26  M. Goldman <mgoldman@tresys.com>
 	* Added tooltip to glade interface noting that diffing never
 	  allow rules could dramaticly increase run time
