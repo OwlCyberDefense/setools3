@@ -1,5 +1,10 @@
 2007-07-27  J. Tang  <jtang@tresys.com>
 
+	* Library jar files are now installed in
+	$PREFIX/share/setools-<version>, with symlinks in
+	$PREFIX/share/java.  They used to be placed in
+	$PREFIX/lib/setools.
+
 	* Added framework for CUnit tests for libseaudit.
 
 2007-07-26  J. Tang  <jtang@tresys.com>

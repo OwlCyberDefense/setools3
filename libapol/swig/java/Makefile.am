@@ -7,7 +7,7 @@ package_name = com.tresys.setools.apol
 package_dir = $(dir $(subst .,/,$(package_name)))apol
 
 wrappedjar_DATA = apol.jar
-wrappedjardir = $(libdir)/setools
+wrappedjardir = $(setoolsdir)
 
 dist_noinst_DATA = $(srcdir)/../apol.i
 BUILT_SOURCES = apol_wrap.c \
@@ -109,6 +109,7 @@ $(wrappedjar_DATA): $(classes)
 install-data-hook:
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(short_name)
+	$(mkdir_p) $(javadir) && cd $(javadir) && $(LN_S) -f $(wrappedjardir)/$(wrappedjar_DATA)
 
 uninstall-local:
 	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_SONAME) $(DESTDIR)$(wrappedsodir)/$(short_name)

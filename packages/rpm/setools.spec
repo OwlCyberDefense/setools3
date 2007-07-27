@@ -181,7 +181,7 @@ This package includes the following graphical tools:
 %define setoolsdir %{_datadir}/setools-%{version}
 %define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
 %define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
-%define javalibdir %{_libdir}/setools
+%define javajardir %{_datadir}/java
 %define tcllibdir %{_libdir}/setools
 
 %prep
@@ -290,11 +290,16 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libjsefs.so.%{libsefs_ver}
 %{_libdir}/libjsefs.so.4
 %{_libdir}/libjsefs.so
-%{javalibdir}/qpol.jar
-%{javalibdir}/apol.jar
-%{javalibdir}/poldiff.jar
-%{javalibdir}/seaudit.jar
-%{javalibdir}/sefs.jar
+%{setoolsdir}/qpol.jar
+%{setoolsdir}/apol.jar
+%{setoolsdir}/poldiff.jar
+%{setoolsdir}/seaudit.jar
+%{setoolsdir}/sefs.jar
+%{javajardir}/qpol.jar
+%{javajardir}/apol.jar
+%{javajardir}/poldiff.jar
+%{javajardir}/seaudit.jar
+%{javajardir}/sefs.jar
 
 %files libs-tcl
 %defattr(-,root,root)

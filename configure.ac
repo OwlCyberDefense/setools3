@@ -36,6 +36,7 @@ libseaudit_jswig_soname=libjseaudit.so.4
 libseaudit_tswig_soname=libtseaudit.so.4
 
 setoolsdir='${prefix}/share/setools-3.3'
+javadir='${prefix}/share/java'
 
 version_min_sepol_major=1
 version_min_sepol_minor=12
@@ -651,6 +652,7 @@ AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
 profile_install_dir='${setoolsdir}/sechecker-profiles'
 
 AC_SUBST(VERSION)
+AC_SUBST(javadir)
 AC_SUBST(sepol_srcdir)
 AC_SUBST(libqpol_version)
 AC_SUBST(libqpol_soname)
