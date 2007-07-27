@@ -10,8 +10,8 @@
  *   <li>update copy-constructor, seaudit_filter_create_from_filter()</li>
  *   <li>update destructor, seaudit_filter_destroy()</li>
  *   <li>add accessor(s) and modifier(s) as necessary</li>
- *   <li>add a record to filter_criteria table, implementing the four
- *       necessary functions</li>
+ *   <li>add a record to filter_criteria table (in filter-internal.c),
+ *       implementing the five necessary functions</li>
  * </ol>
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -286,7 +286,12 @@ int seaudit_filter_set_strict(seaudit_filter_t * filter, bool is_strict)
 		errno = EINVAL;
 		return -1;
 	}
-	filter->strict = is_strict;
+	if (filter->strict != is_strict) {
+		filter->strict = is_strict;
+		if (filter->model != NULL) {
+			model_notify_filter_changed(filter->model, filter);
+		}
+	}
 	return 0;
 }
 

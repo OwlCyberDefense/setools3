@@ -1,7 +1,7 @@
 /**
  *  @file
  *
- *  Declarations for libapol domain transition analysis tests.
+ *  Declarations for using filters in libseaudit.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -23,13 +23,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef DTA_TESTS_H
-#define DTA_TESTS_H
+#ifndef FILTERS_H
+#define FILTERS_H
 
 #include <CUnit/CUnit.h>
 
-extern CU_TestInfo dta_tests[];
-extern int dta_init();
-extern int dta_cleanup();
+extern CU_TestInfo filters_tests[];
+extern int filters_init();
+extern int filters_cleanup();
 
 #endif

@@ -1,7 +1,7 @@
 /**
  *  @file
  *
- *  Declarations for libapol domain transition analysis tests.
+ *  Declarations for parsing selinux audit logs from a file pointer.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -23,13 +23,13 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef DTA_TESTS_H
-#define DTA_TESTS_H
+#ifndef PARSE_FILE_H
+#define PARSE_FILE_H
 
 #include <CUnit/CUnit.h>
 
-extern CU_TestInfo dta_tests[];
-extern int dta_init();
-extern int dta_cleanup();
+extern CU_TestInfo parse_file_tests[];
+extern int parse_file_init();
+extern int parse_file_cleanup();
 
 #endif
