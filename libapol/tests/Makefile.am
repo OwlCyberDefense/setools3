@@ -2,8 +2,10 @@ TESTS = libapol-tests
 check_PROGRAMS = libapol-tests
 
 libapol_tests_SOURCES = \
+	avrule-tests.c avrule-tests.h \
 	dta-tests.c dta-tests.h \
 	policy-21-tests.c policy-21-tests.h \
+	terule-tests.c terule-tests.h \
 	libapol-tests.c
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
