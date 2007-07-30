@@ -1107,7 +1107,7 @@ static int domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol
 			dummy.type = tmpl_result->end_type = apol_vector_get_element(potential_end_types, i);
 			dom_node_t *end_node = NULL;
 			apol_bst_get_element(policy->domain_trans_table->domain_table, (void *)&dummy, NULL, (void **)&end_node);
-			const qpol_type_t *end_type = end_node->type;
+			const qpol_type_t *end_type = dummy.type;
 			if (end_type == start_type)
 				continue;
 			//get all proc trans rules for ths end (may be multiple due to attributes)
