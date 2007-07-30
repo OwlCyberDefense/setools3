@@ -184,7 +184,7 @@ static int perform_av_query(const apol_policy_t * policy, const options_t * opt,
 
 	if (opt->allow || opt->all)
 		rules |= QPOL_RULE_ALLOW;
-	if (opt->nallow || opt->all)
+	if ((opt->nallow || opt->all) && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_NEVERALLOW))
 		rules |= QPOL_RULE_NEVERALLOW;
 	if (opt->auditallow || opt->all)
 		rules |= QPOL_RULE_AUDITALLOW;
