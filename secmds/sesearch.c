@@ -1062,7 +1062,10 @@ int main(int argc, char **argv)
 		apol_class_query_t *regex_match_query = apol_class_query_create();
 		apol_class_query_set_regex(policy, regex_match_query, 1);
 		apol_class_query_set_class(policy, regex_match_query, cmd_opts.class_name);
-		apol_class_get_by_query(policy, regex_match_query, &qpol_matching_classes);
+		if (apol_class_get_by_query(policy, regex_match_query, &qpol_matching_classes)) {
+			apol_class_query_destroy(&regex_match_query);
+			goto cleanup;
+		}
 		const qpol_class_t *class = NULL;
 		for (size_t i = 0; i < apol_vector_get_size(qpol_matching_classes); ++i) {
 			const char *class_name;
