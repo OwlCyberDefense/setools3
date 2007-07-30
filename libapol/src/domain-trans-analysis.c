@@ -1618,6 +1618,8 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 	apol_vector_t *local_results = NULL;
 	apol_avrule_query_t *accessq = NULL;
 	int error = 0;
+	if (!results)
+		*results = NULL;
 	if (!policy || !dta || !results) {
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
@@ -1763,12 +1765,10 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 		apol_avrule_query_destroy(&accessq);
 	}
 
+	*results = apol_vector_create(domain_trans_result_free);
 	if (!(*results)) {
-		*results = apol_vector_create(domain_trans_result_free);
-		if (!(*results)) {
-			error = errno;
-			goto err;
-		}
+		error = errno;
+		goto err;
 	}
 	for (size_t i = 0; i < apol_vector_get_size(local_results); i++) {
 		apol_domain_trans_result_t *res =
@@ -1785,6 +1785,7 @@ int apol_domain_trans_analysis_do(apol_policy_t * policy, apol_domain_trans_anal
 	return 0;
       err:
 	apol_vector_destroy(&local_results);
+	apol_vector_destroy(results);
 	apol_avrule_query_destroy(&accessq);
 	errno = error;
 	return -1;
