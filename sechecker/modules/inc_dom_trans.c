@@ -185,7 +185,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 	sechk_result_t *find_domains_res = NULL;
 	apol_domain_trans_analysis_t *domain_trans = NULL;
 	apol_vector_t *domain_vector = NULL, *role_vector = NULL, *user_vector = NULL, *rbac_vector = NULL;
-	apol_vector_t *domain_trans_vector;
+	apol_vector_t *domain_trans_vector = NULL;
 	apol_user_query_t *user_query = NULL;
 	apol_role_trans_query_t *role_trans_query = NULL;
 	char *buff = NULL;

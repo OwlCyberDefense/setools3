@@ -1058,6 +1058,7 @@ static int domain_trans_table_find_orphan_type_transitions(apol_policy_t * polic
 			}
 			tmp_result = NULL;
 		}
+		apol_vector_destroy(&ttnodes);
 	}
 	apol_vector_destroy(&epnodes);
 
