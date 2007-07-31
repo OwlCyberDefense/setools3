@@ -1225,7 +1225,7 @@ static int domain_trans_table_get_all_forward_trans(apol_policy_t * policy, apol
 						if (apol_vector_get_size(execrules)) {
 							for (size_t l = 0; l < apol_vector_get_size(execrules); l++) {
 								avrule_node_t *xnode = apol_vector_get_element(execrules, l);
-								xnode->used = true;
+								//do not mark xnode as used here; it is valid to re-use it.
 								if (apol_vector_append
 								    (tmpl_result->exec_rules, (void *)xnode->rule)) {
 									error = errno;
@@ -1421,6 +1421,9 @@ static int domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol
 				apol_vector_sort_uniquify(potential_start_types, NULL, NULL);
 				for (size_t k = 0; k < apol_vector_get_size(potential_start_types); k++) {
 					tmpl_result->start_type = apol_vector_get_element(potential_start_types, k);
+					//no transition to self
+					if (tmpl_result->end_type == tmpl_result->start_type)
+						continue;
 					//get all execute rule for this start type
 					apol_vector_t *exec_rules =
 						find_avrules_in_node((void *)epnode, APOL_DOMAIN_TRANS_RULE_EXEC,
