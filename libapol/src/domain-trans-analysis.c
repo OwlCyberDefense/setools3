@@ -365,18 +365,19 @@ static int table_add_avrule(apol_policy_t * policy, apol_domain_trans_table_t * 
 	}
 	qpol_iterator_destroy(&iter);
 
-	dom_node_t *dnode = NULL;
-	ep_node_t *enode = NULL;
 	if (proc_trans || ep || setexec) {
 		for (size_t i = 0; i < apol_vector_get_size(sources); i++) {
-			dnode = NULL;
+			dom_node_t *dnode = NULL;
 			dom_node_t dummy = { apol_vector_get_element(sources, i), NULL, NULL, NULL };
 			if (apol_bst_get_element(dta_table->domain_table, &dummy, NULL, (void **)&dnode)) {
-				if (!(dnode = dom_node_create(dummy.type)) ||
-				    apol_bst_insert(dta_table->domain_table, (void *)dnode, NULL)) {
+				dom_node_t *new_dnode = NULL;
+				if (!(new_dnode = dom_node_create(dummy.type)) ||
+				    apol_bst_insert(dta_table->domain_table, (void *)new_dnode, NULL)) {
 					error = errno;
+					dom_node_free(new_dnode);
 					goto err;
 				}
+				dnode = new_dnode;
 			}
 			if (setexec) {
 				if (apol_vector_append_unique(dnode->setexec_rules, (void *)rule, NULL, NULL)) {
@@ -388,7 +389,8 @@ static int table_add_avrule(apol_policy_t * policy, apol_domain_trans_table_t * 
 				if (proc_trans) {
 					avrule_node_t *new_node =
 						avrule_node_create((const qpol_type_t *)apol_vector_get_element(targets, j), rule);
-					if (apol_bst_insert_and_get(dnode->process_transition_tree, (void **)&new_node, NULL) < 0) {
+					if (!new_node ||
+					    apol_bst_insert_and_get(dnode->process_transition_tree, (void **)&new_node, NULL) < 0) {
 						error = errno;
 						free(new_node);
 						goto err;
@@ -397,7 +399,8 @@ static int table_add_avrule(apol_policy_t * policy, apol_domain_trans_table_t * 
 				if (ep) {
 					avrule_node_t *new_node =
 						avrule_node_create((const qpol_type_t *)apol_vector_get_element(targets, j), rule);
-					if (apol_bst_insert_and_get(dnode->entrypoint_tree, (void **)&new_node, NULL) < 0) {
+					if (!new_node ||
+					    apol_bst_insert_and_get(dnode->entrypoint_tree, (void **)&new_node, NULL) < 0) {
 						error = errno;
 						free(new_node);
 						goto err;
@@ -408,19 +411,22 @@ static int table_add_avrule(apol_policy_t * policy, apol_domain_trans_table_t * 
 	}
 	if (exec) {
 		for (size_t i = 0; i < apol_vector_get_size(targets); i++) {
-			enode = NULL;
+			ep_node_t *enode = NULL;
 			ep_node_t dummy = { apol_vector_get_element(targets, i), NULL, NULL };
 			if (apol_bst_get_element(dta_table->entrypoint_table, &dummy, NULL, (void **)&enode)) {
-				if (!(enode = ep_node_create(dummy.type)) ||
-				    apol_bst_insert(dta_table->entrypoint_table, (void *)enode, NULL)) {
+				ep_node_t *new_enode = NULL;
+				if (!(new_enode = ep_node_create(dummy.type)) ||
+				    apol_bst_insert(dta_table->entrypoint_table, (void *)new_enode, NULL)) {
 					error = errno;
+					ep_node_free(new_enode);
 					goto err;
 				}
+				enode = new_enode;
 			}
 			for (size_t j = 0; j < apol_vector_get_size(sources); j++) {
 				avrule_node_t *new_node =
 					avrule_node_create((const qpol_type_t *)apol_vector_get_element(sources, j), rule);
-				if (apol_bst_insert_and_get(enode->execute_tree, (void **)&new_node, NULL) < 0) {
+				if (!new_node || apol_bst_insert_and_get(enode->execute_tree, (void **)&new_node, NULL) < 0) {
 					error = errno;
 					free(new_node);
 					goto err;
@@ -434,7 +440,6 @@ static int table_add_avrule(apol_policy_t * policy, apol_domain_trans_table_t * 
 	return 0;
 
       err:
-	dom_node_free(dnode);
 	qpol_iterator_destroy(&iter);
 	apol_vector_destroy(&sources);
 	apol_vector_destroy(&targets);
@@ -453,17 +458,19 @@ static int table_add_terule(apol_policy_t * policy, apol_domain_trans_table_t * 
 	qpol_terule_get_default_type(qp, rule, &dflt);
 	apol_vector_t *sources = apol_query_expand_type(policy, src);
 	apol_vector_t *targets = apol_query_expand_type(policy, tgt);
-	ep_node_t *enode = NULL;
 	int error = 0;
 	for (size_t i = 0; i < apol_vector_get_size(targets); i++) {
-		enode = NULL;
+		ep_node_t *enode = NULL;
 		ep_node_t dummy = { apol_vector_get_element(targets, i), NULL, NULL };
 		if (apol_bst_get_element(dta_table->entrypoint_table, &dummy, NULL, (void **)&enode)) {
-			if (!(enode = ep_node_create(dummy.type)) ||
-			    apol_bst_insert(dta_table->entrypoint_table, (void *)enode, NULL)) {
+			ep_node_t *new_enode = NULL;
+			if (!(new_enode = ep_node_create(dummy.type)) ||
+			    apol_bst_insert(dta_table->entrypoint_table, (void *)new_enode, NULL)) {
 				error = errno;
+				ep_node_free(new_enode);
 				goto err;
 			}
+			enode = new_enode;
 		}
 		for (size_t j = 0; j < apol_vector_get_size(sources); j++) {
 			terule_node_t *new_node =
@@ -480,7 +487,6 @@ static int table_add_terule(apol_policy_t * policy, apol_domain_trans_table_t * 
 	apol_vector_destroy(&targets);
 	return 0;
       err:
-	ep_node_free(enode);
 	apol_vector_destroy(&sources);
 	apol_vector_destroy(&targets);
 	errno = error;
@@ -1373,7 +1379,7 @@ static int domain_trans_table_get_all_reverse_trans(apol_policy_t * policy, apol
 		apol_vector_sort_uniquify(potential_ep_types, NULL, NULL);
 		for (size_t i = 0; i < apol_vector_get_size(potential_ep_types); i++) {
 			tmpl_result->ep_type = apol_vector_get_element(potential_ep_types, i);
-			//get all ep rules for ths end (may be multiple due to attributes)
+			//get all ep rules for this end (may be multiple due to attributes)
 			eprules = find_avrules_in_node((void *)end_node, APOL_DOMAIN_TRANS_RULE_ENTRYPOINT, tmpl_result->ep_type);
 			apol_vector_destroy(&tmpl_result->ep_rules);
 			tmpl_result->ep_rules = apol_vector_create(NULL);
