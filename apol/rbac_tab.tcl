@@ -416,8 +416,10 @@ proc Apol_RBAC::_searchRBACs {} {
         $raq set_source_any $::ApolTop::policy $is_any
         $raq set_target $::ApolTop::policy $target_role
         set v [$raq run $::ApolTop::policy]
+        $raq -acquire
         $raq -delete
         set role_allows [role_allow_vector_to_list $v]
+        $v -acquire
         $v -delete
     }
 
@@ -428,8 +430,10 @@ proc Apol_RBAC::_searchRBACs {} {
         $rtq set_target $::ApolTop::policy $target_type 0
         $rtq set_default $::ApolTop::policy $default_role
         set v [$rtq run $::ApolTop::policy]
+        $rtq -acquire
         $rtq -delete
         set role_trans [role_trans_vector_to_list $v]
+        $v -acquire
         $v -delete
     }
 

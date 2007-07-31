@@ -268,6 +268,7 @@ proc Apol_Widget::resetLevelSelectorToPolicy {path} {
             }
             $i next
         }
+        $i -acquire
         $i -delete
         set level_names {}
         foreach l [lsort -integer -index 1 $level_data] {
@@ -605,6 +606,7 @@ proc Apol_Widget::_filter_type_combobox {path attribvalue} {
                 set t [qpol_type_from_void $t]
                 lappend typesList [$t get_name $::ApolTop::qpolicy]
             }
+            $i -acquire
             $i -delete
         }
         if {$typesList == {}} {
@@ -636,6 +638,7 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
             lappend vars($path:cats) [$qpol_cat_datum get_name $::ApolTop::qpolicy]
             $i next
         }
+        $i -acquire
         $i -delete
     }
 }

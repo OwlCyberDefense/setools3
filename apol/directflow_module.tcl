@@ -125,6 +125,7 @@ proc Apol_Analysis_directflow::newAnalysis {} {
     set results [_analyze]
     set f [_createResultsDisplay]
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -136,6 +137,7 @@ proc Apol_Analysis_directflow::updateAnalysis {f} {
     set results [_analyze]
     _clearResultsDisplay $f
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -352,6 +354,7 @@ proc Apol_Analysis_directflow::_analyze {} {
     }
     $q set_result_regex $::ApolTop::policy $regexp
     set results [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     return $results
 }
@@ -423,6 +426,7 @@ proc Apol_Analysis_directflow::_treeOpen {tree node} {
                 $tree itemconfigure $node -data [list 1 $results]
                 if {$new_results != {}} {
                     _createResultsNodes $tree $node $new_results 1
+                    $new_results -acquire
                     $new_results -delete
                 }
             }
@@ -458,6 +462,7 @@ proc Apol_Analysis_directflow::_renderResults {f results} {
     $tree opentree top 0
     $tree see top
 
+    $results_list -acquire
     $results_list -delete
 }
 
@@ -571,6 +576,7 @@ proc Apol_Analysis_directflow::_renderResultsDirectFlow {res tree node data} {
         }
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
     }
 }

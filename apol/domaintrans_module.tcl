@@ -122,6 +122,7 @@ proc Apol_Analysis_domaintrans::newAnalysis {} {
     set results [_analyze]
     set f [_createResultsDisplay]
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -133,6 +134,7 @@ proc Apol_Analysis_domaintrans::updateAnalysis {f} {
     set results [_analyze]
     _clearResultsDisplay $f
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -432,6 +434,7 @@ proc Apol_Analysis_domaintrans::_filterTypeLists {attrib lb} {
             lappend vals(targets:inc_displayed) [$t get_name $::ApolTop::qpolicy]
             $i next
         }
+        $i -acquire
         $i -delete
         set vals(targets:inc_displayed) [lsort $vals(targets:inc_displayed)]
     } else {
@@ -643,6 +646,7 @@ proc Apol_Analysis_domaintrans::_analyze {} {
     $::ApolTop::policy build_domain_trans_table
     apol_tcl_set_info_string $::ApolTop::policy "Performing Domain Transition Analysis..."
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     return $v
 }
@@ -667,6 +671,7 @@ proc Apol_Analysis_domaintrans::_analyzeMore {tree node analysis_args} {
     }
     $::ApolTop::policy reset_domain_trans_table
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     return $v
 }
@@ -731,6 +736,7 @@ proc Apol_Analysis_domaintrans::_treeOpen {tree node} {
         $tree itemconfigure $node -data [list {} $results]
         if {$new_results != {}} {
             _createResultsNodes $tree $node $new_results $search_crit
+            $new_results -acquire
             $new_results -delete
         }
     }
@@ -915,6 +921,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
     set v [list_to_vector $proctrans]
     apol_tcl_avrule_sort $::ApolTop::policy $v
     Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+    $v -acquire
     $v -delete
     if {[llength $setexec] > 0} {
         $res.tb insert end "\n" {} \
@@ -924,6 +931,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
         set v [list_to_vector $setexec]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
     }
 
@@ -939,6 +947,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
         set v [list_to_vector $entrypoint]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
         $res.tb insert end "\n" {} \
             "            " {} \
@@ -948,6 +957,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
         set v [list_to_vector $execute]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
         if {[llength $type_trans] > 0} {
             $res.tb insert end "\n" {} \
@@ -958,6 +968,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
             set v [list_to_vector $type_trans]
             apol_tcl_terule_sort $::ApolTop::policy $v
             Apol_Widget::appendSearchResultRules $res 12 $v qpol_terule_from_void
+            $v -acquire
             $v -delete
         }
     }
@@ -970,6 +981,7 @@ proc Apol_Analysis_domaintrans::_renderResultsDTA {res tree node data} {
         set v [list_to_vector $access_list]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
     }
 }

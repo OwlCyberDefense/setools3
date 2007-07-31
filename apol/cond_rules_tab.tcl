@@ -175,8 +175,10 @@ proc Apol_Cond_Rules::_search {} {
     }
 
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set results [cond_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     if {[llength $results] == 0} {
@@ -209,15 +211,19 @@ proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
     set cond_expr [apol_cond_expr_render $::ApolTop::policy $cond]
     set i [$cond get_av_true_iter $::ApolTop::qpolicy $avrules]
     set av_true_vector [new_apol_vector_t $i]
+    $i -acquire
     $i -delete
     set i [$cond get_av_false_iter $::ApolTop::qpolicy $avrules]
     set av_false_vector [new_apol_vector_t $i]
+    $i -acquire
     $i -delete
     set i [$cond get_te_true_iter $::ApolTop::qpolicy $terules]
     set te_true_vector [new_apol_vector_t $i]
+    $i -acquire
     $i -delete
     set i [$cond get_te_false_iter $::ApolTop::qpolicy $terules]
     set te_false_vector [new_apol_vector_t $i]
+    $i -acquire
     $i -delete
 
     variable widgets
@@ -234,7 +240,9 @@ proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
         Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules qpol_syn_avrule_from_void
         set syn_terules [apol_terule_list_to_syn_terules $::ApolTop::policy $te_true_vector]
         Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules qpol_syn_terule_from_void
+        $syn_avrules -acquire
         $syn_avrules -delete
+        $syn_terules -acquire
         $syn_terules -delete
     }
 
@@ -249,12 +257,18 @@ proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {
         Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_avrules qpol_syn_avrule_from_void
         set syn_terules [apol_terule_list_to_syn_terules $::ApolTop::policy $te_false_vector]
         Apol_Widget::appendSearchResultSynRules $widgets(results) 4 $syn_terules qpol_syn_terule_from_void
+        $syn_avrules -acquire
         $syn_avrules -delete
+        $syn_terules -acquire
         $syn_terules -delete
     }
 
+    $av_true_vector -acquire
     $av_true_vector -delete
+    $av_false_vector -acquire
     $av_false_vector -delete
+    $te_true_vector -acquire
     $te_true_vector -delete
+    $te_false_vector -acquire
     $te_false_vector -delete
 }

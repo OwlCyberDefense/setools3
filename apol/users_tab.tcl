@@ -97,8 +97,10 @@ proc Apol_Users::create {tab_name nb} {
 proc Apol_Users::open {ppath} {
     set q [new_apol_user_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable users_list [lsort [user_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     variable opts
@@ -249,8 +251,10 @@ proc Apol_Users::_searchUsers {} {
     $q set_default_level $::ApolTop::policy $default
     $q set_range $::ApolTop::policy $range $range_type
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set users_data [user_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set text "USERS:\n"
@@ -274,10 +278,12 @@ proc Apol_Users::_renderUser {user_name show_all} {
         set default [$qpol_user_datum get_dfltlevel $::ApolTop::qpolicy]
         set apol_default [new_apol_mls_level_t $::ApolTop::policy $default]
         append text " level [$apol_default render $::ApolTop::policy]"
+        $apol_default -acquire
         $apol_default -delete
         set range [$qpol_user_datum get_range $::ApolTop::qpolicy]
         set apol_range [new_apol_mls_range_t $::ApolTop::policy $range]
         append text " range [$apol_range render $::ApolTop::policy]"
+        $apol_range -acquire
         $apol_range -delete
     }
     set i [$qpol_user_datum get_role_iter $::ApolTop::qpolicy]

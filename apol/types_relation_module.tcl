@@ -106,6 +106,7 @@ proc Apol_Analysis_tra::newAnalysis {} {
     set results [_analyze]
     set f [_createResultsDisplay]
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -118,6 +119,7 @@ proc Apol_Analysis_tra::updateAnalysis {f} {
     set results [_analyze]
     _clearResultsDisplay $f
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -271,6 +273,7 @@ proc Apol_Analysis_tra::_analyze {} {
     $q set_analyses $::ApolTop::policy $analyses
 
     set results [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     return $results
 }
@@ -473,6 +476,7 @@ proc Apol_Analysis_tra::_showSimilar {res name parent_data data} {
     }
     apol_tcl_avrule_sort $::ApolTop::policy $v
     Apol_Widget::appendSearchResultRules $res 2 $v qpol_avrule_from_void
+    $v -acquire
     $v -delete
 
     $res.tb insert end "\n" title \
@@ -486,6 +490,7 @@ proc Apol_Analysis_tra::_showSimilar {res name parent_data data} {
     }
     apol_tcl_avrule_sort $::ApolTop::policy $v
     Apol_Widget::appendSearchResultRules $res 2 $v qpol_avrule_from_void
+    $v -acquire
     $v -delete
 }
 
@@ -547,6 +552,7 @@ proc Apol_Analysis_tra::_showDissimilar {res name parent_name data} {
     }
     apol_tcl_avrule_sort $::ApolTop::policy $v
     Apol_Widget::appendSearchResultRules $res 2 $v qpol_avrule_from_void
+    $v -acquire
     $v -delete
 }
 
@@ -612,6 +618,7 @@ proc Apol_Analysis_tra::_showDirectFlow {res data} {
         }
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
     }
 }
@@ -697,6 +704,7 @@ proc Apol_Analysis_tra::_showDTA {res data} {
     set v [list_to_vector $proctrans]
     apol_tcl_avrule_sort $::ApolTop::policy $v
     Apol_Widget::appendSearchResultRules $res 6 $v _qpol_avrule_from_void
+    $v -acquire
     $v -delete
     if {[llength $setexec] > 0} {
         $res.tb insert end "\n" {} \
@@ -706,6 +714,7 @@ proc Apol_Analysis_tra::_showDTA {res data} {
         set v [list_to_vector $setexec]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
     }
 
@@ -721,6 +730,7 @@ proc Apol_Analysis_tra::_showDTA {res data} {
         set v [list_to_vector $entrypoint]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
         $res.tb insert end "\n" {} \
             "            " {} \
@@ -730,6 +740,7 @@ proc Apol_Analysis_tra::_showDTA {res data} {
         set v [list_to_vector $execute]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 12 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
         if {[llength $type_trans] > 0} {
             $res.tb insert end "\n" {} \
@@ -740,6 +751,7 @@ proc Apol_Analysis_tra::_showDTA {res data} {
             set v [list_to_vector $type_trans]
             apol_tcl_terule_sort $::ApolTop::policy $v
             Apol_Widget::appendSearchResultRules $res 12 $v qpol_terule_from_void
+            $v -acquire
             $v -delete
         }
     }
@@ -752,6 +764,7 @@ proc Apol_Analysis_tra::_showDTA {res data} {
         set v [list_to_vector $access_list]
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
     }
 }

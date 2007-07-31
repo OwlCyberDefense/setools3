@@ -233,6 +233,7 @@ proc Apol_Context_Dialog::_okay {dialog} {
     } else {
         $dialog enddialog 0
     }
+    $context -acquire
     $context -delete
 }
 

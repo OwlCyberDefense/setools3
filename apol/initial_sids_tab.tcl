@@ -63,8 +63,10 @@ proc Apol_Initial_SIDS::open {ppath} {
     variable vals
     set q [new_apol_isid_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set vals(items) [lsort [isid_vector_to_list $v]]
+    $v -acquire
     $v -delete
 }
 
@@ -107,8 +109,10 @@ proc Apol_Initial_SIDS::_search {} {
         $q set_context $::ApolTop::policy $context $range_match
     }
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set isids [isid_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set results "INITIAL SIDS:"

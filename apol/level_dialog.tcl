@@ -77,5 +77,6 @@ proc Apol_Level_Dialog::_okay {dialog} {
     } else {
         $dialog enddialog 0
     }
+    $level -acquire
     $level -delete
 }

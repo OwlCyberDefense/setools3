@@ -134,20 +134,26 @@ proc Apol_Class_Perms::create {tab_name nb} {
 proc Apol_Class_Perms::open {ppath} {
     set q [new_apol_class_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable class_list [lsort [class_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     set q [new_apol_common_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable common_perms_list [lsort [common_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     set q [new_apol_perm_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable perms_list [lsort [str_vector_to_list $v]]
+    $v -acquire
     $v -delete
 }
 
@@ -177,10 +183,12 @@ proc Apol_Class_Perms::getPermsForClass {class_name} {
     set qpol_class_datum [new_qpol_class_t $::ApolTop::qpolicy $class_name]
     set i [$qpol_class_datum get_perm_iter $::ApolTop::qpolicy]
     set perms [iter_to_str_list $i]
+    $i -acquire
     $i -delete
     if {[set qpol_common_datum [$qpol_class_datum get_common $::ApolTop::qpolicy]] != "NULL"} {
         set i [$qpol_common_datum get_perm_iter $::ApolTop::qpolicy]
         set perms [concat $perms [iter_to_str_list $i]]
+        $i -acquire
         $i -delete
     }
     lsort -dictionary -unique $perms
@@ -199,6 +207,7 @@ proc Apol_Class_Perms::getClassesForPerm {perm_name} {
         lappend classes_list [$qpol_class_datum get_name $::ApolTop::qpolicy]
         $i next
     }
+    $i -acquire
     $i -delete
     set indirect_classes_list {}
     set i [$::ApolTop::qpolicy get_common_iter $perm_name]
@@ -207,11 +216,14 @@ proc Apol_Class_Perms::getClassesForPerm {perm_name} {
         set q [new_apol_class_query_t]
         $q set_common $::ApolTop::policy [$qpol_common_datum get_name $::ApolTop::qpolicy]
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
         set indirect_classes_list [concat $indirect_classes_list [class_vector_to_list $v]]
+        $v -acquire
         $v -delete
         $i next
     }
+    $i -acquire
     $i -delete
     list [lsort $classes_list] [lsort -unique $indirect_classes_list]
 }
@@ -301,8 +313,10 @@ proc Apol_Class_Perms::_search {} {
         $q set_class $::ApolTop::policy $regexp
         $q set_regex $::ApolTop::policy $use_regexp
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
         set classes_data [class_vector_to_list $v]
+        $v -acquire
         $v -delete
         append results "OBJECT CLASSES:\n"
         if {$classes_data == {}} {
@@ -319,8 +333,10 @@ proc Apol_Class_Perms::_search {} {
         $q set_common $::ApolTop::policy $regexp
         $q set_regex $::ApolTop::policy $use_regexp
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
         set commons_data [common_vector_to_list $v]
+        $v -acquire
         $v -delete
         append results "\nCOMMON PERMISSIONS:  \n"
         if {$commons_data == {}} {
@@ -337,8 +353,10 @@ proc Apol_Class_Perms::_search {} {
         $q set_perm $::ApolTop::policy $regexp
         $q set_regex $::ApolTop::policy $use_regexp
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
         set perms_data [str_vector_to_list $v]
+        $v -acquire
         $v -delete
         append results "\nPERMISSIONS"
         if {$opts(perms:classes)} {
@@ -367,6 +385,7 @@ proc Apol_Class_Perms::_renderClass {class_name show_perms expand_common} {
     if {$show_perms} {
         set i [$qpol_class_datum get_perm_iter $::ApolTop::qpolicy]
         set perms_list [iter_to_str_list $i]
+        $i -acquire
         $i -delete
         foreach perm [lsort $perms_list] {
             append text "    $perm\n"
@@ -378,6 +397,7 @@ proc Apol_Class_Perms::_renderClass {class_name show_perms expand_common} {
                 foreach perm [lsort [iter_to_str_list $i]] {
                     append text "        $perm\n"
                 }
+                $i -acquire
                 $i -delete
             }
         }
@@ -394,6 +414,7 @@ proc Apol_Class_Perms::_renderCommon {common_name show_perms show_classes} {
         foreach perm [lsort [iter_to_str_list $i]] {
             append text "    $perm\n"
         }
+        $i -acquire
         $i -delete
     }
     if {$show_classes} {
@@ -408,6 +429,7 @@ proc Apol_Class_Perms::_renderCommon {common_name show_perms show_classes} {
             }
             $i next
         }
+        $i -acquire
         $i -delete
         foreach class [lsort $classes_list] {
             append text "      $class\n"
@@ -444,6 +466,7 @@ proc Apol_Class_Perms::_renderPerm {perm_name show_classes show_commons} {
             lappend commons_list [$qpol_common_datum get_name $::ApolTop::qpolicy]
             $i next
         }
+        $i -acquire
         $i -delete
 
         if {$commons_list == {}} {

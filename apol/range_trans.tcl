@@ -160,8 +160,10 @@ proc Apol_Range::_searchRanges {} {
     $q set_range $::ApolTop::policy $range $range_match
 
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set results [range_trans_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     if {[llength $results] == 0} {

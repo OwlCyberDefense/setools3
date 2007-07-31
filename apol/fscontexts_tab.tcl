@@ -209,8 +209,10 @@ proc Apol_FSContexts::_genfscon_open {} {
 
     set q [new_apol_genfscon_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set genfscons [genfscon_vector_to_list $v]
+    $v -acquire
     $v -delete
     set vals(genfscon:items) {}
     foreach g $genfscons {
@@ -234,8 +236,10 @@ proc Apol_FSContexts::_genfscon_popup {fstype} {
     set q [new_apol_genfscon_query_t]
     $q set_filesystem $::ApolTop::policy $fstype
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set genfscons [genfscon_vector_to_list $v]
+    $v -acquire
     $v -delete
     set text "genfs filesystem $fstype ([llength $genfscons] context"
     if {[llength $genfscons] != 1} {
@@ -280,8 +284,10 @@ proc Apol_FSContexts::_genfscon_runSearch {} {
     $q set_path $::ApolTop::policy $path
 
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set genfscons [genfscon_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set results "GENFSCONS:"
@@ -351,8 +357,10 @@ proc Apol_FSContexts::_fsuse_open {} {
 
     set q [new_apol_fs_use_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set fs_uses [lsort -unique [fs_use_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     # get a list of all behaviors present in this policy
@@ -419,8 +427,10 @@ proc Apol_FSContexts::_fsuse_runSearch {} {
     $q set_behavior $::ApolTop::policy $behavior
 
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set fsuses [fs_use_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set results "FS_USES:"

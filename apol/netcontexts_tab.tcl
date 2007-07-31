@@ -248,8 +248,10 @@ proc Apol_NetContexts::_portcon_open {} {
 
     set q [new_apol_portcon_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set portcons [portcon_vector_to_list $v]
+    $v -acquire
     $v -delete
     set vals(portcon:items) {}
     set protos {}
@@ -288,8 +290,10 @@ proc Apol_NetContexts::_portcon_popup {port} {
     $q set_low $::ApolTop::policy $low
     $q set_high $::ApolTop::policy $high
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set portcons [portcon_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set text "port $port ([llength $portcons] context"
@@ -390,8 +394,10 @@ proc Apol_NetContexts::_portcon_runSearch {} {
         $q set_context $::ApolTop::policy $context $range_match
     }
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set portcons [portcon_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set results "PORTCONS:"
@@ -485,8 +491,10 @@ proc Apol_NetContexts::_netifcon_open {} {
 
     set q [new_apol_netifcon_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set vals(netifcon:items) [lsort [netifcon_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     variable widgets
@@ -532,8 +540,10 @@ proc Apol_NetContexts::_netifcon_runSearch {} {
         $q set_msg_context $::ApolTop::policy $context $range_match
     }
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set netifcons [netifcon_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set results "NETIFCONS:"
@@ -585,8 +595,10 @@ proc Apol_NetContexts::_nodecon_create {p_f} {
 proc Apol_NetContexts::_nodecon_open {} {
     set q [new_apol_nodecon_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set nodecons [nodecon_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     variable vals
@@ -727,10 +739,13 @@ proc Apol_NetContexts::_nodecon_popup {nodecon_addr} {
     set q [new_apol_nodecon_query_t]
     set ip [apol_str_to_internal_ip $nodecon_addr]
     $q set_addr $::ApolTop::policy $ip
+    $ip -acquire
     $ip -delete
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set nodecons [nodecon_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set text "nodecon $nodecon_addr ([llength $nodecons] context"
@@ -805,8 +820,10 @@ proc Apol_NetContexts::_nodecon_runSearch {} {
     }
 
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set nodecons [nodecon_vector_to_list $v]
+    $v -acquire
     $v -delete
 
     set results "NODECONS:"

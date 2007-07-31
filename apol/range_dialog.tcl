@@ -115,6 +115,7 @@ proc Apol_Range_Dialog::_okay {dialog} {
     } else {
         $dialog enddialog 0
     }
+    $range -acquire
     $range -delete
 }
 

@@ -98,14 +98,18 @@ proc Apol_Types::create {tab_name nb} {
 proc Apol_Types::open {ppath} {
     set q [new_apol_type_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable typelist [lsort [type_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     set q [new_apol_attr_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable attriblist [lsort [attr_vector_to_list $v]]
+    $v -acquire
     $v -delete
 }
 
@@ -132,12 +136,14 @@ proc Apol_Types::isTypeInPolicy {type} {
     set q [new_apol_type_query_t]
     $q set_type $::ApolTop::policy $type
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     if {$v == "NULL" || [$v get_size] == 0} {
         set retval 0
     } else {
         set retval 1
     }
+    $v -acquire
     $v -delete
     set retval
 }
@@ -298,8 +304,10 @@ proc Apol_Types::_searchTypes {} {
         $q set_type $::ApolTop::policy $regexp
         $q set_regex $::ApolTop::policy $use_regexp
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
         set types_data [type_vector_to_list $v]
+        $v -acquire
         $v -delete
         append results "TYPES ([llength $types_data]):\n\n"
         foreach t [lsort $types_data] {
@@ -311,8 +319,10 @@ proc Apol_Types::_searchTypes {} {
         $q set_attr $::ApolTop::policy $regexp
         $q set_regex $::ApolTop::policy $use_regexp
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
         set attribs_data [attr_vector_to_list $v]
+        $v -acquire
         $v -delete
         if {$opts(types)} {
             append results "\n\n"
@@ -331,12 +341,14 @@ proc Apol_Types::_renderType {type_name show_attribs show_aliases} {
     set attribs {}
     set i [$qpol_type_datum get_alias_iter $::ApolTop::qpolicy]
     set aliases [iter_to_str_list $i]
+    $i -acquire
     $i -delete
     set i [$qpol_type_datum get_attr_iter $::ApolTop::qpolicy]
     foreach a [iter_to_list $i] {
         set a [qpol_type_from_void $a]
         lappend attribs [$a get_name $::ApolTop::qpolicy]
     }
+    $i -acquire
     $i -delete
 
     set text "$type_name"
@@ -367,6 +379,7 @@ proc Apol_Types::_renderAttrib {attrib_name show_types show_attribs} {
             set t [qpol_type_from_void $t]
             lappend types [$t get_name $::ApolTop::qpolicy]
         }
+        $i -acquire
         $i -delete
         append text " ([llength $types] type"
         if {[llength $types] != 1} {
@@ -383,6 +396,7 @@ proc Apol_Types::_renderAttrib {attrib_name show_types show_attribs} {
                     set a [qpol_type_from_void $a]
                     lappend this_attribs [$a get_name $::ApolTop::qpolicy]
                 }
+                $i -acquire
                 $i -delete
 
                 set this_attribs [lsort $this_attribs]

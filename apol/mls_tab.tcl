@@ -94,14 +94,18 @@ proc Apol_MLS::open {ppath} {
 
     set q [new_apol_level_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set vals(senslist) [lsort [level_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     set q [new_apol_cat_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set vals(catslist) [lsort [cat_vector_to_list $v]]
+    $v -acquire
     $v -delete
 }
 
@@ -135,6 +139,7 @@ proc Apol_MLS::isSensInPolicy {sens} {
         set qpol_level_t [new_qpol_level_t $::ApolTop::qpolicy $s]
         set i [$qpol_level_t get_alias_iter $::ApolTop::qpolicy]
         set l [iter_to_str_list $i]
+        $i -acquire
         $i -delete
         if {[lsearch $l $sens] >= 0} {
             return $s
@@ -182,6 +187,7 @@ proc Apol_MLS::_renderLevel {level_name show_level} {
     set qpol_level_datum [new_qpol_level_t $::ApolTop::qpolicy $level_name]
     set i [$qpol_level_datum get_alias_iter $::ApolTop::qpolicy]
     set aliases [iter_to_str_list $i]
+    $i -acquire
     $i -delete
 
     set text $level_name
@@ -191,6 +197,7 @@ proc Apol_MLS::_renderLevel {level_name show_level} {
     if {$show_level} {
         set i [$qpol_level_datum get_cat_iter $::ApolTop::qpolicy]
         set num_cats [$i get_size]
+        $i -acquire
         $i -delete
         append text " ($num_cats categor"
         if {$num_cats == 1} {
@@ -200,6 +207,7 @@ proc Apol_MLS::_renderLevel {level_name show_level} {
         }
         set level [new_apol_mls_level_t $::ApolTop::policy $qpol_level_datum]
         append text "\n    level [$level render $::ApolTop::policy]\n"
+        $level -acquire
         $level -delete
     }
     return $text
@@ -209,6 +217,7 @@ proc Apol_MLS::_renderCats {cat_name show_sens} {
     set qpol_cat_datum [new_qpol_cat_t $::ApolTop::qpolicy $cat_name]
     set i [$qpol_cat_datum get_alias_iter $::ApolTop::qpolicy]
     set aliases [iter_to_str_list $i]
+    $i -acquire
     $i -delete
 
     set text $cat_name
@@ -220,6 +229,7 @@ proc Apol_MLS::_renderCats {cat_name show_sens} {
         set q [new_apol_level_query_t]
         $q set_cat $::ApolTop::policy $cat_name
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
         set sens_list {}
         for {set i 0} {$i < [$v get_size]} {incr i} {
@@ -228,6 +238,7 @@ proc Apol_MLS::_renderCats {cat_name show_sens} {
             set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
             lappend sens_list [list $level_name $level_value]
         }
+        $v -acquire
         $v -delete
         foreach s [lsort -integer -index 1 $sens_list] {
             append text "    [lindex $s 0]\n"
@@ -264,6 +275,7 @@ proc Apol_MLS::_search {} {
         $q set_sens $::ApolTop::policy $regexp
         $q set_regex $::ApolTop::policy $use_regexp
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
 
         set level_data {}
@@ -273,6 +285,7 @@ proc Apol_MLS::_search {} {
             set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
             lappend level_data [list $level_name $level_value]
         }
+        $v -acquire
         $v -delete
 
         append results "SENSITIVITIES (ordered by dominance from low to high):"
@@ -293,6 +306,7 @@ proc Apol_MLS::_search {} {
         $q set_cat $::ApolTop::policy $regexp
         $q set_regex $::ApolTop::policy $use_regexp
         set v [$q run $::ApolTop::policy]
+        $q -acquire
         $q -delete
 
         set cats_data {}
@@ -302,6 +316,7 @@ proc Apol_MLS::_search {} {
             set cat_value [$qpol_cat_datum get_value $::ApolTop::qpolicy]
             lappend cats_data [list $cat_name $cat_value]
         }
+        $v -acquire
         $v -delete
 
         append results "CATEGORIES (ordered by appearance within policy):"

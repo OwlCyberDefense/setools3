@@ -76,8 +76,10 @@ proc Apol_Roles::create {tab_name nb} {
 proc Apol_Roles::open {ppath} {
     set q [new_apol_role_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable role_list [lsort [role_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     variable widgets
@@ -151,8 +153,10 @@ proc Apol_Roles::_searchRoles {} {
     set q [new_apol_role_query_t]
     $q set_type $::ApolTop::policy $type
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set roles_data [role_vector_to_list $v]
+    $v -acquire
     $v -delete
     set text "ROLES:\n"
     if {[llength $roles_data] == 0} {
@@ -177,6 +181,7 @@ proc Apol_Roles::_renderRole {role_name show_all} {
         lappend types [$qpol_type_datum get_name $::ApolTop::qpolicy]
         $i next
     }
+    $i -acquire
     $i -delete
     set text "$role_name ([llength $types] type"
     if {[llength $types] != 1} {

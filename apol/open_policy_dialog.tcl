@@ -285,6 +285,7 @@ proc Apol_Open_Policy_Dialog::importList {} {
         addModule $m
     }
     _validateEntryKey $vars(primary_file)
+    $ppath -acquire
     $ppath -delete
 }
 
@@ -353,6 +354,7 @@ proc Apol_Open_Policy_Dialog::tryOpenPolicy {} {
 proc Apol_Open_Policy_Dialog::getModuleInfo {f} {
     set mod [new_qpol_module_t $f]
     set retval [list [$mod get_name] [$mod get_version]]
+    $mod -acquire
     $mod -delete
     return $retval
 }

@@ -112,6 +112,7 @@ proc Apol_Analysis_transflow::newAnalysis {} {
     set results [_analyze]
     set f [_createResultsDisplay]
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -123,6 +124,7 @@ proc Apol_Analysis_transflow::updateAnalysis {f} {
     set results [_analyze]
     _clearResultsDisplay $f
     _renderResults $f $results
+    $results -acquire
     $results -delete
     return {}
 }
@@ -570,6 +572,7 @@ proc Apol_Analysis_transflow::_filterTypeLists {attrib} {
                 set t [qpol_type_from_void $t]
                 lappend typesList [$t get_name $::ApolTop::qpolicy]
             }
+            $i -acquire
             $i -delete
         }
         if {$typesList == {}} {
@@ -688,6 +691,7 @@ proc Apol_Analysis_transflow::_analyze {} {
     }
     $q set_result_regex $::ApolTop::policy $regexp
     set results [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     return $results
 }
@@ -761,6 +765,7 @@ proc Apol_Analysis_transflow::_treeOpen {tree node} {
                 $tree itemconfigure $node -data [list 1 $results]
                 if {$new_results != {}} {
                     _createResultsNodes $tree $node $new_results 1
+                    $new_results -acquire
                     $new_results -delete
                 }
             }
@@ -797,6 +802,7 @@ proc Apol_Analysis_transflow::_renderResults {f results} {
     $tree opentree top 0
     $tree see top
 
+    $results_list -acquire
     $results_list -delete
 }
 
@@ -933,6 +939,7 @@ proc Apol_Analysis_transflow::_renderPath {res path_num path} {
         set v [new_apol_vector_t]
         $v append [lindex $rules 0]
         Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
 
         set v [new_apol_vector_t]
@@ -941,6 +948,7 @@ proc Apol_Analysis_transflow::_renderPath {res path_num path} {
         }
         apol_tcl_avrule_sort $::ApolTop::policy $v
         Apol_Widget::appendSearchResultRules $res 10 $v qpol_avrule_from_void
+        $v -acquire
         $v -delete
     }
 }
@@ -1135,5 +1143,6 @@ proc Apol_Analysis_transflow::_doFindMore {res tree node} {
 
     $res.tb configure -state disabled
     destroy $d
+    $v -acquire
     $v -delete
 }

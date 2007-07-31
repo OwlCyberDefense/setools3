@@ -97,8 +97,10 @@ proc Apol_Cond_Bools::create {tab_name nb} {
 proc Apol_Cond_Bools::open {ppath} {
     set q [new_apol_bool_query_t]
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     variable cond_bools_list [lsort [bool_vector_to_list $v]]
+    $v -acquire
     $v -delete
 
     variable cond_bools_defaults
@@ -223,8 +225,10 @@ proc Apol_Cond_Bools::_search {} {
     $q set_bool $::ApolTop::policy $name
     $q set_regex $::ApolTop::policy $opts(use_regexp)
     set v [$q run $::ApolTop::policy]
+    $q -acquire
     $q -delete
     set bools_data [bool_vector_to_list $v]
+    $v -acquire
     $v -delete
     
     set results {}

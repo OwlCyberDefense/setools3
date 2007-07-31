@@ -971,7 +971,9 @@ proc Apol_TE::_search_terules {whichButton} {
                 }
             }
 
+            $avq -acquire
             $avq -delete
+            $teq -acquire
             $teq -delete
             if {$avresults != "NULL"} {
                 set num_avresults [$avresults get_size]
