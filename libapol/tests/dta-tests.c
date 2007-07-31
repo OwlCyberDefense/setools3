@@ -86,6 +86,52 @@ static void dta_forward(void)
 	apol_vector_destroy(&v);
 }
 
+static void dta_forward_multi_end(void)
+{
+	apol_policy_reset_domain_trans_table(p);
+	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
+	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
+	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_set_start_type(p, d, "shark_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
+	apol_vector_t *v = NULL;
+	retval = apol_domain_trans_analysis_do(p, d, &v);
+	apol_domain_trans_analysis_destroy(&d);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT_PTR_NOT_NULL(v);
+	CU_ASSERT(apol_vector_get_size(v) == 2);
+
+	qpol_policy_t *q = apol_policy_get_qpol(p);
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		const apol_domain_trans_result_t *dtr = (const apol_domain_trans_result_t *)apol_vector_get_element(v, i);
+
+		const qpol_type_t *qt = apol_domain_trans_result_get_start_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		const char *name, *ep_name;
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT_STRING_EQUAL(name, "shark_t");
+
+		qt = apol_domain_trans_result_get_end_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT(strcmp(name, "surf_t") == 0 || strcmp(name, "sand_t") == 0);
+
+		qt = apol_domain_trans_result_get_entrypoint_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		retval = qpol_type_get_name(q, qt, &ep_name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+
+		CU_ASSERT_STRING_EQUAL(ep_name, "wave_t");
+	}
+
+	apol_vector_destroy(&v);
+}
+
 static void dta_forward_access(void)
 {
 	apol_policy_reset_domain_trans_table(p);
@@ -283,6 +329,8 @@ CU_TestInfo dta_tests[] = {
 	{"dta forward", dta_forward}
 	,
 	{"dta forward + access", dta_forward_access}
+	,
+	{"dta forward with multiple endpoints for same entrypoint", dta_forward_multi_end}
 	,
 	{"dta reverse", dta_reverse}
 	,
