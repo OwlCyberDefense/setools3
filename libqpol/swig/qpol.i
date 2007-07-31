@@ -102,7 +102,7 @@ SWIGEXPORT void * qpol_swig_message_callback_arg = NULL;
 		catch (UnsatisfiedLinkError ule)
 		{
 			System.loadLibrary("jqpol");
-		}	
+		}
 	}
 %}
 
@@ -119,7 +119,7 @@ typedef uint32_t size_t;
 const char *libqpol_get_version(void);
 
 %rename(qpol_default_policy_find) wrap_qpol_default_policy_find;
-%newobject wrap_qpol_default_policy_find;
+%newobject wrap_qpol_default_policy_find();
 
 /* if java, pass the new exception macro to C not just SWIG */
 #ifdef SWIGJAVA
@@ -417,7 +417,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_class_iter();
+	%newobject get_class_iter(char*);
 	qpol_iterator_t *get_class_iter(char *perm=NULL) {
 		qpol_iterator_t *iter;
 		if (perm) {
@@ -433,7 +433,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_common_iter();
+	%newobject get_common_iter(char*);
 	qpol_iterator_t *get_common_iter(char *perm=NULL) {
 		qpol_iterator_t *iter;
 		if (perm) {
@@ -559,7 +559,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_avrule_iter();
+	%newobject get_avrule_iter(int);
 	qpol_iterator_t *get_avrule_iter(int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_policy_get_avrule_iter(self, rule_types, &iter)) {
@@ -569,7 +569,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_terule_iter();
+	%newobject get_terule_iter(int);
 	qpol_iterator_t *get_terule_iter(int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_policy_get_terule_iter(self, rule_types, &iter)) {
@@ -682,7 +682,7 @@ typedef struct qpol_type {} qpol_type_t;
 	fail:
 			return (int)i;
 	};
-	%newobject get_type_iter;
+	%newobject get_type_iter(qpol_policy_t*);
 	qpol_iterator_t *get_type_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		int retv = qpol_type_get_type_iter(p, self, &iter);
@@ -694,7 +694,7 @@ typedef struct qpol_type {} qpol_type_t;
 	fail:
 		return iter;
 	};
-	%newobject get_attr_iter;
+	%newobject get_attr_iter(qpol_policy_t*);
 	qpol_iterator_t *get_attr_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		int retv = qpol_type_get_attr_iter(p, self, &iter);
@@ -706,7 +706,7 @@ typedef struct qpol_type {} qpol_type_t;
 	fail:
 		return iter;
 	};
-	%newobject get_alias_iter;
+	%newobject get_alias_iter(qpol_policy_t*);
 	qpol_iterator_t *get_alias_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_type_get_alias_iter(p, self, &iter)) {
@@ -755,7 +755,7 @@ typedef struct qpol_role {} qpol_role_t;
 	fail:
 		return NULL;
 	};
-	%newobject get_type_iter;
+	%newobject get_type_iter(qpol_policy_t*);
 	qpol_iterator_t *get_type_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_role_get_type_iter(p, self, &iter)) {
@@ -764,7 +764,7 @@ typedef struct qpol_role {} qpol_role_t;
 	fail:
 		return iter;
 	};
-	%newobject get_dominate_iter;
+	%newobject get_dominate_iter(qpol_policy_t*);
 	qpol_iterator_t *get_dominate_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_role_get_dominate_iter(p, self, &iter)) {
@@ -821,7 +821,7 @@ typedef struct qpol_level {} qpol_level_t;
 	fail:
 		return NULL;
 	};
-	%newobject get_cat_iter;
+	%newobject get_cat_iter(qpol_policy_t*);
 	qpol_iterator_t *get_cat_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_level_get_cat_iter(p, self, &iter)) {
@@ -830,7 +830,7 @@ typedef struct qpol_level {} qpol_level_t;
 	fail:
 		return iter;
 	};
-	%newobject get_alias_iter;
+	%newobject get_alias_iter(qpol_policy_t*);
 	qpol_iterator_t *get_alias_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_level_get_alias_iter(p, self, &iter)) {
@@ -887,7 +887,7 @@ typedef struct qpol_cat {} qpol_cat_t;
 	fail:
 		return NULL;
 	};
-	%newobject get_alias_iter;
+	%newobject get_alias_iter(qpol_policy_t*);
 	qpol_iterator_t *get_alias_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_cat_get_alias_iter(p, self, &iter)) {
@@ -958,7 +958,7 @@ typedef struct qpol_mls_level {} qpol_mls_level_t;
 	fail:
 		return name;
 	};
-	%newobject get_cat_iter;
+	%newobject get_cat_iter(qpol_policy_t*);
 	qpol_iterator_t *get_cat_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_mls_level_get_cat_iter(p, self, &iter)) {
@@ -998,7 +998,7 @@ typedef struct qpol_user {} qpol_user_t;
 	fail:
 		return (int) v;
 	};
-	%newobject get_role_iter;
+	%newobject get_role_iter(qpol_policy_t*);
 	qpol_iterator_t *get_role_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_user_get_role_iter(p, self, &iter)) {
@@ -1180,7 +1180,7 @@ typedef struct qpol_class {} qpol_class_t;
 	fail:
 		return c;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_class_get_perm_iter(p, self, &iter)) {
@@ -1189,7 +1189,7 @@ typedef struct qpol_class {} qpol_class_t;
 	fail:
 		return iter;
 	};
-	%newobject get_constraint_iter();
+	%newobject get_constraint_iter(qpol_policy_t*);
 	qpol_iterator_t *get_constraint_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_class_get_constraint_iter(p, self, &iter)) {
@@ -1198,7 +1198,7 @@ typedef struct qpol_class {} qpol_class_t;
 	fail:
 		return iter;
 	};
-	%newobject get_validatetrans_iter();
+	%newobject get_validatetrans_iter(qpol_policy_t*);
 	qpol_iterator_t *get_validatetrans_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_class_get_validatetrans_iter(p, self, &iter)) {
@@ -1245,7 +1245,7 @@ typedef struct qpol_common {} qpol_common_t;
 	fail:
 		return (int) v;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_common_get_perm_iter(p, self, &iter)) {
@@ -1632,7 +1632,7 @@ typedef struct qpol_constraint {} qpol_constraint_t;
 	fail:
 		return cls;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_constraint_get_perm_iter(p, self, &iter)) {
@@ -1641,7 +1641,7 @@ typedef struct qpol_constraint {} qpol_constraint_t;
 	fail:
 		return iter;
 	};
-	%newobject get_expr_iter;
+	%newobject get_expr_iter(qpol_policy_t*);
 	qpol_iterator_t *get_expr_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_constraint_get_expr_iter(p, self, &iter)) {
@@ -1676,7 +1676,7 @@ typedef struct qpol_validatetrans {} qpol_validatetrans_t;
 	fail:
 		return cls;
 	};
-	%newobject get_expr_iter();
+	%newobject get_expr_iter(qpol_policy_t*);
 	qpol_iterator_t *get_expr_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_validatetrans_get_expr_iter(p, self, &iter)) {
@@ -1752,7 +1752,7 @@ typedef struct qpol_constraint_expr_node {} qpol_constraint_expr_node_t;
 	fail:
 		return (int) op;
 	};
-	%newobject get_names_iter;
+	%newobject get_names_iter(qpol_policy_t*);
 	qpol_iterator_t *get_names_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_constraint_expr_node_get_names_iter(p, self, &iter)) {
@@ -1980,7 +1980,7 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 	fail:
 		return (int) which;
 	};
-	%newobject get_syn_avrule_iter();
+	%newobject get_syn_avrule_iter(qpol_policy_t*);
 	qpol_iterator_t *get_syn_avrule_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_avrule_get_syn_avrule_iter(p, self, &iter)) {
@@ -2079,7 +2079,7 @@ typedef struct qpol_terule {} qpol_terule_t;
 	fail:
 		return (int) which;
 	};
-	%newobject get_syn_terule_iter();
+	%newobject get_syn_terule_iter(qpol_policy_t*);
 	qpol_iterator_t *get_syn_terule_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_terule_get_syn_terule_iter(p, self, &iter)) {
@@ -2107,7 +2107,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 		/* no op */
 		return;
 	};
-	%newobject get_expr_node_iter();
+	%newobject get_expr_node_iter(qpol_policy_t*);
 	qpol_iterator_t *get_expr_node_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_expr_node_iter(p, self, &iter)) {
@@ -2116,7 +2116,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_av_true_iter();
+	%newobject get_av_true_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_av_true_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_av_true_iter(p, self, rule_types, &iter)) {
@@ -2125,7 +2125,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_av_false_iter();
+	%newobject get_av_false_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_av_false_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_av_false_iter(p, self, rule_types, &iter)) {
@@ -2134,7 +2134,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_te_true_iter();
+	%newobject get_te_true_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_te_true_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_te_true_iter(p, self, rule_types, &iter)) {
@@ -2143,7 +2143,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_te_false_iter();
+	%newobject get_te_false_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_te_false_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_te_false_iter(p, self, rule_types, &iter)) {
@@ -2225,7 +2225,7 @@ typedef struct qpol_type_set {} qpol_type_set_t;
 		/* no op */
 		return;
 	};
-	%newobject get_included_types_iter();
+	%newobject get_included_types_iter(qpol_policy_t*);
 	qpol_iterator_t *get_included_types_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_type_set_get_included_types_iter(p, self, &iter)) {
@@ -2234,7 +2234,7 @@ typedef struct qpol_type_set {} qpol_type_set_t;
 	fail:
 		return iter;
 	};
-	%newobject get_subtracted_types_iter();
+	%newobject get_subtracted_types_iter(qpol_policy_t*);
 	qpol_iterator_t *get_subtracted_types_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_type_set_get_subtracted_types_iter(p, self, &iter)) {
@@ -2310,7 +2310,7 @@ typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 	fail:
 		return (int) i;
 	};
-	%newobject get_class_iter();
+	%newobject get_class_iter(qpol_policy_t*);
 	qpol_iterator_t *get_class_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_syn_avrule_get_class_iter(p, self, &iter)) {
@@ -2319,7 +2319,7 @@ typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 	fail:
 		return iter;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_syn_avrule_get_perm_iter(p, self, &iter)) {
@@ -2395,7 +2395,7 @@ typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 	fail:
 		return ts;
 	};
-	%newobject get_class_iter();
+	%newobject get_class_iter(qpol_policy_t*);
 	qpol_iterator_t *get_class_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_syn_terule_get_class_iter(p, self, &iter)) {

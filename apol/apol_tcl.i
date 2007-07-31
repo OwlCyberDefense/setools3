@@ -87,11 +87,11 @@ static char *tcl_get_error(void)
  * needed so that the callback can properly update apol's progress
  * dialog without deadlocking itself.
  */
-%newobject apol_tcl_open_policy;
+%newobject apol_tcl_open_policy(const apol_policy_path_t *, Tcl_Interp *);
 %typemap (in) (const apol_policy_path_t *ppath, Tcl_Interp *interp) {
   int res = SWIG_ConvertPtr($input, SWIG_as_voidptrptr(&$1), $1_descriptor, 0);
   if (res) {
-    SWIG_exception_fail(SWIG_ArgError(res), "in method '" "apol_tcl_open_policy" "', argument " "1"" of type '" "apol_policy_path_t const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res), "in method '" "apol_tcl_open_policy" "', argument " "1"" of type '" "apol_policy_path_t const *""'");
   }
   $2 = interp;
 };
@@ -385,14 +385,14 @@ unsigned int apol_tcl_get_policy_version(apol_policy_t *policy);
 %typemap (in) (sefs_query * query, Tcl_Interp *interp) {
   int res = SWIG_ConvertPtr($input, SWIG_as_voidptrptr(&$1), $1_descriptor, 0);
   if (res) {
-    SWIG_exception_fail(SWIG_ArgError(res), "in method '" "apol_tcl_query_database" "', argument " "1"" of type '" "sefs_query *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res), "in method '" "apol_tcl_query_database" "', argument " "1"" of type '" "sefs_query *""'");
   }
   $2 = interp;
 };
 sefs_db *apol_tcl_open_database(const char * filename, Tcl_Interp * interp);
 sefs_db *apol_tcl_open_database_from_dir(const char * filename, Tcl_Interp * interp);
-%newobject apol_tcl_open_database;
-%newobject apol_tcl_open_database_from_dir;
+%newobject apol_tcl_open_database(const char*, Tcl_Interp*);
+%newobject apol_tcl_open_database_from_dir(const char*, Tcl_Interp*);
 int apol_tcl_query_database(sefs_fclist *fclist, sefs_query *query, Tcl_Interp * interp);
 void apol_tcl_entry_do_nothing(sefs_entry *e);
 

@@ -139,6 +139,10 @@ SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
 // don't wrap private friend functions
 #define SWIG_FRIENDS
 
+%newobject sefs_fclist::runQuery(sefs_query * query);
+%newobject sefs_entry::toString();
+%newobject sefs_default_file_contexts_get_path();
+
 %include <sefs/fclist.hh>
 %include <sefs/db.hh>
 %include <sefs/entry.hh>

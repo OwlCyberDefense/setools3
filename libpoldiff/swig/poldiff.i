@@ -348,7 +348,7 @@ typedef struct poldiff {} poldiff_t;
 	int is_run(uint32_t flags) {
 		return poldiff_is_run(self, flags);
 	};
-	%newobject get_stats();
+	%newobject get_stats(uint32_t);
 	poldiff_stats_t *get_stats(uint32_t flags) {
 		poldiff_stats_t *s = poldiff_stats_create();
 		if (!s) {
@@ -453,7 +453,7 @@ typedef struct poldiff_attrib {} poldiff_attrib_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_attrib_to_string(p, self);
@@ -494,7 +494,7 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_avrule_to_string(p, self);
@@ -552,7 +552,7 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 	const apol_vector_t *get_orig_line_numbers() {
 		return poldiff_avrule_get_orig_line_numbers(self);
 	};
-	%newobject get_orig_line_numbers_for_perm();
+	%newobject get_orig_line_numbers_for_perm(poldiff_t*, char*);
 	apol_vector_t *get_orig_line_numbers_for_perm(poldiff_t *p, char *perm) {
 		apol_vector_t *v;
 		v = poldiff_avrule_get_orig_line_numbers_for_perm(p, self, perm);
@@ -565,7 +565,7 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 	const apol_vector_t *get_mod_line_numbers() {
 		return poldiff_avrule_get_mod_line_numbers(self);
 	};
-	%newobject get_mod_line_numbers_for_perm();
+	%newobject get_mod_line_numbers_for_perm(poldiff_t*, char*);
 	apol_vector_t *get_mod_line_numbers_for_perm(poldiff_t *p, char *perm) {
 		apol_vector_t *v;
 		v = poldiff_avrule_get_mod_line_numbers_for_perm(p, self, perm);
@@ -594,7 +594,7 @@ typedef struct poldiff_bool {} poldiff_bool_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_bool_to_string(p, self);
@@ -629,7 +629,7 @@ typedef struct poldiff_cat {} poldiff_cat_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_cat_to_string(p, self);
@@ -664,7 +664,7 @@ typedef struct poldiff_class {} poldiff_class_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_class_to_string(p, self);
@@ -705,7 +705,7 @@ typedef struct poldiff_common {} poldiff_common_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_common_to_string(p, self);
@@ -746,7 +746,7 @@ typedef struct poldiff_level {} poldiff_level_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_level_to_string(p, self);
@@ -756,7 +756,7 @@ typedef struct poldiff_level {} poldiff_level_t;
 	fail:
 		return str;
 	};
-	%newobject to_string_brief();
+	%newobject to_string_brief(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_level_to_string_brief(p, self);
@@ -800,7 +800,7 @@ typedef struct poldiff_range {} poldiff_range_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string_brief();
+	%newobject to_string_brief(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_range_to_string_brief(p, self);
@@ -847,7 +847,7 @@ typedef struct poldiff_range_trans {} poldiff_range_trans_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_range_trans_to_string(p, self);
@@ -891,7 +891,7 @@ typedef struct poldiff_role_allow {} poldiff_role_allow_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_role_allow_to_string(p, self);
@@ -935,7 +935,7 @@ typedef struct poldiff_role_trans {} poldiff_role_trans_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_role_trans_to_string(p, self);
@@ -979,7 +979,7 @@ typedef struct poldiff_role {} poldiff_role_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_role_to_string(p, self);
@@ -1020,7 +1020,7 @@ typedef struct poldiff_terule {} poldiff_terule_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_terule_to_string(p, self);
@@ -1097,7 +1097,7 @@ typedef struct poldiff_type {} poldiff_type_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_type_to_string(p, self);
@@ -1138,7 +1138,7 @@ typedef struct poldiff_user {} poldiff_user_t;
 		/* no op */
 		return;
 	};
-	%newobject to_string();
+	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
 		str = poldiff_user_to_string(p, self);
@@ -1191,7 +1191,7 @@ typedef struct poldiff_type_remap_entry {} poldiff_type_remap_entry_t;
 		/* no op */
 		return;
 	};
-	%newobject get_original_types();
+	%newobject get_original_types(poldiff_t*);
 	apol_string_vector_t *get_original_types(poldiff_t *p) {
 		apol_vector_t *v;
 		v = poldiff_type_remap_entry_get_original_types(p, self);
@@ -1201,7 +1201,7 @@ typedef struct poldiff_type_remap_entry {} poldiff_type_remap_entry_t;
 	fail:
 		return (apol_string_vector_t*)v;
 	};
-	%newobject get_modified_types();
+	%newobject get_modified_types(poldiff_t*);
 	apol_string_vector_t *get_modified_types(poldiff_t *p) {
 		apol_vector_t *v;
 		v = poldiff_type_remap_entry_get_modified_types(p, self);
