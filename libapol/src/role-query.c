@@ -70,11 +70,11 @@ int apol_role_get_by_query(const apol_policy_t * p, apol_role_query_t * r, apol_
 			} else if (compval == 0) {
 				continue;
 			}
-			if (qpol_role_get_type_iter(p->p, role, &type_iter) < 0) {
-				goto cleanup;
-			}
 			if (r->type_name == NULL || r->type_name[0] == '\0') {
 				goto end_of_query;
+			}
+			if (qpol_role_get_type_iter(p->p, role, &type_iter) < 0) {
+				goto cleanup;
 			}
 			append_role = 0;
 			for (; !qpol_iterator_end(type_iter); qpol_iterator_next(type_iter)) {

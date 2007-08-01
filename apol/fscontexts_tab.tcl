@@ -212,14 +212,17 @@ proc Apol_FSContexts::_genfscon_open {} {
     $q -acquire
     $q -delete
     set genfscons [genfscon_vector_to_list $v]
-    $v -acquire
-    $v -delete
     set vals(genfscon:items) {}
     foreach g $genfscons {
         lappend vals(genfscon:items) [$g get_name $::ApolTop::qpolicy]
     }
     set vals(genfscon:items) [lsort -unique $vals(genfscon:items)]
 
+    # because qpol_policy_get_genfscon_iter() returns allocated items,
+    # destroying the vector before using its items will segfault
+    $v -acquire
+    $v -delete
+    
     variable widgets
     $widgets(genfscon:fs) configure -values $vals(genfscon:items)
 }
@@ -239,8 +242,6 @@ proc Apol_FSContexts::_genfscon_popup {fstype} {
     $q -acquire
     $q -delete
     set genfscons [genfscon_vector_to_list $v]
-    $v -acquire
-    $v -delete
     set text "genfs filesystem $fstype ([llength $genfscons] context"
     if {[llength $genfscons] != 1} {
         append text s
@@ -250,6 +251,11 @@ proc Apol_FSContexts::_genfscon_popup {fstype} {
         append text "\n    [_genfscon_render $g]"
     }
     Apol_Widget::showPopupText "filesystem $fstype" $text
+
+    # because qpol_policy_get_genfscon_iter() returns allocated items,
+    # destroying the vector before using its items will segfault
+    $v -acquire
+    $v -delete
 }
 
 proc Apol_FSContexts::_genfscon_runSearch {} {
@@ -287,8 +293,6 @@ proc Apol_FSContexts::_genfscon_runSearch {} {
     $q -acquire
     $q -delete
     set genfscons [genfscon_vector_to_list $v]
-    $v -acquire
-    $v -delete
 
     set results "GENFSCONS:"
     if {[llength $genfscons] == 0} {
@@ -299,6 +303,11 @@ proc Apol_FSContexts::_genfscon_runSearch {} {
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
+
+    # because qpol_policy_get_genfscon_iter() returns allocated items,
+    # destroying the vector before using its items will segfault
+    $v -acquire
+    $v -delete
 }
 
 proc Apol_FSContexts::_genfscon_render {qpol_genfscon_datum} {

@@ -279,14 +279,50 @@ static char *tcl_get_error(void)
 	}
 %}
 
-%rename(apol_tcl_rule_render) apol_avrule_render;
-extern char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule);
-%rename(apol_tcl_rule_render) apol_terule_render;
-extern char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule);
-%rename(apol_tcl_rule_render) apol_syn_avrule_render;
-extern char *apol_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule);
-%rename(apol_tcl_rule_render) apol_syn_terule_render;
-extern char *apol_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule);
+%rename(apol_tcl_rule_render) apol_tcl_avrule_render;
+%rename(apol_tcl_rule_render) apol_tcl_terule_render;
+%rename(apol_tcl_rule_render) apol_tcl_syn_avrule_render;
+%rename(apol_tcl_rule_render) apol_tcl_syn_terule_render;
+
+/* Because this SWIG file will be written as C++, it expects all
+ * %newobject objects to be allocated via new and destructed with
+ * delete.  However, the libapol render functions use malloc()/free()
+ * as that they come from C.  Therefore, use an intermediate function
+ * to create a new string from the malloc() copy.
+ */
+%{
+	static char *apol_tcl_malloc_to_new(char *s) {
+		if (s == NULL) {
+			return new char[0];
+		}
+		char *t = new char[strlen(s) + 1];
+		strcpy(t, s);
+		free(s);
+		return t;
+	}
+	char *apol_tcl_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule) {
+		return apol_tcl_malloc_to_new(apol_avrule_render(policy, rule));
+	}
+	char *apol_tcl_terule_render(apol_policy_t *policy, qpol_terule_t *rule) {
+		return apol_tcl_malloc_to_new(apol_terule_render(policy, rule));
+	}
+	char *apol_tcl_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule) {
+		return apol_tcl_malloc_to_new(apol_syn_avrule_render(policy, rule));
+	}
+
+	char *apol_tcl_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule) {
+		return apol_tcl_malloc_to_new(apol_syn_terule_render(policy, rule));
+	}
+%}
+%newobject apol_tcl_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule);
+char *apol_tcl_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule);
+%newobject apol_tcl_terule_render(apol_policy_t *policy, qpol_terule_t *rule);
+char *apol_tcl_terule_render(apol_policy_t *policy, qpol_terule_t *rule);
+%newobject apol_tcl_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule);
+char *apol_tcl_syn_avrule_render(apol_policy_t *policy, qpol_syn_avrule_t *rule);
+%newobject apol_tcl_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule);
+char *apol_tcl_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule);
+
 
 void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v);
 void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v);

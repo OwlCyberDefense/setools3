@@ -598,9 +598,7 @@ proc Apol_NetContexts::_nodecon_open {} {
     $q -acquire
     $q -delete
     set nodecons [nodecon_vector_to_list $v]
-    $v -acquire
-    $v -delete
-
+ 
     variable vals
     variable widgets
     set vals(nodecon:items) {}
@@ -618,6 +616,11 @@ proc Apol_NetContexts::_nodecon_open {} {
         lappend vals(nodecon:items) $addr
     }
     set vals(nodecon:items) [lsort -unique -dictionary $vals(nodecon:items)]
+
+    # because qpol_policy_get_nodecon_iter() returns allocated items,
+    # destroying the vector before using its items will segfault
+    $v -acquire
+    $v -delete
 }
 
 proc Apol_NetContexts::_nodecon_show {} {
@@ -745,8 +748,6 @@ proc Apol_NetContexts::_nodecon_popup {nodecon_addr} {
     $q -acquire
     $q -delete
     set nodecons [nodecon_vector_to_list $v]
-    $v -acquire
-    $v -delete
 
     set text "nodecon $nodecon_addr ([llength $nodecons] context"
     if {[llength $nodecons] != 1} {
@@ -757,6 +758,11 @@ proc Apol_NetContexts::_nodecon_popup {nodecon_addr} {
         append text "\n    [_nodecon_render $n]"
     }
     Apol_Widget::showPopupText "address $nodecon_addr" $text
+
+    # because qpol_policy_get_nodecon_iter() returns allocated items,
+    # destroying the vector before using its items will segfault
+    $v -acquire
+    $v -delete
 }
 
 proc Apol_NetContexts::_nodecon_runSearch {} {
@@ -823,8 +829,6 @@ proc Apol_NetContexts::_nodecon_runSearch {} {
     $q -acquire
     $q -delete
     set nodecons [nodecon_vector_to_list $v]
-    $v -acquire
-    $v -delete
 
     set results "NODECONS:"
     if {[llength $nodecons] == 0} {
@@ -835,6 +839,11 @@ proc Apol_NetContexts::_nodecon_runSearch {} {
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
+
+    # because qpol_policy_get_nodecon_iter() returns allocated items,
+    # destroying the vector before using its items will segfault
+    $v -acquire
+    $v -delete
 }
 
 proc Apol_NetContexts::_nodecon_render {qpol_nodecon_datum} {

@@ -265,6 +265,9 @@ const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 char *apol_file_find_path(const char *file_name);
 
 /* directly include and wrap */
+%newobject apol_ipv4_addr_render(const apol_policy_t *p, uint32_t addr[4]);
+%newobject apol_ipv6_addr_render(const apol_policy_t *p, uint32_t addr[4]);
+%newobject apol_qpol_context_render(const apol_policy_t *p, const qpol_context_t *context);
 %include "apol/render.h"
 
 /* derived vector type here */
@@ -689,6 +692,7 @@ int apol_role_has_type(apol_policy_t * p, qpol_role_t * r, qpol_type_t * t);
 
 /* apol class query */
 typedef struct apol_class_query {} apol_class_query_t;
+%newobject apol_class_query_t::run(apol_policy_t*);
 %extend apol_class_query_t {
 	apol_class_query_t() {
 		apol_class_query_t *cq;
@@ -702,7 +706,6 @@ typedef struct apol_class_query {} apol_class_query_t;
 	~apol_class_query_t() {
 		apol_class_query_destroy(&self);
 	};
-	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
 		if (apol_class_get_by_query(p, self, &v)) {
@@ -2743,8 +2746,10 @@ typedef struct apol_types_relation_result {} apol_types_relation_result_t;
 };
 typedef struct apol_types_relation_access {} apol_types_relation_access_t;
 %extend apol_types_relation_access_t {
-	apol_types_relation_access_t(void *x) {
-		return (apol_types_relation_access_t*)x;
+	apol_types_relation_access_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_types_relation_access_t objects");
+	fail:
+		return NULL;
 	};
 	~apol_types_relation_access_t() {
 		/* no op - vector will destroy */
@@ -2757,3 +2762,8 @@ typedef struct apol_types_relation_access {} apol_types_relation_access_t;
 		return apol_types_relation_access_get_rules(self);
 	};
 };
+%inline %{
+	apol_types_relation_access_t *apol_types_relation_access_from_void(void *x) {
+		return (apol_types_relation_access_t*)x;
+	};
+%}
