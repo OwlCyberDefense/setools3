@@ -38,6 +38,17 @@ extern "C"
 	typedef struct seaudit_sort seaudit_sort_t;
 
 /**
+ * Create a new sort object, initialized with the data from an
+ * existing sort.  The new sort will not be attached to any model.
+ *
+ * @param sort Sort to clone.
+ *
+ * @return A cloned sort object, or NULL upon error.  The caller is
+ * responsible for calling seaudit_sort_destroy() afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_create_from_sort(const seaudit_sort_t * sort);
+
+/**
  * Destroy the referenced seaudit_sort object.
  *
  * @param sort Sort object to destroy.  The pointer will be set to
@@ -56,7 +67,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_message_type(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_message_type(const int direction);
 
 /**
  * Instruct a model to sort messages by chronological order.
@@ -68,7 +79,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_date(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_date(const int direction);
 
 /**
  * Instruct a model to sort messages by host name, alphabetically.
@@ -80,7 +91,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_host(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_host(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by permissions,
@@ -93,7 +104,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_permission(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_permission(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by source context's user,
@@ -106,7 +117,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_source_user(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_source_user(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by source context's role,
@@ -119,7 +130,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_source_role(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_source_role(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by source context's type,
@@ -132,7 +143,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_source_type(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_source_type(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by target context's user,
@@ -145,7 +156,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_target_user(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_target_user(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by target context's role,
@@ -158,7 +169,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_target_role(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_target_role(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by target context's type,
@@ -171,7 +182,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_target_type(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_target_type(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by object class,
@@ -184,7 +195,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_object_class(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_object_class(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by the executable,
@@ -197,7 +208,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_executable(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_executable(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by the command,
@@ -210,7 +221,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_command(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_command(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by the name, alphabetically.
@@ -223,7 +234,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_name(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_name(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by the path, alphabetically.
@@ -236,7 +247,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_path(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_path(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by the device, alphabetically.
@@ -249,7 +260,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_device(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_device(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by the object's inode.
@@ -262,7 +273,7 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_inode(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_inode(const int direction);
 
 /**
  * Instruct a model to sort AVC messages by the process ID.  Non-AVC
@@ -275,7 +286,150 @@ extern "C"
  * caller is responsible for calling seaudit_sort_destroy()
  * afterwards.
  */
-	extern seaudit_sort_t *seaudit_sort_by_pid(int direction);
+	extern seaudit_sort_t *seaudit_sort_by_pid(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by the port number.  Non-AVC
+ * messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_port(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by local address,
+ * alphabetically.  Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_laddr(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by the local port number.
+ * Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_lport(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by foreign address,
+ * alphabetically.  Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_faddr(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by the foreign port number.
+ * Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_fport(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by source address,
+ * alphabetically.  Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_saddr(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by the source port number.
+ * Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_sport(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by destination address,
+ * alphabetically.  Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_daddr(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by the destination port
+ * number.  Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_dport(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by the IPC call's key.
+ * Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_key(const int direction);
+
+/**
+ * Instruct a model to sort AVC messages by the process capability
+ * value.  Non-AVC messages will be placed below AVC ones.
+ *
+ * @param direction Direction to sort.  Non-negative for ascending,
+ * negative for descending.
+ *
+ * @return Sort object for this criterion, or NULL upon error.  The
+ * caller is responsible for calling seaudit_sort_destroy()
+ * afterwards.
+ */
+	extern seaudit_sort_t *seaudit_sort_by_cap(const int direction);
 
 #ifdef  __cplusplus
 }

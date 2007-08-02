@@ -17,11 +17,10 @@ DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libpoldiff/src/libpoldiff.so
 
-$(BUILT_SOURCES): $(dist_noinst_DATA)
+$(BUILT_SOURCES): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_PYTHON_OPT) -o $@ \
 	-I$(top_srcdir)/libpoldiff/include -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
-$<
 
 $(wrappedso_DATA): $(BUILT_SOURCES)
 	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)

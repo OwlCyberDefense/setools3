@@ -69,7 +69,7 @@ struct apol_types_relation_result
 
 struct apol_types_relation_access
 {
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	/** vector of qpol_avrule_t pointers */
 	apol_vector_t *rules;
 };
@@ -88,8 +88,9 @@ struct apol_types_relation_access
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_common_attribs(apol_policy_t * p,
-					      qpol_type_t * typeA, qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_common_attribs(const apol_policy_t * p,
+					      const qpol_type_t * typeA, const qpol_type_t * typeB,
+					      apol_types_relation_result_t * r)
 {
 	qpol_iterator_t *iA = NULL, *iB = NULL;
 	apol_vector_t *vA = NULL, *vB = NULL;
@@ -126,10 +127,10 @@ static int apol_types_relation_common_attribs(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_common_roles(apol_policy_t * p,
-					    qpol_type_t * typeA, qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_common_roles(const apol_policy_t * p,
+					    const qpol_type_t * typeA, const qpol_type_t * typeB, apol_types_relation_result_t * r)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_role_query_t *rq = NULL;
 	apol_vector_t *vA = NULL, *vB = NULL;
 	int retval = -1;
@@ -171,10 +172,10 @@ static int apol_types_relation_common_roles(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_common_users(apol_policy_t * p,
-					    qpol_type_t * typeA, qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_common_users(const apol_policy_t * p,
+					    const qpol_type_t * typeA, const qpol_type_t * typeB, apol_types_relation_result_t * r)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_role_query_t *rq = NULL;
 	apol_vector_t *vA = NULL, *vB = NULL;
 	qpol_iterator_t *iter = NULL, *riter = NULL;
@@ -299,9 +300,9 @@ static void apol_types_relation_access_free(void *data)
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_access_append_rule(apol_policy_t * p, qpol_avrule_t * r, apol_vector_t * access)
+static int apol_types_relation_access_append_rule(const apol_policy_t * p, const qpol_avrule_t * r, apol_vector_t * access)
 {
-	qpol_type_t *t;
+	const qpol_type_t *t;
 	apol_vector_t *expanded = NULL;
 	size_t i, j;
 	apol_types_relation_access_t *a;
@@ -322,7 +323,7 @@ static int apol_types_relation_access_append_rule(apol_policy_t * p, qpol_avrule
 			}
 			a->type = t;
 		}
-		if (apol_vector_append(a->rules, r) < 0) {
+		if (apol_vector_append(a->rules, (void *)r) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -348,11 +349,11 @@ static int apol_types_relation_access_append_rule(apol_policy_t * p, qpol_avrule
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_create_access_pools(apol_policy_t * p,
-						   qpol_type_t * typeA,
-						   qpol_type_t * typeB, apol_vector_t * accessesA, apol_vector_t * accessesB)
+static int apol_types_relation_create_access_pools(const apol_policy_t * p,
+						   const qpol_type_t * typeA,
+						   const qpol_type_t * typeB, apol_vector_t * accessesA, apol_vector_t * accessesB)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_avrule_query_t *aq = NULL;
 	apol_vector_t *vA = NULL, *vB = NULL;
 	size_t i;
@@ -403,7 +404,8 @@ static int apol_types_relation_create_access_pools(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_access_append(apol_policy_t * p, apol_types_relation_access_t * a, apol_vector_t * access)
+static int apol_types_relation_access_append(const apol_policy_t * p, const apol_types_relation_access_t * a,
+					     apol_vector_t * access)
 {
 	apol_types_relation_access_t *new_a;
 	int retval = -1;
@@ -438,9 +440,10 @@ static int apol_types_relation_access_append(apol_policy_t * p, apol_types_relat
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_accesses(apol_policy_t * p,
-					qpol_type_t * typeA,
-					qpol_type_t * typeB, int do_similar, int do_dissimilar, apol_types_relation_result_t * r)
+static int apol_types_relation_accesses(const apol_policy_t * p,
+					const qpol_type_t * typeA,
+					const qpol_type_t * typeB, int do_similar, int do_dissimilar,
+					apol_types_relation_result_t * r)
 {
 	apol_vector_t *accessesA = NULL, *accessesB = NULL;
 	apol_types_relation_access_t *a, *b;
@@ -535,9 +538,10 @@ static int apol_types_relation_accesses(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_allows(apol_policy_t * p, qpol_type_t * typeA, qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_allows(const apol_policy_t * p, const qpol_type_t * typeA, const qpol_type_t * typeB,
+				      apol_types_relation_result_t * r)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_avrule_query_t *aq = NULL;
 	apol_vector_t *v = NULL;
 	int retval = -1;
@@ -582,13 +586,14 @@ static int apol_types_relation_allows(apol_policy_t * p, qpol_type_t * typeA, qp
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_types(const apol_policy_t * p, const qpol_type_t * typeA, const qpol_type_t * typeB,
+				     apol_types_relation_result_t * r)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_terule_query_t *tq = NULL;
 	apol_vector_t *v = NULL, *candidate_types = NULL;
-	qpol_terule_t *rule;
-	qpol_type_t *target, *default_type;
+	const qpol_terule_t *rule;
+	const qpol_type_t *target, *default_type;
 	size_t i, j;
 	int retval = -1;
 
@@ -613,7 +618,7 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
 		}
 		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
 		     apol_vector_get_index(candidate_types, default_type, NULL, NULL, &j) == 0) &&
-		    apol_vector_append(r->types, rule) < 0) {
+		    apol_vector_append(r->types, (void *)rule) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -634,7 +639,7 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
 		}
 		if ((apol_vector_get_index(candidate_types, target, NULL, NULL, &j) == 0 ||
 		     apol_vector_get_index(candidate_types, default_type, NULL, NULL, &j) == 0) &&
-		    apol_vector_append(r->types, rule) < 0) {
+		    apol_vector_append(r->types, (void *)rule) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -660,10 +665,11 @@ static int apol_types_relation_types(apol_policy_t * p, qpol_type_t * typeA, qpo
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_clone_infoflow(apol_policy_t * p, apol_vector_t * v, char *target_name, apol_vector_t * results)
+static int apol_types_relation_clone_infoflow(const apol_policy_t * p, const apol_vector_t * v, const char *target_name,
+					      apol_vector_t * results)
 {
 	apol_vector_t *candidate_types = NULL;
-	qpol_type_t *target;
+	const qpol_type_t *target;
 	apol_infoflow_result_t *res, *new_res;
 	size_t i, j;
 	int retval = -1;
@@ -699,10 +705,10 @@ static int apol_types_relation_clone_infoflow(apol_policy_t * p, apol_vector_t *
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_directflow(apol_policy_t * p,
-					  qpol_type_t * typeA, qpol_type_t * typeB, apol_types_relation_result_t * r)
+static int apol_types_relation_directflow(const apol_policy_t * p,
+					  const qpol_type_t * typeA, const qpol_type_t * typeB, apol_types_relation_result_t * r)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_infoflow_analysis_t *ia = NULL;
 	apol_vector_t *v = NULL;
 	apol_infoflow_graph_t *g = NULL;
@@ -744,12 +750,12 @@ static int apol_types_relation_directflow(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_transflow(apol_policy_t * p,
-					 qpol_type_t * typeA,
-					 qpol_type_t * typeB,
+static int apol_types_relation_transflow(const apol_policy_t * p,
+					 const qpol_type_t * typeA,
+					 const qpol_type_t * typeB,
 					 unsigned int do_transAB, unsigned int do_transBA, apol_types_relation_result_t * r)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_infoflow_analysis_t *ia = NULL;
 	apol_vector_t *v = NULL;
 	apol_infoflow_graph_t *g = NULL;
@@ -816,10 +822,11 @@ static int apol_types_relation_transflow(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_types_relation_clone_domaintrans(apol_policy_t * p, apol_vector_t * v, char *target_name, apol_vector_t * results)
+static int apol_types_relation_clone_domaintrans(const apol_policy_t * p, const apol_vector_t * v, const char *target_name,
+						 apol_vector_t * results)
 {
 	apol_vector_t *candidate_types = NULL;
-	qpol_type_t *target;
+	const qpol_type_t *target;
 	apol_domain_trans_result_t *res, *new_res;
 	size_t i, j;
 	int retval = -1;
@@ -857,11 +864,11 @@ static int apol_types_relation_clone_domaintrans(apol_policy_t * p, apol_vector_
  * @return 0 on success, < 0 on error.
  */
 static int apol_types_relation_domain(apol_policy_t * p,
-				      qpol_type_t * typeA,
-				      qpol_type_t * typeB,
+				      const qpol_type_t * typeA,
+				      const qpol_type_t * typeB,
 				      unsigned int do_domainsAB, unsigned int do_domainsBA, apol_types_relation_result_t * r)
 {
-	char *nameA, *nameB;
+	const char *nameA, *nameB;
 	apol_domain_trans_analysis_t *dta = NULL;
 	apol_vector_t *v = NULL;
 	int retval = -1;
@@ -873,11 +880,12 @@ static int apol_types_relation_domain(apol_policy_t * p,
 		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
-	if (apol_policy_domain_trans_table_build(p) < 0 ||
+	if (apol_policy_build_domain_trans_table(p) < 0 ||
 	    apol_domain_trans_analysis_set_direction(p, dta, APOL_DOMAIN_TRANS_DIRECTION_FORWARD) < 0) {
 		goto cleanup;
 	}
 	if (do_domainsAB) {
+		apol_policy_reset_domain_trans_table(p);
 		if (apol_domain_trans_analysis_set_start_type(p, dta, nameA) < 0 || apol_domain_trans_analysis_do(p, dta, &v) < 0) {
 			goto cleanup;
 		}
@@ -891,9 +899,7 @@ static int apol_types_relation_domain(apol_policy_t * p,
 	}
 	if (do_domainsBA) {
 		apol_vector_destroy(&v);
-		if (do_domainsAB) {
-			apol_domain_trans_table_reset(p);
-		}
+		apol_policy_reset_domain_trans_table(p);
 		if (apol_domain_trans_analysis_set_start_type(p, dta, nameB) < 0 || apol_domain_trans_analysis_do(p, dta, &v) < 0) {
 			goto cleanup;
 		}
@@ -914,9 +920,9 @@ static int apol_types_relation_domain(apol_policy_t * p,
 
 /******************** public functions below ********************/
 
-int apol_types_relation_analysis_do(apol_policy_t * p, apol_types_relation_analysis_t * tr, apol_types_relation_result_t ** r)
+int apol_types_relation_analysis_do(apol_policy_t * p, const apol_types_relation_analysis_t * tr, apol_types_relation_result_t ** r)
 {
-	qpol_type_t *typeA, *typeB;
+	const qpol_type_t *typeA, *typeB;
 	unsigned char isattrA, isattrB;
 	unsigned int do_similar_access, do_dissimilar_access;
 	unsigned int do_transAB, do_transBA;
@@ -1003,7 +1009,7 @@ void apol_types_relation_analysis_destroy(apol_types_relation_analysis_t ** tr)
 	}
 }
 
-int apol_types_relation_analysis_set_first_type(apol_policy_t * p, apol_types_relation_analysis_t * tr, const char *name)
+int apol_types_relation_analysis_set_first_type(const apol_policy_t * p, apol_types_relation_analysis_t * tr, const char *name)
 {
 	if (name == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -1012,7 +1018,7 @@ int apol_types_relation_analysis_set_first_type(apol_policy_t * p, apol_types_re
 	return apol_query_set(p, &tr->typeA, NULL, name);
 }
 
-int apol_types_relation_analysis_set_other_type(apol_policy_t * p, apol_types_relation_analysis_t * tr, const char *name)
+int apol_types_relation_analysis_set_other_type(const apol_policy_t * p, apol_types_relation_analysis_t * tr, const char *name)
 {
 	if (name == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -1021,7 +1027,7 @@ int apol_types_relation_analysis_set_other_type(apol_policy_t * p, apol_types_re
 	return apol_query_set(p, &tr->typeB, NULL, name);
 }
 
-int apol_types_relation_analysis_set_analyses(apol_policy_t * p __attribute__ ((unused)),
+int apol_types_relation_analysis_set_analyses(const apol_policy_t * p __attribute__ ((unused)),
 					      apol_types_relation_analysis_t * tr, unsigned int analyses)
 {
 	if (analyses != 0) {
@@ -1056,82 +1062,82 @@ void apol_types_relation_result_destroy(apol_types_relation_result_t ** result)
 	}
 }
 
-apol_vector_t *apol_types_relation_result_get_attributes(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_attributes(const apol_types_relation_result_t * result)
 {
 	return result->attribs;
 }
 
-apol_vector_t *apol_types_relation_result_get_roles(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_roles(const apol_types_relation_result_t * result)
 {
 	return result->roles;
 }
 
-apol_vector_t *apol_types_relation_result_get_users(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_users(const apol_types_relation_result_t * result)
 {
 	return result->users;
 }
 
-apol_vector_t *apol_types_relation_result_get_similar_first(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_similar_first(const apol_types_relation_result_t * result)
 {
 	return result->simA;
 }
 
-apol_vector_t *apol_types_relation_result_get_similar_other(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_similar_other(const apol_types_relation_result_t * result)
 {
 	return result->simB;
 }
 
-apol_vector_t *apol_types_relation_result_get_dissimilar_first(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_dissimilar_first(const apol_types_relation_result_t * result)
 {
 	return result->disA;
 }
 
-apol_vector_t *apol_types_relation_result_get_dissimilar_other(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_dissimilar_other(const apol_types_relation_result_t * result)
 {
 	return result->disB;
 }
 
-apol_vector_t *apol_types_relation_result_get_allowrules(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_allowrules(const apol_types_relation_result_t * result)
 {
 	return result->allows;
 }
 
-apol_vector_t *apol_types_relation_result_get_typerules(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_typerules(const apol_types_relation_result_t * result)
 {
 	return result->types;
 }
 
-apol_vector_t *apol_types_relation_result_get_directflows(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_directflows(const apol_types_relation_result_t * result)
 {
 	return result->dirflows;
 }
 
-apol_vector_t *apol_types_relation_result_get_transflowsAB(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_transflowsAB(const apol_types_relation_result_t * result)
 {
 	return result->transAB;
 }
 
-apol_vector_t *apol_types_relation_result_get_transflowsBA(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_transflowsBA(const apol_types_relation_result_t * result)
 {
 	return result->transBA;
 }
 
-apol_vector_t *apol_types_relation_result_get_domainsAB(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_domainsAB(const apol_types_relation_result_t * result)
 {
 	return result->domsAB;
 }
 
-apol_vector_t *apol_types_relation_result_get_domainsBA(apol_types_relation_result_t * result)
+const apol_vector_t *apol_types_relation_result_get_domainsBA(const apol_types_relation_result_t * result)
 {
 	return result->domsBA;
 }
 
-qpol_type_t *apol_types_relation_access_get_type(apol_types_relation_access_t * a)
+const qpol_type_t *apol_types_relation_access_get_type(const apol_types_relation_access_t * a)
 {
 	return a->type;
 }
 
-apol_vector_t *apol_types_relation_access_get_rules(apol_types_relation_access_t * a)
+const apol_vector_t *apol_types_relation_access_get_rules(const apol_types_relation_access_t * a)
 {
 	return a->rules;
 }

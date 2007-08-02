@@ -22,7 +22,10 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include "poldiff_internal.h"
+#include <poldiff/component_record.h>
 
 #include <apol/util.h>
 #include <qpol/policy_extend.h>
@@ -33,9 +36,9 @@
 /**
  * All policy items (object classes, types, rules, etc.) must
  * implement at least these functions.  Next, a record should be
- * appended to the array 'item_records' below.
+ * appended to the array 'component_records' below.
  */
-typedef struct poldiff_item_record
+struct poldiff_component_record
 {
 	const char *item_name;
 	uint32_t flag_bit;
@@ -48,9 +51,9 @@ typedef struct poldiff_item_record
 	poldiff_item_comp_fn_t comp;
 	poldiff_new_diff_fn_t new_diff;
 	poldiff_deep_diff_fn_t deep_diff;
-} poldiff_item_record_t;
+};
 
-static const poldiff_item_record_t item_records[] = {
+static const poldiff_component_record_t component_records[] = {
 	{
 	 "attribute",
 	 POLDIFF_DIFF_ATTRIBS,
@@ -65,17 +68,56 @@ static const poldiff_item_record_t item_records[] = {
 	 attrib_deep_diff,
 	 },
 	{
-	 "avrule",
-	 POLDIFF_DIFF_AVRULES,
-	 poldiff_avrule_get_stats,
-	 poldiff_get_avrule_vector,
+	 "Allow Rules",
+	 POLDIFF_DIFF_AVALLOW,
+	 poldiff_avrule_get_stats_allow,
+	 poldiff_get_avrule_vector_allow,
 	 poldiff_avrule_get_form,
 	 poldiff_avrule_to_string,
-	 avrule_reset,
-	 avrule_get_items,
+	 avrule_reset_allow,
+	 avrule_get_items_allow,
 	 avrule_comp,
-	 avrule_new_diff,
-	 avrule_deep_diff,
+	 avrule_new_diff_allow,
+	 avrule_deep_diff_allow,
+	 },
+	{
+	 "Audit Allow Rules",
+	 POLDIFF_DIFF_AVAUDITALLOW,
+	 poldiff_avrule_get_stats_auditallow,
+	 poldiff_get_avrule_vector_auditallow,
+	 poldiff_avrule_get_form,
+	 poldiff_avrule_to_string,
+	 avrule_reset_auditallow,
+	 avrule_get_items_auditallow,
+	 avrule_comp,
+	 avrule_new_diff_auditallow,
+	 avrule_deep_diff_auditallow,
+	 },
+	{
+	 "Don't Audit Rules",
+	 POLDIFF_DIFF_AVDONTAUDIT,
+	 poldiff_avrule_get_stats_dontaudit,
+	 poldiff_get_avrule_vector_dontaudit,
+	 poldiff_avrule_get_form,
+	 poldiff_avrule_to_string,
+	 avrule_reset_dontaudit,
+	 avrule_get_items_dontaudit,
+	 avrule_comp,
+	 avrule_new_diff_dontaudit,
+	 avrule_deep_diff_dontaudit,
+	 },
+	{
+	 "Never Allow Rules",
+	 POLDIFF_DIFF_AVNEVERALLOW,
+	 poldiff_avrule_get_stats_neverallow,
+	 poldiff_get_avrule_vector_neverallow,
+	 poldiff_avrule_get_form,
+	 poldiff_avrule_to_string,
+	 avrule_reset_neverallow,
+	 avrule_get_items_neverallow,
+	 avrule_comp,
+	 avrule_new_diff_neverallow,
+	 avrule_deep_diff_neverallow,
 	 },
 	{
 	 "bool",
@@ -195,17 +237,43 @@ static const poldiff_item_record_t item_records[] = {
 	 role_trans_deep_diff,
 	 },
 	{
-	 "terule",
-	 POLDIFF_DIFF_TERULES,
-	 poldiff_terule_get_stats,
-	 poldiff_get_terule_vector,
+	 "Type Change rules",
+	 POLDIFF_DIFF_TECHANGE,
+	 poldiff_terule_get_stats_change,
+	 poldiff_get_terule_vector_change,
 	 poldiff_terule_get_form,
 	 poldiff_terule_to_string,
-	 terule_reset,
-	 terule_get_items,
+	 terule_reset_change,
+	 terule_get_items_change,
 	 terule_comp,
-	 terule_new_diff,
-	 terule_deep_diff,
+	 terule_new_diff_change,
+	 terule_deep_diff_change,
+	 },
+	{
+	 "Type Member Rules",
+	 POLDIFF_DIFF_TEMEMBER,
+	 poldiff_terule_get_stats_member,
+	 poldiff_get_terule_vector_member,
+	 poldiff_terule_get_form,
+	 poldiff_terule_to_string,
+	 terule_reset_member,
+	 terule_get_items_member,
+	 terule_comp,
+	 terule_new_diff_member,
+	 terule_deep_diff_member,
+	 },
+	{
+	 "Type Transition Rules",
+	 POLDIFF_DIFF_TETRANS,
+	 poldiff_terule_get_stats_trans,
+	 poldiff_get_terule_vector_trans,
+	 poldiff_terule_get_form,
+	 poldiff_terule_to_string,
+	 terule_reset_trans,
+	 terule_get_items_trans,
+	 terule_comp,
+	 terule_new_diff_trans,
+	 terule_deep_diff_trans,
 	 },
 	{
 	 "type",
@@ -232,8 +300,21 @@ static const poldiff_item_record_t item_records[] = {
 	 user_comp,
 	 user_new_diff,
 	 user_deep_diff,
-	 }
+	 },
 };
+
+const poldiff_component_record_t *poldiff_get_component_record(uint32_t which)
+{
+	size_t i = 0;
+	size_t num_items;
+
+	num_items = sizeof(component_records) / sizeof(poldiff_component_record_t);
+	for (i = 0; i < num_items; i++) {
+		if (component_records[i].flag_bit == which)
+			return &component_records[i];
+	}
+	return NULL;
+}
 
 poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_policy, poldiff_handle_fn_t fn, void *callback_arg)
 {
@@ -271,7 +352,10 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	}
 
 	if ((diff->attrib_diffs = attrib_summary_create()) == NULL ||
-	    (diff->avrule_diffs = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_ALLOW] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_AUDITALLOW] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_DONTAUDIT] = avrule_create()) == NULL ||
+	    (diff->avrule_diffs[AVRULE_OFFSET_NEVERALLOW] = avrule_create()) == NULL ||
 	    (diff->bool_diffs = bool_create()) == NULL ||
 	    (diff->cat_diffs = cat_create()) == NULL ||
 	    (diff->class_diffs = class_create()) == NULL ||
@@ -281,7 +365,9 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 	    (diff->role_diffs = role_create()) == NULL ||
 	    (diff->role_allow_diffs = role_allow_create()) == NULL ||
 	    (diff->role_trans_diffs = role_trans_create()) == NULL ||
-	    (diff->terule_diffs = terule_create()) == NULL ||
+	    (diff->terule_diffs[TERULE_OFFSET_CHANGE] = terule_create()) == NULL ||
+	    (diff->terule_diffs[TERULE_OFFSET_MEMBER] = terule_create()) == NULL ||
+	    (diff->terule_diffs[TERULE_OFFSET_TRANS] = terule_create()) == NULL ||
 	    (diff->type_diffs = type_summary_create()) == NULL || (diff->user_diffs = user_create()) == NULL) {
 		ERR(diff, "%s", strerror(ENOMEM));
 		poldiff_destroy(&diff);
@@ -289,6 +375,7 @@ poldiff_t *poldiff_create(apol_policy_t * orig_policy, apol_policy_t * mod_polic
 		return NULL;
 	}
 
+	diff->policy_opts = QPOL_POLICY_OPTION_NO_RULES | QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 	return diff;
 }
 
@@ -304,7 +391,10 @@ void poldiff_destroy(poldiff_t ** diff)
 
 	type_map_destroy(&(*diff)->type_map);
 	attrib_summary_destroy(&(*diff)->attrib_diffs);
-	avrule_destroy(&(*diff)->avrule_diffs);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_ALLOW]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_AUDITALLOW]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_DONTAUDIT]);
+	avrule_destroy(&(*diff)->avrule_diffs[AVRULE_OFFSET_NEVERALLOW]);
 	bool_destroy(&(*diff)->bool_diffs);
 	cat_destroy(&(*diff)->cat_diffs);
 	class_destroy(&(*diff)->class_diffs);
@@ -315,7 +405,9 @@ void poldiff_destroy(poldiff_t ** diff)
 	role_allow_destroy(&(*diff)->role_allow_diffs);
 	role_trans_destroy(&(*diff)->role_trans_diffs);
 	user_destroy(&(*diff)->user_diffs);
-	terule_destroy(&(*diff)->terule_diffs);
+	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_CHANGE]);
+	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_MEMBER]);
+	terule_destroy(&(*diff)->terule_diffs[TERULE_OFFSET_TRANS]);
 	type_summary_destroy(&(*diff)->type_diffs);
 	free(*diff);
 	*diff = NULL;
@@ -329,62 +421,62 @@ void poldiff_destroy(poldiff_t ** diff)
  *
  * @param diff The policy difference structure containing the policies
  * to compare and to populate with the item differences.
- * @param item_record Item record containg callbacks to perform each
+ * @param component_record Item record containg callbacks to perform each
  * step of the computation for a particular kind of item.
  *
  * @return 0 on success and < 0 on error; if the call fails; errno
  * will be set and the only defined operation on the policy difference
  * structure will be poldiff_destroy().
  */
-static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * item_record)
+static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_component_record_t * component_record)
 {
 	apol_vector_t *p1_v = NULL, *p2_v = NULL;
 	int error = 0, retv;
 	size_t x = 0, y = 0;
 	void *item_x = NULL, *item_y = NULL;
 
-	if (!diff || !item_record) {
+	if (!diff || !component_record) {
 		ERR(diff, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
-	diff->diff_status &= (~item_record->flag_bit);
+	diff->diff_status &= (~component_record->flag_bit);
 
-	INFO(diff, "Getting %s items from original policy.", item_record->item_name);
-	p1_v = item_record->get_items(diff, diff->orig_pol);
+	INFO(diff, "Getting %s items from original policy.", component_record->item_name);
+	p1_v = component_record->get_items(diff, diff->orig_pol);
 	if (!p1_v) {
 		error = errno;
 		goto err;
 	}
 
-	INFO(diff, "Getting %s items from modified policy.", item_record->item_name);
-	p2_v = item_record->get_items(diff, diff->mod_pol);
+	INFO(diff, "Getting %s items from modified policy.", component_record->item_name);
+	p2_v = component_record->get_items(diff, diff->mod_pol);
 	if (!p2_v) {
 		error = errno;
 		goto err;
 	}
 
-	INFO(diff, "Finding differences in %s.", item_record->item_name);
+	INFO(diff, "Finding differences in %s.", component_record->item_name);
 	for (x = 0, y = 0; x < apol_vector_get_size(p1_v);) {
 		if (y >= apol_vector_get_size(p2_v))
 			break;
 		item_x = apol_vector_get_element(p1_v, x);
 		item_y = apol_vector_get_element(p2_v, y);
-		retv = item_record->comp(item_x, item_y, diff);
+		retv = component_record->comp(item_x, item_y, diff);
 		if (retv < 0) {
-			if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
+			if (component_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
 				error = errno;
 				goto err;
 			}
 			x++;
 		} else if (retv > 0) {
-			if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
+			if (component_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
 				error = errno;
 				goto err;
 			}
 			y++;
 		} else {
-			if (item_record->deep_diff(diff, item_x, item_y)) {
+			if (component_record->deep_diff(diff, item_x, item_y)) {
 				error = errno;
 				goto err;
 			}
@@ -394,14 +486,14 @@ static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * 
 	}
 	for (; x < apol_vector_get_size(p1_v); x++) {
 		item_x = apol_vector_get_element(p1_v, x);
-		if (item_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
+		if (component_record->new_diff(diff, POLDIFF_FORM_REMOVED, item_x)) {
 			error = errno;
 			goto err;
 		}
 	}
 	for (; y < apol_vector_get_size(p2_v); y++) {
 		item_y = apol_vector_get_element(p2_v, y);
-		if (item_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
+		if (component_record->new_diff(diff, POLDIFF_FORM_ADDED, item_y)) {
 			error = errno;
 			goto err;
 		}
@@ -409,7 +501,7 @@ static int poldiff_do_item_diff(poldiff_t * diff, const poldiff_item_record_t * 
 
 	apol_vector_destroy(&p1_v);
 	apol_vector_destroy(&p2_v);
-	diff->diff_status |= item_record->flag_bit;
+	diff->diff_status |= component_record->flag_bit;
 	return 0;
       err:
 	apol_vector_destroy(&p1_v);
@@ -431,12 +523,33 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 		return -1;
 	}
 
-	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
+	int policy_opts = diff->policy_opts;
+	if (flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES)) {
+		policy_opts &= ~(QPOL_POLICY_OPTION_NO_RULES);
+	}
+	if (flags & POLDIFF_DIFF_AVNEVERALLOW) {
+		policy_opts &= ~(QPOL_POLICY_OPTION_NO_NEVERALLOWS);
+	}
+	if (policy_opts != diff->policy_opts) {
+		INFO(diff, "%s", "Loading rules from original policy.");
+		if (qpol_policy_rebuild(diff->orig_qpol, policy_opts)) {
+			return -1;
+		}
+		INFO(diff, "%s", "Loading rules from modified policy.");
+		if (qpol_policy_rebuild(diff->mod_qpol, policy_opts)) {
+			return -1;
+		}
+		// force flushing of existing pointers into policies
+		diff->remapped = 1;
+		diff->policy_opts = policy_opts;
+	}
+
+	num_items = sizeof(component_records) / sizeof(poldiff_component_record_t);
 	if (diff->remapped) {
 		for (i = 0; i < num_items; i++) {
-			if (item_records[i].flag_bit & POLDIFF_DIFF_REMAPPED) {
-				INFO(diff, "Resetting %s diff.", item_records[i].item_name);
-				if (item_records[i].reset(diff))
+			if (component_records[i].flag_bit & POLDIFF_DIFF_REMAPPED) {
+				INFO(diff, "Resetting %s diff.", component_records[i].item_name);
+				if (component_records[i].reset(diff))
 					return -1;
 			}
 		}
@@ -444,6 +557,7 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 		diff->remapped = 0;
 	}
 
+	INFO(diff, "%s", "Building type map.");
 	if (type_map_build(diff)) {
 		return -1;
 	}
@@ -451,9 +565,9 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 	diff->line_numbers_enabled = 0;
 	for (i = 0; i < num_items; i++) {
 		/* item requested but not yet run */
-		if ((flags & item_records[i].flag_bit) && !(item_records[i].flag_bit & diff->diff_status)) {
-			INFO(diff, "Running %s diff.", item_records[i].item_name);
-			if (poldiff_do_item_diff(diff, &(item_records[i]))) {
+		if ((flags & component_records[i].flag_bit) && !(component_records[i].flag_bit & diff->diff_status)) {
+			INFO(diff, "Running %s diff.", component_records[i].item_name);
+			if (poldiff_do_item_diff(diff, &(component_records[i]))) {
 				return -1;
 			}
 		}
@@ -462,7 +576,7 @@ int poldiff_run(poldiff_t * diff, uint32_t flags)
 	return 0;
 }
 
-int poldiff_is_run(poldiff_t * diff, uint32_t flags)
+int poldiff_is_run(const poldiff_t * diff, uint32_t flags)
 {
 	if (!flags)
 		return 1;	       /* nothing to do */
@@ -478,7 +592,7 @@ int poldiff_is_run(poldiff_t * diff, uint32_t flags)
 	return 0;
 }
 
-int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5])
+int poldiff_get_stats(const poldiff_t * diff, uint32_t flags, size_t stats[5])
 {
 	size_t i, j, num_items, tmp_stats[5] = { 0, 0, 0, 0, 0 };
 
@@ -490,10 +604,10 @@ int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5])
 
 	stats[0] = stats[1] = stats[2] = stats[3] = stats[4] = 0;
 
-	num_items = sizeof(item_records) / sizeof(poldiff_item_record_t);
+	num_items = sizeof(component_records) / sizeof(poldiff_component_record_t);
 	for (i = 0; i < num_items; i++) {
-		if (flags & item_records[i].flag_bit) {
-			item_records[i].get_stats(diff, tmp_stats);
+		if (flags & component_records[i].flag_bit) {
+			component_records[i].get_stats(diff, tmp_stats);
 			for (j = 0; j < 5; j++)
 				stats[j] += tmp_stats[j];
 		}
@@ -514,10 +628,25 @@ int poldiff_enable_line_numbers(poldiff_t * diff)
 			return -1;
 		if (qpol_policy_build_syn_rule_table(diff->mod_qpol))
 			return -1;
-		if ((retval = avrule_enable_line_numbers(diff)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_ALLOW)) < 0) {
 			return retval;
 		}
-		if ((retval = terule_enable_line_numbers(diff)) < 0) {
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_AUDITALLOW)) < 0) {
+			return retval;
+		}
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_DONTAUDIT)) < 0) {
+			return retval;
+		}
+		if ((retval = avrule_enable_line_numbers(diff, AVRULE_OFFSET_NEVERALLOW)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_CHANGE)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_MEMBER)) < 0) {
+			return retval;
+		}
+		if ((retval = terule_enable_line_numbers(diff, TERULE_OFFSET_TRANS)) < 0) {
 			return retval;
 		}
 		diff->line_numbers_enabled = 1;
@@ -531,9 +660,10 @@ int poldiff_build_bsts(poldiff_t * diff)
 	apol_vector_t *perms[2] = { NULL, NULL };
 	apol_vector_t *bools[2] = { NULL, NULL };
 	size_t i, j;
-	qpol_class_t *cls;
-	qpol_bool_t *bool;
-	char *name, *new_name;
+	const qpol_class_t *cls;
+	qpol_bool_t *qbool;
+	const char *name;
+	char *new_name;
 	int retval = -1, error = 0;
 	if (diff->class_bst != NULL) {
 		return 0;
@@ -554,7 +684,7 @@ int poldiff_build_bsts(poldiff_t * diff)
 			goto cleanup;
 		}
 		for (j = 0; j < apol_vector_get_size(classes[i]); j++) {
-			cls = (qpol_class_t *) apol_vector_get_element(classes[i], j);
+			cls = apol_vector_get_element(classes[i], j);
 			if (qpol_class_get_name(q, cls, &name) < 0) {
 				error = errno;
 				goto cleanup;
@@ -576,8 +706,8 @@ int poldiff_build_bsts(poldiff_t * diff)
 			}
 		}
 		for (j = 0; j < apol_vector_get_size(bools[i]); j++) {
-			bool = (qpol_bool_t *) apol_vector_get_element(bools[i], j);
-			if (qpol_bool_get_name(q, bool, &name) < 0) {
+			qbool = (qpol_bool_t *) apol_vector_get_element(bools[i], j);
+			if (qpol_bool_get_name(q, qbool, &name) < 0) {
 				error = errno;
 				goto cleanup;
 			}
@@ -606,27 +736,27 @@ static void poldiff_handle_default_callback(void *arg __attribute__ ((unused)),
 {
 	switch (level) {
 	case POLDIFF_MSG_INFO:
-		{
-			/* by default do not display these messages */
-			return;
-		}
+	{
+		/* by default do not display these messages */
+		return;
+	}
 	case POLDIFF_MSG_WARN:
-		{
-			fprintf(stderr, "WARNING: ");
-			break;
-		}
+	{
+		fprintf(stderr, "WARNING: ");
+		break;
+	}
 	case POLDIFF_MSG_ERR:
 	default:
-		{
-			fprintf(stderr, "ERROR: ");
-			break;
-		}
+	{
+		fprintf(stderr, "ERROR: ");
+		break;
+	}
 	}
 	vfprintf(stderr, fmt, va_args);
 	fprintf(stderr, "\n");
 }
 
-void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...)
+void poldiff_handle_msg(const poldiff_t * p, int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -636,4 +766,49 @@ void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...)
 		p->fn(p->handle_arg, p, level, fmt, ap);
 	}
 	va_end(ap);
+}
+
+poldiff_item_get_form_fn_t poldiff_component_record_get_form_fn(const poldiff_component_record_t * diff)
+{
+	if (!diff) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return diff->get_form;
+}
+
+poldiff_item_to_string_fn_t poldiff_component_record_get_to_string_fn(const poldiff_component_record_t * diff)
+{
+	if (!diff) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return diff->to_string;
+}
+
+poldiff_get_item_stats_fn_t poldiff_component_record_get_stats_fn(const poldiff_component_record_t * diff)
+{
+	if (!diff) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return diff->get_stats;
+}
+
+poldiff_get_result_items_fn_t poldiff_component_record_get_results_fn(const poldiff_component_record_t * diff)
+{
+	if (!diff) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return diff->get_results;
+}
+
+const char *poldiff_component_record_get_label(const poldiff_component_record_t * diff)
+{
+	if (!diff) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return diff->item_name;
 }

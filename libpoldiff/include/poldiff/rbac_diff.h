@@ -49,7 +49,7 @@ extern "C"
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_role_allow_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_role_allow_get_stats(const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of role allow differences from the policy difference
@@ -62,7 +62,7 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_role_allow_vector(poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_role_allow_vector(const poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -75,7 +75,7 @@ extern "C"
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-	extern char *poldiff_role_allow_to_string(poldiff_t * diff, const void *role_allow);
+	extern char *poldiff_role_allow_to_string(const poldiff_t * diff, const void *role_allow);
 
 /**
  *  Get the name of the source role from a role allow diff.
@@ -99,28 +99,49 @@ extern "C"
 	extern poldiff_form_e poldiff_role_allow_get_form(const void *role_allow);
 
 /**
- *  Get a vector of roles added to the role allow rule.
+ *  Get a vector of roles unmodified by the role allow rule.  The
+ *  vector will be non-empty only if the form is
+ *  POLDIFF_FORM_MODIFIED.
  *
- *  @param role_allow The role allow diff from which to get the types vector.
+ *  @param role_allow The role allow diff from which to get the roles
+ *  vector.
+ *
+ *  @return A vector of role names (type char *) that are in both
+ *  policies.  If no roles are common to both policies then the size
+ *  of the returned vector will be 0.  The caller must not destroy
+ *  this vector.  The caller must not destroy this vector.
+ */
+	extern const apol_vector_t *poldiff_role_allow_get_unmodified_roles(const poldiff_role_allow_t * role_allow);
+
+/**
+ *  Get a vector of roles added to the role allow rule.  If the role
+ *  allow was added by the modified policy then this vector will hold
+ *  all of the roles.
+ *
+ *  @param role_allow The role allow diff from which to get the roles
+ *  vector.
  *
  *  @return A vector of role names (type char *) that are allowed to
  *  the role in the modified policy.  If no roles were added the size
  *  of the returned vector will be 0.  The caller must not destroy
- *  this vector.  On error, errno will be set.
+ *  this vector.
  */
-	extern apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * role_allow);
+	extern const apol_vector_t *poldiff_role_allow_get_added_roles(const poldiff_role_allow_t * role_allow);
 
 /**
- *  Get a vector of roles removed from the role allow rule.
+ *  Get a vector of roles removed from the role allow rule.  If the
+ *  role allow was removed by the modified policy then this vector
+ *  will hold all of the roles.
  *
- *  @param role_allow The role allow diff from which to get the types vector.
+ *  @param role_allow The role allow diff from which to get the roles
+ *  vector.
  *
  *  @return A vector of role names (type char *) that are allowed to
  *  the role in the original policy.  If no roles were removed the
  *  size of the returned vector will be 0.  The caller must not
- *  destroy this vector.  On error, errno will be set.
+ *  destroy this vector.
  */
-	extern apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t * role_allow);
+	extern const apol_vector_t *poldiff_role_allow_get_removed_roles(const poldiff_role_allow_t * role_allow);
 
 /**
  *  Get an array of statistics for the number of differences of each
@@ -134,7 +155,7 @@ extern "C"
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_role_trans_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_role_trans_get_stats(const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of role_transition differences from the policy difference
@@ -147,7 +168,7 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_role_trans_vector(poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_role_trans_vector(const poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -160,7 +181,7 @@ extern "C"
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-	extern char *poldiff_role_trans_to_string(poldiff_t * diff, const void *role_trans);
+	extern char *poldiff_role_trans_to_string(const poldiff_t * diff, const void *role_trans);
 
 /**
  *  Get the name of the source role from a role_transition difference.

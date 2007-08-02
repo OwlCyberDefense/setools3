@@ -155,11 +155,8 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 		num_perms = 0,
 		num_types = 0,
 		num_attribs = 0,
-		num_allow = 0,
-		num_neverallow = 0,
-		num_type_trans = 0,
-		num_type_change = 0,
-		num_auditallow = 0, num_dontaudit = 0,
+		num_allow = 0, num_auditallow = 0, num_dontaudit = 0,
+		num_type_change = 0, num_type_member, num_type_trans = 0,
 		num_roles = 0, num_roleallow = 0, num_role_trans = 0, num_users = 0, num_bools = 0;
 	apol_vector_t *vec = NULL;
 	qpol_iterator_t *i = NULL;
@@ -215,10 +212,6 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	qpol_iterator_get_size(i, &num_allow);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_avrule_iter(q, QPOL_RULE_NEVERALLOW, &i);
-	qpol_iterator_get_size(i, &num_neverallow);
-	qpol_iterator_destroy(&i);
-
 	qpol_policy_get_avrule_iter(q, QPOL_RULE_AUDITALLOW, &i);
 	qpol_iterator_get_size(i, &num_auditallow);
 	qpol_iterator_destroy(&i);
@@ -227,22 +220,27 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	qpol_iterator_get_size(i, &num_dontaudit);
 	qpol_iterator_destroy(&i);
 
-	qpol_policy_get_terule_iter(q, QPOL_RULE_TYPE_TRANS, &i);
-	qpol_iterator_get_size(i, &num_type_trans);
-	qpol_iterator_destroy(&i);
-
 	qpol_policy_get_terule_iter(q, QPOL_RULE_TYPE_CHANGE, &i);
 	qpol_iterator_get_size(i, &num_type_change);
 	qpol_iterator_destroy(&i);
 
-	contents = g_strdup_printf("\nNumber of Type Enforcement Rules:\n"
+	qpol_policy_get_terule_iter(q, QPOL_RULE_TYPE_MEMBER, &i);
+	qpol_iterator_get_size(i, &num_type_member);
+	qpol_iterator_destroy(&i);
+
+	qpol_policy_get_terule_iter(q, QPOL_RULE_TYPE_TRANS, &i);
+	qpol_iterator_get_size(i, &num_type_trans);
+	qpol_iterator_destroy(&i);
+
+	contents = g_strdup_printf("\nNumber of Rules:\n"
 				   "\tallow: %zd\n"
-				   "\tneverallow: %zd\n"
-				   "\ttype_transition: %zd\n"
-				   "\ttype_change: %zd\n"
 				   "\tauditallow: %zd\n"
-				   "\tdontaudit %zd\n",
-				   num_allow, num_neverallow, num_type_trans, num_type_change, num_auditallow, num_dontaudit);
+				   "\tdontaudit %zd\n"
+				   "\tneverallow: not calculated\n"
+				   "\ttype_change: %zd\n"
+				   "\ttype_member: %zd\n"
+				   "\ttype_transition: %zd\n",
+				   num_allow, num_auditallow, num_dontaudit, num_type_change, num_type_member, num_type_trans);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 
@@ -272,7 +270,7 @@ static void policy_view_stats_update(policy_view_t * view, apol_policy_t * p, ap
 	num_bools = apol_vector_get_size(vec);
 	apol_vector_destroy(&vec);
 
-	contents = g_strdup_printf("\nNumber of Users: %d\n" "\nNumber of Booleans: %d\n", num_users, num_bools);
+	contents = g_strdup_printf("\nNumber of Users: %zd\n" "\nNumber of Booleans: %zd\n", num_users, num_bools);
 	gtk_text_buffer_insert(view->stats, &iter, contents, -1);
 	g_free(contents);
 }

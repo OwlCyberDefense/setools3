@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libsefs
+Description: SETools file contexts library
+Version: @libsefs_version@
+Requires: libapol >= 4.1, sqlite3 >= 3.2
+Conflicts:
+Libs: -L${libdir} -lsefs
+Cflags: -I${includedir}/sefs

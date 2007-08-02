@@ -39,7 +39,7 @@
 #include "iterator_internal.h"
 #include "qpol_internal.h"
 
-int qpol_policy_get_user_by_name(qpol_policy_t * policy, const char *name, qpol_user_t ** datum)
+int qpol_policy_get_user_by_name(const qpol_policy_t * policy, const char *name, const qpol_user_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -65,7 +65,7 @@ int qpol_policy_get_user_by_name(qpol_policy_t * policy, const char *name, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_user_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_user_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	hash_state_t *hs = NULL;
@@ -103,7 +103,7 @@ int qpol_policy_get_user_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_value(qpol_policy_t * policy, qpol_user_t * datum, uint32_t * value)
+int qpol_user_get_value(const qpol_policy_t * policy, const qpol_user_t * datum, uint32_t * value)
 {
 	user_datum_t *internal_datum;
 
@@ -121,7 +121,7 @@ int qpol_user_get_value(qpol_policy_t * policy, qpol_user_t * datum, uint32_t * 
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_role_iter(qpol_policy_t * policy, qpol_user_t * datum, qpol_iterator_t ** roles)
+int qpol_user_get_role_iter(const qpol_policy_t * policy, const qpol_user_t * datum, qpol_iterator_t ** roles)
 {
 	user_datum_t *internal_datum = NULL;
 	int error = 0;
@@ -160,7 +160,7 @@ int qpol_user_get_role_iter(qpol_policy_t * policy, qpol_user_t * datum, qpol_it
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_range(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_range_t ** range)
+int qpol_user_get_range(const qpol_policy_t * policy, const qpol_user_t * datum, const qpol_mls_range_t ** range)
 {
 	user_datum_t *internal_datum = NULL;
 
@@ -181,7 +181,7 @@ int qpol_user_get_range(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_ra
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_dfltlevel(qpol_policy_t * policy, qpol_user_t * datum, qpol_mls_level_t ** level)
+int qpol_user_get_dfltlevel(const qpol_policy_t * policy, const qpol_user_t * datum, const qpol_mls_level_t ** level)
 {
 	user_datum_t *internal_datum = NULL;
 
@@ -202,7 +202,7 @@ int qpol_user_get_dfltlevel(qpol_policy_t * policy, qpol_user_t * datum, qpol_ml
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_name(qpol_policy_t * policy, qpol_user_t * datum, char **name)
+int qpol_user_get_name(const qpol_policy_t * policy, const qpol_user_t * datum, const char **name)
 {
 	user_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;

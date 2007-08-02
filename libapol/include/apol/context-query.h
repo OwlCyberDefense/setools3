@@ -56,7 +56,25 @@ extern "C"
  *
  * @return An initialized context structure, or NULL upon error.
  */
-	extern apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context);
+	extern apol_context_t *apol_context_create_from_qpol_context(const apol_policy_t * p, const qpol_context_t * context);
+
+/**
+ * Take a literal context string that may be missing components (e.g.,
+ * <b>user_u::type_t:s0:c0.c127</b>), fill in a newly allocated
+ * apol_context_t, and return it.  If there is a MLS range component
+ * to the context, it will <b>not</b> expanded.  The caller must call
+ * apol_context_destroy() upon the return value afterwards.
+ *
+ * Because this function creates a context without the benefit of a
+ * policy, its range is incomplete.  Call apol_context_convert() to
+ * complete it.
+ *
+ * @param context_string Pointer to a string representing a (possibly
+ * incomplete) context, or NULL upon error.
+ *
+ * @return An initialized context structure, or NULL upon error.
+ */
+	extern apol_context_t *apol_context_create_from_literal(const char *context_string);
 
 /**
  * Deallocate all memory associated with a context structure and then
@@ -71,50 +89,50 @@ extern "C"
  * Set the user field of a context structure.  This function
  * duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param user New user field to set, or NULL to unset this field.
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const char *user);
+	extern int apol_context_set_user(const apol_policy_t * p, apol_context_t * context, const char *user);
 
 /**
  * Set the role field of a context structure.  This function
  * duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param role New role field to set, or NULL to unset this field.
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const char *role);
+	extern int apol_context_set_role(const apol_policy_t * p, apol_context_t * context, const char *role);
 
 /**
  * Set the type field of a context structure.  This function
  * duplicates the incoming string.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param type New type field to set, or NULL to unset this field.
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const char *type);
+	extern int apol_context_set_type(const apol_policy_t * p, apol_context_t * context, const char *type);
 
 /**
  * Set the range field of a context structure.	This function takes
  * ownership of the range, such that the caller must not modify nor
  * destroy it afterwards.
  *
- * @param p Error reporting handler.
+ * @param p Error reporting handler, or NULL to use default handler.
  * @param context Context to modify.
  * @param range New range field to set, or NULL to unset this field.
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range);
+	extern int apol_context_set_range(const apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range);
 
 /**
  * Get the user field of a context structure.
@@ -174,7 +192,7 @@ extern "C"
  *
  * @return 1 If comparison succeeds, 0 if not; -1 on error.
  */
-	extern int apol_context_compare(apol_policy_t * p,
+	extern int apol_context_compare(const apol_policy_t * p,
 					const apol_context_t * target, const apol_context_t * search,
 					unsigned int range_compare_type);
 
@@ -190,7 +208,7 @@ extern "C"
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-	extern int apol_context_validate(apol_policy_t * p, apol_context_t * context);
+	extern int apol_context_validate(const apol_policy_t * p, const apol_context_t * context);
 
 /**
  * Given a partial context, determine if it is legal according to the
@@ -205,21 +223,36 @@ extern "C"
  *
  * @return 1 If context is legal, 0 if not; -1 on error.
  */
-	extern int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context);
+	extern int apol_context_validate_partial(const apol_policy_t * p, const apol_context_t * context);
 
 /**
  * Given a context, allocate and return a string that represents the
  * context.  This function does not check if the context is valid or
- * not.  For fields that have not been set, leave that part of the
- * string empty.
+ * not.  An asterisk ("*") represents fields that have not been set.
+ * For example, if a context has the role object_r but has no user nor
+ * type set, it will be rendered as "<sample>*:object_r:*</sample>"
+ * (assuming the given policy is not MLS).
  *
- * @param p Policy within which to look up context information.
+ * @param p Policy within which to look up MLS range information.  If
+ * NULL, then attempt to treat the range as incomplete.
  * @param context Context to render.
  *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
+ * @return A newly allocated string on success, which the caller must
+ * free afterwards.  Upon error return NULL.
  */
-	extern char *apol_context_render(apol_policy_t * p, apol_context_t * context);
+	extern char *apol_context_render(const apol_policy_t * p, const apol_context_t * context);
+
+/**
+ * Given a context, convert the range within it (as per
+ * apol_mls_range_convert()) to a complete range.  If the context has
+ * no range or has no literal range then do nothing.
+ *
+ * @param p Policy containing category information.
+ * @param context Context to convert.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int apol_context_convert(const apol_policy_t * p, apol_context_t * context);
 
 #ifdef	__cplusplus
 }

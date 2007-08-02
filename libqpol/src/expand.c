@@ -29,6 +29,7 @@
 #include <sepol/policydb.h>
 #include <stdlib.h>
 #include "qpol_internal.h"
+#include "expand.h"
 
 static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_datum_t datum, void *ptr)
 {
@@ -53,7 +54,7 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 	return 0;
 }
 
-int qpol_expand_module(qpol_policy_t * base)
+int qpol_expand_module(qpol_policy_t * base, int neverallows)
 {
 	unsigned int i;
 	uint32_t *typemap = NULL, *boolmap = NULL;
@@ -96,9 +97,9 @@ int qpol_expand_module(qpol_policy_t * base)
 	for (i = 0; i < db->p_bools.nprim; i++) {
 		boolmap[i] = i + 1;
 	}
-	rt = expand_module_avrules(base->sh, db, db, typemap, boolmap, 0, 1);
+	rt = expand_module_avrules(base->sh, db, db, typemap, boolmap, 0, neverallows);
 #else
-	rt = expand_module_avrules(base->sh, db, db, typemap, 0, 1);
+	rt = expand_module_avrules(base->sh, db, db, typemap, 0, neverallows);
 #endif
 	if (rt < 0) {
 		goto err;

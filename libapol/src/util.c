@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 /* these are needed for nodecons and IPv4 and IPv6 */
 #include <qpol/nodecon_query.h>
@@ -43,6 +44,7 @@
 
 /* use 8k line size */
 #define APOL_LINE_SZ 8192
+#define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
 
 const char *libapol_get_version(void)
 {
@@ -51,8 +53,8 @@ const char *libapol_get_version(void)
 
 int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 {
-	bool_t ipv4 = FALSE;
-	bool_t ipv6 = FALSE;
+	bool ipv4 = false;
+	bool ipv6 = false;
 
 	if (!str || !ip) {
 		errno = EINVAL;
@@ -62,10 +64,10 @@ int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 	ip[0] = ip[1] = ip[2] = ip[3] = 0;
 
 	if (strchr(str, '.'))
-		ipv4 = TRUE;
+		ipv4 = true;
 
 	if (strchr(str, ':'))
-		ipv6 = TRUE;
+		ipv6 = true;
 
 	if (ipv4 == ipv6) {
 		errno = EINVAL;
@@ -79,7 +81,7 @@ int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 		size_t len = strlen(str), i;
 		for (i = 0; i <= len; i++) {
 			if (str[i] == '.' || str[i] == '\0') {
-				if (val < 0 || val > 255) {
+				if (val > 255) {
 					errno = EINVAL;
 					return -1;
 				}
@@ -131,6 +133,39 @@ const char *apol_objclass_to_str(uint32_t objclass)
 	return NULL;
 }
 
+uint32_t apol_str_to_objclass(const char *objclass)
+{
+	if (objclass == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	if (strcmp(objclass, "block") == 0) {
+		return QPOL_CLASS_BLK_FILE;
+	}
+	if (strcmp(objclass, "char") == 0) {
+		return QPOL_CLASS_CHR_FILE;
+	}
+	if (strcmp(objclass, "dir") == 0) {
+		return QPOL_CLASS_DIR;
+	}
+	if (strcmp(objclass, "fifo") == 0) {
+		return QPOL_CLASS_FIFO_FILE;
+	}
+	if (strcmp(objclass, "file") == 0) {
+		return QPOL_CLASS_FILE;
+	}
+	if (strcmp(objclass, "link") == 0) {
+		return QPOL_CLASS_LNK_FILE;
+	}
+	if (strcmp(objclass, "sock") == 0) {
+		return QPOL_CLASS_SOCK_FILE;
+	}
+	if (strcmp(objclass, "any") == 0) {
+		return QPOL_CLASS_ALL;
+	}
+	return 0;
+}
+
 const char *apol_protocol_to_str(uint8_t protocol)
 {
 	switch (protocol) {
@@ -139,8 +174,25 @@ const char *apol_protocol_to_str(uint8_t protocol)
 	case IPPROTO_UDP:
 		return "udp";
 	default:
+		errno = EPROTONOSUPPORT;
 		return NULL;
 	}
+}
+
+uint8_t apol_str_to_protocol(const char *protocol_str)
+{
+	if (protocol_str == NULL) {
+		errno = EINVAL;
+		return 0;
+	}
+	if (strcmp(protocol_str, "tcp") == 0 || strcmp(protocol_str, "TCP") == 0) {
+		return IPPROTO_TCP;
+	}
+	if (strcmp(protocol_str, "udp") == 0 || strcmp(protocol_str, "UDP") == 0) {
+		return IPPROTO_UDP;
+	}
+	errno = EPROTONOSUPPORT;
+	return 0;
 }
 
 const char *apol_fs_use_behavior_to_str(uint32_t behavior)
@@ -456,8 +508,6 @@ char *apol_str_join(const apol_vector_t * list, const char *delim)
  * a new string that does not contain those whitespaces.
  *
  * @param str String to modify.
- *
- * @return 0 on success, < 0 on out of memory.
  */
 static void trim_leading_whitespace(char *str)
 {
@@ -471,7 +521,7 @@ static void trim_leading_whitespace(char *str)
  * Given a mutable string, replace trailing whitespace characters with
  * null characters.
  *
- * @param str Reference to a mutable string.
+ * @param str String to modify.
  */
 static void trim_trailing_whitespace(char *str)
 {

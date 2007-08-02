@@ -190,7 +190,7 @@ size_t seaudit_get_num_log_messages(seaudit_t * s);
  * @return Time of the first log message, or NULL if no log is opened.
  * Treat this as a const pointer.
  */
-struct tm *seaudit_get_log_first(seaudit_t * s);
+const struct tm *seaudit_get_log_first(seaudit_t * s);
 
 /**
  * Return the time stamp for the last message in the currently opened
@@ -201,6 +201,6 @@ struct tm *seaudit_get_log_first(seaudit_t * s);
  * @return Time of the last log message, or NULL if no log is opened.
  * Treat this as a const pointer.
  */
-struct tm *seaudit_get_log_last(seaudit_t * s);
+const struct tm *seaudit_get_log_last(seaudit_t * s);
 
 #endif

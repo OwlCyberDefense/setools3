@@ -72,7 +72,7 @@ extern "C"
  * responsible for calling apol_vector_destroy() afterwards.  On
  * error, return NULL and set errno.
  */
-	apol_vector_t *class_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *class_get_items(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two qpol_class_t objects, determining if they have the same
@@ -86,7 +86,7 @@ extern "C"
  * @return < 0, 0, or > 0 if class x is respectively less than, equal
  * to, or greater than class y.
  */
-	int class_comp(const void *x, const void *y, poldiff_t * diff);
+	int class_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for
@@ -159,7 +159,7 @@ extern "C"
  * responsible for calling apol_vector_destroy() afterwards.  On
  * error, return NULL and set errno.
  */
-	apol_vector_t *common_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *common_get_items(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two qpol_common_t objects, determining if they have the
@@ -173,7 +173,7 @@ extern "C"
  * @return < 0, 0, or > 0 if common x is respectively less than, equal
  * to, or greater than common y.
  */
-	int common_comp(const void *x, const void *y, poldiff_t * diff);
+	int common_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for

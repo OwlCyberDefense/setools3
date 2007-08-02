@@ -37,8 +37,6 @@
 
 #include <apol/vector.h>
 
-#include <libxml/xmlreader.h>
-
 #include <errno.h>
 #include <getopt.h>
 #include <stdio.h>

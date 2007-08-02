@@ -49,13 +49,21 @@
 #include "../include/qpol/type_query.h"
 #include "../include/qpol/user_query.h"
 #include "../include/qpol/util.h"
+
+/* Provide hooks so that language-specific modules can define the
+ * callback function, used by the handler in
+ * qpol_policy_open_from_file().
+ */
+SWIGEXPORT qpol_callback_fn_t qpol_swig_message_callback = NULL;
+SWIGEXPORT void * qpol_swig_message_callback_arg = NULL;
+
 %}
 
 #ifdef SWIGJAVA
 %javaconst(1);
 /* get the java environment so we can throw exceptions */
 %{
-	JNIEnv *jenv;
+	static JNIEnv *jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
 		return JNI_VERSION_1_2;
@@ -68,9 +76,6 @@
 
 #ifdef SWIGJAVA
 
-/* remove $null not valid outside of type map */
-#undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
@@ -90,7 +95,14 @@
 %}
 %pragma(java) jniclasscode=%{
 	static {
-		System.loadLibrary("jqpol");
+		try
+		{
+			libqpol_get_version();
+		}
+		catch (UnsatisfiedLinkError ule)
+		{
+			System.loadLibrary("jqpol");
+		}
 	}
 %}
 
@@ -107,13 +119,72 @@ typedef uint32_t size_t;
 const char *libqpol_get_version(void);
 
 %rename(qpol_default_policy_find) wrap_qpol_default_policy_find;
-%newobject wrap_qpol_default_policy_find;
-%inline %{
+%newobject wrap_qpol_default_policy_find();
+
 /* if java, pass the new exception macro to C not just SWIG */
 #ifdef SWIGJAVA
 #undef SWIG_exception
 #define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%inline %{
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+%}
 #endif
+
+#ifdef SWIGTCL
+/* implement a custom non thread-safe error handler */
+%{
+static char *message = NULL;
+static void tcl_clear_error(void)
+{
+        free(message);
+        message = NULL;
+}
+static void tcl_throw_error(const char *s)
+{
+	free(message);
+	message = strdup(s);
+}
+static char *tcl_get_error(void)
+{
+	return message;
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+%}
+
+%wrapper %{
+/* Tcl module's initialization routine is expected to be named
+ * Qpol_Init(), but the output file will be called libtqpol.so instead
+ * of libqpol.so.  Therefore add an alias from Tqpol_Init() to the
+ * real Qpol_Init().
+ */
+SWIGEXPORT int Tqpol_Init(Tcl_Interp *interp) {
+	return SWIG_init(interp);
+}
+%}
+
+%exception {
+	char *err;
+	tcl_clear_error();
+	$action
+	if ((err = tcl_get_error()) != NULL) {
+                Tcl_Obj *obj = Tcl_NewStringObj(message, -1);
+                Tcl_ResetResult(interp);
+                Tcl_SetObjResult(interp, obj);
+		goto fail;
+	}
+}
+#undef SWIG_exception
+#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
+#endif
+
+%inline %{
+	/* cast void * to char * as it can't have a constructor */
+	const char * to_str(void *x) {
+		return (const char *)x;
+	}
+
 	char * wrap_qpol_default_policy_find() {
 		char *path;
 		int retv;
@@ -128,13 +199,6 @@ const char *libqpol_get_version(void);
 	fail: /* SWIG_exception calls goto fail */
 		return NULL;
 	}
-%}
-
-%inline %{
-/* cast void * to char * as it can't have a constructor */
-const char * to_str(void *x) {
-	return (const char *)x;
-}
 %}
 
 /* qpol_module */
@@ -155,8 +219,8 @@ typedef struct qpol_module {} qpol_module_t;
 	~qpol_module_t() {
 		qpol_module_destroy(&self);
 	};
-	char *qpol_module_get_path() {
-		char *p;
+	const char *get_path() {
+		const char *p;
 		if (qpol_module_get_path(self, &p)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module path");
 		}
@@ -164,8 +228,8 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 		return NULL;
 	};
-	char *qpol_module_get_name() {
-		char *n;
+	const char *get_name() {
+		const char *n;
 		if (qpol_module_get_name(self, &n)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module name");
 		}
@@ -173,8 +237,8 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 			return NULL;
 	};
-	char *qpol_module_get_version() {
-		char *v;
+	const char *get_version() {
+		const char *v;
 		if (qpol_module_get_version(self, &v)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module version");
 		}
@@ -182,7 +246,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 			return NULL;
 	};
-	int qpol_module_get_type() {
+	int get_type() {
 		int t;
 		if (qpol_module_get_type(self, &t)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module type");
@@ -190,7 +254,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 		return t;
 	};
-	int qpol_module_get_enabled() {
+	int get_enabled() {
 		int e;
 		if (qpol_module_get_enabled(self, &e)) {
 			SWIG_exception(SWIG_ValueError,"Could not get module state");
@@ -198,7 +262,7 @@ typedef struct qpol_module {} qpol_module_t;
 	fail:
 			return e;
 	};
-	void qpol_module_set_enabled(int state) {
+	void set_enabled(int state) {
 		if (qpol_module_set_enabled(self, state)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set module state");
 		}
@@ -208,6 +272,8 @@ typedef struct qpol_module {} qpol_module_t;
 };
 
 /* qpol_policy */
+#define QPOL_POLICY_OPTION_NO_NEVERALLOWS 0x00000001
+#define QPOL_POLICY_OPTION_NO_RULES       0x00000002
 typedef struct qpol_policy {} qpol_policy_t;
 typedef void (*qpol_callback_fn_t) (void *varg, struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
 #define QPOL_POLICY_UNKNOWN       -1
@@ -228,19 +294,9 @@ typedef enum qpol_capability
 } qpol_capability_e;
 
 %extend qpol_policy_t {
-	/* open no rules currently unavailable pending neverallow decision */
-	qpol_policy_t(const char *path, qpol_callback_fn_t fn, void *arg) {
+	qpol_policy_t(const char *path, const int options) {
 		qpol_policy_t *p;
-		if (qpol_policy_open_from_file(path, &p, fn, arg) < 0) {
-			SWIG_exception(SWIG_IOError, "Error opening policy");
-		}
-		return p;
-	fail:
-		return NULL;
-	};
-	qpol_policy_t(const char *path) {
-		qpol_policy_t *p;
-		if (qpol_policy_open_from_file(path, &p, NULL, NULL) < 0) {
+		if (qpol_policy_open_from_file(path, &p, qpol_swig_message_callback, qpol_swig_message_callback_arg, options) < 0) {
 			SWIG_exception(SWIG_IOError, "Error opening policy");
 		}
 		return p;
@@ -264,8 +320,8 @@ typedef enum qpol_capability
 	fail:
 		return;
 	};
-	void rebuild () {
-		if (qpol_policy_rebuild(self)) {
+	void rebuild (const int options) {
+		if (qpol_policy_rebuild(self, options)) {
 			SWIG_exception(SWIG_RuntimeError, "Failed rebuilding policy");
 		}
 	fail:
@@ -361,7 +417,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_class_iter();
+	%newobject get_class_iter(char*);
 	qpol_iterator_t *get_class_iter(char *perm=NULL) {
 		qpol_iterator_t *iter;
 		if (perm) {
@@ -377,7 +433,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_common_iter();
+	%newobject get_common_iter(char*);
 	qpol_iterator_t *get_common_iter(char *perm=NULL) {
 		qpol_iterator_t *iter;
 		if (perm) {
@@ -503,7 +559,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_avrule_iter();
+	%newobject get_avrule_iter(int);
 	qpol_iterator_t *get_avrule_iter(int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_policy_get_avrule_iter(self, rule_types, &iter)) {
@@ -513,7 +569,7 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
-	%newobject get_terule_iter();
+	%newobject get_terule_iter(int);
 	qpol_iterator_t *get_terule_iter(int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_policy_get_terule_iter(self, rule_types, &iter)) {
@@ -580,24 +636,21 @@ typedef struct qpol_iterator {} qpol_iterator_t;
 /* qpol type */
 typedef struct qpol_type {} qpol_type_t;
 %extend qpol_type_t {
-	qpol_type_t(qpol_policy_t *p, char *name) {
-		qpol_type_t *t;
+	qpol_type_t(qpol_policy_t *p, const char *name) {
+		const qpol_type_t *t;
 		if (qpol_policy_get_type_by_name(p, name, &t)) {
 			SWIG_exception(SWIG_RuntimeError, "Type does not exist");
 		}
-		return t;
+		return (qpol_type_t*)t;
 	fail:
 		return NULL;
-	};
-	qpol_type_t(void *x) {
-		return (qpol_type_t*)x;
 	};
 	~qpol_type_t() {
 		/* no op */
 		return;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_type_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get type name");
 		}
@@ -629,7 +682,7 @@ typedef struct qpol_type {} qpol_type_t;
 	fail:
 			return (int)i;
 	};
-	%newobject get_type_iter;
+	%newobject get_type_iter(qpol_policy_t*);
 	qpol_iterator_t *get_type_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		int retv = qpol_type_get_type_iter(p, self, &iter);
@@ -641,7 +694,7 @@ typedef struct qpol_type {} qpol_type_t;
 	fail:
 		return iter;
 	};
-	%newobject get_attr_iter;
+	%newobject get_attr_iter(qpol_policy_t*);
 	qpol_iterator_t *get_attr_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		int retv = qpol_type_get_attr_iter(p, self, &iter);
@@ -653,7 +706,7 @@ typedef struct qpol_type {} qpol_type_t;
 	fail:
 		return iter;
 	};
-	%newobject get_alias_iter;
+	%newobject get_alias_iter(qpol_policy_t*);
 	qpol_iterator_t *get_alias_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_type_get_alias_iter(p, self, &iter)) {
@@ -663,21 +716,23 @@ typedef struct qpol_type {} qpol_type_t;
 		return iter;
 	};
  };
+%inline %{
+	qpol_type_t *qpol_type_from_void(void *x) {
+		return (qpol_type_t*)x;
+	};
+%}
 
 /* qpol role */
 typedef struct qpol_role {} qpol_role_t;
 %extend qpol_role_t {
-	qpol_role_t(qpol_policy_t *p, char *name) {
-		qpol_role_t *r;
+	qpol_role_t(qpol_policy_t *p, const char *name) {
+		const qpol_role_t *r;
 		if (qpol_policy_get_role_by_name(p, name, &r)) {
 			SWIG_exception(SWIG_RuntimeError, "Role does not exist");
 		}
-		return r;
+		return (qpol_role_t*)r;
 	fail:
 		return NULL;
-	};
-	qpol_role_t(void *x) {
-		return (qpol_role_t*)x;
 	};
 	~qpol_role_t() {
 		/* no op */
@@ -692,7 +747,7 @@ typedef struct qpol_role {} qpol_role_t;
 		return (int) v;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_role_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get role name");
 		}
@@ -700,7 +755,7 @@ typedef struct qpol_role {} qpol_role_t;
 	fail:
 		return NULL;
 	};
-	%newobject get_type_iter;
+	%newobject get_type_iter(qpol_policy_t*);
 	qpol_iterator_t *get_type_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_role_get_type_iter(p, self, &iter)) {
@@ -709,7 +764,7 @@ typedef struct qpol_role {} qpol_role_t;
 	fail:
 		return iter;
 	};
-	%newobject get_dominate_iter;
+	%newobject get_dominate_iter(qpol_policy_t*);
 	qpol_iterator_t *get_dominate_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_role_get_dominate_iter(p, self, &iter)) {
@@ -719,21 +774,23 @@ typedef struct qpol_role {} qpol_role_t;
 		return iter;
 	};
 };
+%inline %{
+	qpol_role_t *qpol_role_from_void(void *x) {
+		return (qpol_role_t*)x;
+	};
+%}
 
 /* qpol level */
 typedef struct qpol_level {} qpol_level_t;
 %extend qpol_level_t {
-	qpol_level_t(qpol_policy_t *p, char *name) {
-		qpol_level_t *l;
+	qpol_level_t(qpol_policy_t *p, const char *name) {
+		const qpol_level_t *l;
 		if (qpol_policy_get_level_by_name(p, name, &l)) {
 			SWIG_exception(SWIG_RuntimeError, "Level does not exist");
 		}
-		return l;
+		return (qpol_level_t*)l;
 	fail:
 		return NULL;
-	};
-	qpol_level_t(void *x) {
-		return (qpol_level_t*)x;
 	};
 	~qpol_level_t() {
 		/* no op */
@@ -756,7 +813,7 @@ typedef struct qpol_level {} qpol_level_t;
 		return (int) v;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_level_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get level sensitivity name");
 		}
@@ -764,7 +821,7 @@ typedef struct qpol_level {} qpol_level_t;
 	fail:
 		return NULL;
 	};
-	%newobject get_cat_iter;
+	%newobject get_cat_iter(qpol_policy_t*);
 	qpol_iterator_t *get_cat_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_level_get_cat_iter(p, self, &iter)) {
@@ -773,7 +830,7 @@ typedef struct qpol_level {} qpol_level_t;
 	fail:
 		return iter;
 	};
-	%newobject get_alias_iter;
+	%newobject get_alias_iter(qpol_policy_t*);
 	qpol_iterator_t *get_alias_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_level_get_alias_iter(p, self, &iter)) {
@@ -783,21 +840,23 @@ typedef struct qpol_level {} qpol_level_t;
 		return iter;
 	};
 };
+%inline %{
+	qpol_level_t *qpol_level_from_void(void *x) {
+		return (qpol_level_t*)x;
+	};
+%}
 
 /* qpol cat */
 typedef struct qpol_cat {} qpol_cat_t;
 %extend qpol_cat_t {
-	qpol_cat_t(qpol_policy_t *p, char *name) {
-		qpol_cat_t *c;
+	qpol_cat_t(qpol_policy_t *p, const char *name) {
+		const qpol_cat_t *c;
 		if (qpol_policy_get_cat_by_name(p, name, &c)) {
 			SWIG_exception(SWIG_RuntimeError, "Category does not exist");
 		}
-		return c;
+		return (qpol_cat_t*)c;
 	fail:
 		return NULL;
-	};
-	qpol_cat_t(void *x) {
-		return (qpol_cat_t*)x;
 	};
 	~qpol_cat_t() {
 		/* no op */
@@ -820,7 +879,7 @@ typedef struct qpol_cat {} qpol_cat_t;
 		return (int) v;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_cat_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get category name");
 		}
@@ -828,7 +887,7 @@ typedef struct qpol_cat {} qpol_cat_t;
 	fail:
 		return NULL;
 	};
-	%newobject get_alias_iter;
+	%newobject get_alias_iter(qpol_policy_t*);
 	qpol_iterator_t *get_alias_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_cat_get_alias_iter(p, self, &iter)) {
@@ -838,27 +897,34 @@ typedef struct qpol_cat {} qpol_cat_t;
 		return iter;
 	};
 };
+%inline %{
+	qpol_cat_t *qpol_cat_from_void(void *x) {
+		return (qpol_cat_t*)x;
+	};
+%}
 
 /* qpol mls range */
 typedef struct qpol_mls_range {} qpol_mls_range_t;
 %extend qpol_mls_range_t {
-	qpol_mls_range_t(void *x) {
-		return (qpol_mls_range_t*)x;
-	};
+	qpol_mls_range_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_mls_range_t objects");
+	fail:
+		return NULL;
+	}
 	~qpol_mls_range_t() {
 		/* no op */
 		return;
 	};
-	qpol_mls_level_t *get_high_level(qpol_policy_t *p) {
-		qpol_mls_level_t *l;
+	const qpol_mls_level_t *get_high_level(qpol_policy_t *p) {
+		const qpol_mls_level_t *l;
 		if (qpol_mls_range_get_high_level(p, self, &l)) {
 			SWIG_exception(SWIG_ValueError, "Could not get range high levl");
 		}
 	fail:
 		return l;
 	};
-	qpol_mls_level_t *get_low_level(qpol_policy_t *p) {
-		qpol_mls_level_t *l;
+	const qpol_mls_level_t *get_low_level(qpol_policy_t *p) {
+		const qpol_mls_level_t *l;
 		if (qpol_mls_range_get_low_level(p, self, &l)) {
 			SWIG_exception(SWIG_ValueError, "Could not get range low levl");
 		}
@@ -866,26 +932,33 @@ typedef struct qpol_mls_range {} qpol_mls_range_t;
 		return l;
 	};
 };
+%inline %{
+	qpol_mls_range_t *qpol_mls_range_from_void(void *x) {
+		return (qpol_mls_range_t*)x;
+	};
+%}
 
 /* qpol mls level */
 typedef struct qpol_mls_level {} qpol_mls_level_t;
 %extend qpol_mls_level_t {
-	qpol_mls_level_t(void *x) {
-		return (qpol_mls_level_t*)x;
-	};
+	qpol_mls_level_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_mls_level_t objects");
+	fail:
+		return NULL;
+	}
 	~qpol_mls_level_t() {
 		/* no op */
 		return;
 	};
 	const char *get_sens_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_mls_level_get_sens_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get level sensitivity name");
 		}
 	fail:
 		return name;
 	};
-	%newobject get_cat_iter;
+	%newobject get_cat_iter(qpol_policy_t*);
 	qpol_iterator_t *get_cat_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_mls_level_get_cat_iter(p, self, &iter)) {
@@ -895,21 +968,23 @@ typedef struct qpol_mls_level {} qpol_mls_level_t;
 		return iter;
 	};
 };
+%inline %{
+	qpol_mls_level_t *qpol_mls_level_from_void(void *x) {
+		return (qpol_mls_level_t*)x;
+	};
+%}
 
 /* qpol user */
 typedef struct qpol_user {} qpol_user_t;
 %extend qpol_user_t {
-	qpol_user_t(qpol_policy_t *p, char *name) {
-		qpol_user_t *u;
+	qpol_user_t(qpol_policy_t *p, const char *name) {
+		const qpol_user_t *u;
 		if (qpol_policy_get_user_by_name(p, name, &u)) {
 			SWIG_exception(SWIG_RuntimeError, "User does not exist");
 		}
-		return u;
+		return (qpol_user_t*)u;
 	fail:
 		return NULL;
-	};
-	qpol_user_t(void *x) {
-		return (qpol_user_t*)x;
 	};
 	~qpol_user_t() {
 		/* no op */
@@ -923,7 +998,7 @@ typedef struct qpol_user {} qpol_user_t;
 	fail:
 		return (int) v;
 	};
-	%newobject get_role_iter;
+	%newobject get_role_iter(qpol_policy_t*);
 	qpol_iterator_t *get_role_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_user_get_role_iter(p, self, &iter)) {
@@ -932,8 +1007,8 @@ typedef struct qpol_user {} qpol_user_t;
 	fail:
 		return iter;
 	};
-	qpol_mls_range_t *get_range(qpol_policy_t *p) {
-		qpol_mls_range_t *r;
+	const qpol_mls_range_t *get_range(qpol_policy_t *p) {
+		const qpol_mls_range_t *r;
 		if (qpol_user_get_range(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get user range");
 		}
@@ -941,15 +1016,15 @@ typedef struct qpol_user {} qpol_user_t;
 		return r;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_user_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get user name");
 		}
 	fail:
 		return name;
 	};
-	qpol_mls_level_t *get_dfltlevel(qpol_policy_t *p) {
-		qpol_mls_level_t *l;
+	const qpol_mls_level_t *get_dfltlevel(qpol_policy_t *p) {
+		const qpol_mls_level_t *l;
 		if (qpol_user_get_dfltlevel(p, self, &l)) {
 			SWIG_exception(SWIG_ValueError, "Could not get user default level");
 		}
@@ -957,20 +1032,22 @@ typedef struct qpol_user {} qpol_user_t;
 		return l;
 	};
 };
+%inline %{
+	qpol_user_t *qpol_user_from_void(void *x) {
+		return (qpol_user_t*)x;
+	};
+%}
 
 /* qpol bool */
 typedef struct qpol_bool {} qpol_bool_t;
 %extend qpol_bool_t {
-	qpol_bool_t(qpol_policy_t *p, char *name) {
+	qpol_bool_t(qpol_policy_t *p, const char *name) {
 		qpol_bool_t *b;
 		if (qpol_policy_get_bool_by_name(p, name, &b)) {
 			SWIG_exception(SWIG_RuntimeError, "Boolean does not exist");
 		}
 	fail:
 		return b;
-	};
-	qpol_bool_t(void *x) {
-		return (qpol_bool_t*)x;
 	};
 	~qpol_bool_t() {
 		/* no op */
@@ -1007,7 +1084,7 @@ typedef struct qpol_bool {} qpol_bool_t;
 		return;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_bool_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get boolean name");
 		}
@@ -1015,43 +1092,50 @@ typedef struct qpol_bool {} qpol_bool_t;
 		return name;
 	};
 };
+%inline %{
+	qpol_bool_t *qpol_bool_from_void(void *x) {
+		return (qpol_bool_t*)x;
+	};
+%}
 
 /* qpol context */
 typedef struct qpol_context {} qpol_context_t;
 %extend qpol_context_t {
-	qpol_context_t(void *x) {
-		return (qpol_context_t*)x;
+	qpol_context_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_context_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_context_t() {
 		/* no op */
 		return;
 	};
-	 qpol_user_t *get_user(qpol_policy_t *p) {
-		qpol_user_t *u;
+	 const qpol_user_t *get_user(qpol_policy_t *p) {
+		const qpol_user_t *u;
 		if (qpol_context_get_user(p, self, &u)) {
 			SWIG_exception(SWIG_ValueError, "Could not get user from context");
 		}
 	fail:
 		return u;
 	 };
-	 qpol_role_t *get_role(qpol_policy_t *p) {
-		qpol_role_t *r;
+	 const qpol_role_t *get_role(qpol_policy_t *p) {
+		const qpol_role_t *r;
 		if (qpol_context_get_role(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get role from context");
 		}
 	fail:
 		return r;
 	 };
-	 qpol_type_t *get_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	 const qpol_type_t *get_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_context_get_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get type from context");
 		}
 	fail:
 		return t;
 	 };
-	 qpol_mls_range_t *get_range(qpol_policy_t *p) {
-		qpol_mls_range_t *r;
+	 const qpol_mls_range_t *get_range(qpol_policy_t *p) {
+		const qpol_mls_range_t *r;
 		if (qpol_context_get_range(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get range from context");
 		}
@@ -1059,20 +1143,22 @@ typedef struct qpol_context {} qpol_context_t;
 		return r;
 	 };
 };
+%inline %{
+	qpol_context_t *qpol_context_from_void(void *x) {
+		return (qpol_context_t*)x;
+	};
+%}
 
 /* qpol class */
 typedef struct qpol_class {} qpol_class_t;
 %extend qpol_class_t {
-	qpol_class_t(qpol_policy_t *p, char *name) {
-		qpol_class_t *c;
+	qpol_class_t(qpol_policy_t *p, const char *name) {
+		const qpol_class_t *c;
 		if (qpol_policy_get_class_by_name(p, name, &c)) {
 			SWIG_exception(SWIG_RuntimeError, "Class does not exist");
 		}
 	fail:
-		return c;
-	};
-	qpol_class_t(void *x) {
-		return (qpol_class_t*)x;
+		return (qpol_class_t*)c;
 	};
 	~qpol_class_t() {
 		/* no op */
@@ -1086,15 +1172,15 @@ typedef struct qpol_class {} qpol_class_t;
 	fail:
 		return (int) v;
 	};
-	qpol_common_t *get_common(qpol_policy_t *p) {
-		qpol_common_t *c;
+	const qpol_common_t *get_common(qpol_policy_t *p) {
+		const qpol_common_t *c;
 		if(qpol_class_get_common(p, self, &c)) {
 			SWIG_exception(SWIG_ValueError, "Could not get common for class");
 		}
 	fail:
 		return c;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_class_get_perm_iter(p, self, &iter)) {
@@ -1103,7 +1189,7 @@ typedef struct qpol_class {} qpol_class_t;
 	fail:
 		return iter;
 	};
-	%newobject get_constraint_iter();
+	%newobject get_constraint_iter(qpol_policy_t*);
 	qpol_iterator_t *get_constraint_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_class_get_constraint_iter(p, self, &iter)) {
@@ -1112,7 +1198,7 @@ typedef struct qpol_class {} qpol_class_t;
 	fail:
 		return iter;
 	};
-	%newobject get_validatetrans_iter();
+	%newobject get_validatetrans_iter(qpol_policy_t*);
 	qpol_iterator_t *get_validatetrans_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_class_get_validatetrans_iter(p, self, &iter)) {
@@ -1122,7 +1208,7 @@ typedef struct qpol_class {} qpol_class_t;
 			return iter;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_class_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get class name");
 		}
@@ -1130,20 +1216,22 @@ typedef struct qpol_class {} qpol_class_t;
 		return name;
 	};
 };
+%inline %{
+	qpol_class_t *qpol_class_from_void(void *x) {
+		return (qpol_class_t*)x;
+	};
+%}
 
 /* qpol common */
 typedef struct qpol_common {} qpol_common_t;
 %extend qpol_common_t {
-	qpol_common_t(qpol_policy_t *p, char *name) {
-		qpol_common_t *c;
+	qpol_common_t(qpol_policy_t *p, const char *name) {
+		const qpol_common_t *c;
 		if (qpol_policy_get_common_by_name(p, name, &c)) {
 			SWIG_exception(SWIG_RuntimeError, "Common does not exist");
 		}
 	fail:
-		return c;
-	};
-	qpol_common_t(void *x) {
-		return (qpol_common_t*)x;
+		return (qpol_common_t*)c;
 	};
 	~qpol_common_t() {
 		/* no op */
@@ -1157,7 +1245,7 @@ typedef struct qpol_common {} qpol_common_t;
 	fail:
 		return (int) v;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if(qpol_common_get_perm_iter(p, self, &iter)) {
@@ -1167,7 +1255,7 @@ typedef struct qpol_common {} qpol_common_t;
 		return iter;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_common_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get common name");
 		}
@@ -1175,36 +1263,47 @@ typedef struct qpol_common {} qpol_common_t;
 		return name;
 	};
 };
+%inline %{
+	qpol_common_t *qpol_common_from_void(void *x) {
+		return (qpol_common_t*)x;
+	};
+%}
 
 /* qpol fs_use */
-/* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are 
+/* The defines QPOL_FS_USE_XATTR through QPOL_FS_USE_NONE are
  * copied from sepol/policydb/services.h.
  * QPOL_FS_USE_PSID is an extension to support v12 policies. */
+#ifdef SWIGJAVA /* java does not understand unsigned constants */
 #define QPOL_FS_USE_XATTR 1
 #define QPOL_FS_USE_TRANS 2
 #define QPOL_FS_USE_TASK  3
 #define QPOL_FS_USE_GENFS 4
 #define QPOL_FS_USE_NONE  5
 #define QPOL_FS_USE_PSID  6
+#else
+#define QPOL_FS_USE_XATTR 1U
+#define QPOL_FS_USE_TRANS 2U
+#define QPOL_FS_USE_TASK  3U
+#define QPOL_FS_USE_GENFS 4U
+#define QPOL_FS_USE_NONE  5U
+#define QPOL_FS_USE_PSID  6U
+#endif
 typedef struct qpol_fs_use {} qpol_fs_use_t;
 %extend qpol_fs_use_t {
-	qpol_fs_use_t(qpol_policy_t *p, char *name) {
-		qpol_fs_use_t *f;
+	qpol_fs_use_t(qpol_policy_t *p, const char *name) {
+		const qpol_fs_use_t *f;
 		if (qpol_policy_get_fs_use_by_name(p, name, &f)) {
 			SWIG_exception(SWIG_RuntimeError, "FS Use Statement does not exist");
 		}
 	fail:
-		return f;
-	};
-	qpol_fs_use_t(void *x) {
-		return (qpol_fs_use_t*)x;
+		return (qpol_fs_use_t*)f;
 	};
 	~qpol_fs_use_t() {
 		/* no op */
 		return;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_fs_use_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get file system name");
 		}
@@ -1219,9 +1318,9 @@ typedef struct qpol_fs_use {} qpol_fs_use_t;
 	fail:
 		return (int) behav;
 	};
-	qpol_context_t *get_context(qpol_policy_t *p) {
+	const qpol_context_t *get_context(qpol_policy_t *p) {
 		uint32_t behav;
-		qpol_context_t *ctx = NULL;
+		const qpol_context_t *ctx = NULL;
 		qpol_fs_use_get_behavior(p, self, &behav);
 		if (behav == QPOL_FS_USE_PSID) {
 			SWIG_exception(SWIG_TypeError, "Cannot get context for fs_use_psid statements");
@@ -1232,9 +1331,15 @@ typedef struct qpol_fs_use {} qpol_fs_use_t;
 		return ctx;
 	};
 };
+%inline %{
+	qpol_fs_use_t *qpol_fs_use_from_void(void *x) {
+		return (qpol_fs_use_t*)x;
+	};
+%}
 
 /* qpol genfscon */
 /* values from flask do not change */
+#ifdef SWIGJAVA /* java does not understand unsigned constants */
 #define QPOL_CLASS_ALL        0
 #define QPOL_CLASS_BLK_FILE  11
 #define QPOL_CLASS_CHR_FILE  10
@@ -1243,9 +1348,19 @@ typedef struct qpol_fs_use {} qpol_fs_use_t;
 #define QPOL_CLASS_FILE       6
 #define QPOL_CLASS_LNK_FILE   9
 #define QPOL_CLASS_SOCK_FILE 12
+#else
+#define QPOL_CLASS_ALL        0U
+#define QPOL_CLASS_BLK_FILE  11U
+#define QPOL_CLASS_CHR_FILE  10U
+#define QPOL_CLASS_DIR        7U
+#define QPOL_CLASS_FIFO_FILE 13U
+#define QPOL_CLASS_FILE       6U
+#define QPOL_CLASS_LNK_FILE   9U
+#define QPOL_CLASS_SOCK_FILE 12U
+#endif
 typedef struct qpol_genfscon {} qpol_genfscon_t;
 %extend qpol_genfscon_t {
-	qpol_genfscon_t(qpol_policy_t *p, char *name, char *path) {
+	qpol_genfscon_t(qpol_policy_t *p, const char *name, const char *path) {
 		qpol_genfscon_t *g;
 		if (qpol_policy_get_genfscon_by_name(p, name, path, &g)) {
 			SWIG_exception(SWIG_RuntimeError, "Genfscon statement does not exist");
@@ -1253,14 +1368,11 @@ typedef struct qpol_genfscon {} qpol_genfscon_t;
 	fail:
 		return g;
 	};
-	qpol_genfscon_t(void *x) {
-		return (qpol_genfscon_t*)x;
-	};
 	~qpol_genfscon_t() {
 		free(self);
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_genfscon_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get file system name");
 		}
@@ -1268,7 +1380,7 @@ typedef struct qpol_genfscon {} qpol_genfscon_t;
 		return name;
 	};
 	const char *get_path(qpol_policy_t *p) {
-		char *path;
+		const char *path;
 		if (qpol_genfscon_get_path(p, self, &path)) {
 			SWIG_exception(SWIG_ValueError, "Could not get file system path");
 		}
@@ -1283,8 +1395,8 @@ typedef struct qpol_genfscon {} qpol_genfscon_t;
 	fail:
 		return (int) cls;
 	};
-	qpol_context_t *get_context(qpol_policy_t *p) {
-		qpol_context_t *ctx;
+	const qpol_context_t *get_context(qpol_policy_t *p) {
+		const qpol_context_t *ctx;
 		if (qpol_genfscon_get_context(p, self, &ctx)) {
 			SWIG_exception(SWIG_ValueError, "Could not get context for genfscon statement");
 		}
@@ -1292,35 +1404,37 @@ typedef struct qpol_genfscon {} qpol_genfscon_t;
 		return ctx;
 	};
 };
+%inline %{
+	qpol_genfscon_t *qpol_genfscon_from_void(void *x) {
+		return (qpol_genfscon_t*)x;
+	};
+%}
 
 /* qpol isid */
 typedef struct qpol_isid {} qpol_isid_t;
 %extend qpol_isid_t {
-	qpol_isid_t(qpol_policy_t *p, char *name) {
-		qpol_isid_t *i;
+	qpol_isid_t(qpol_policy_t *p, const char *name) {
+		const qpol_isid_t *i;
 		if (qpol_policy_get_isid_by_name(p, name, &i)) {
 			SWIG_exception(SWIG_RuntimeError, "Isid does not exist");
 		}
 	fail:
-		return i;
-	};
-	qpol_isid_t(void *x) {
-		return (qpol_isid_t*)x;
+		return (qpol_isid_t*)i;
 	};
 	~qpol_isid_t() {
 		/* no op */
 		return;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_isid_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get name for initial sid");
 		}
 	fail:
 		return name;
 	};
-	qpol_context_t *get_context(qpol_policy_t *p) {
-		qpol_context_t *ctx;
+	const qpol_context_t *get_context(qpol_policy_t *p) {
+		const qpol_context_t *ctx;
 		if (qpol_isid_get_context(p, self, &ctx)) {
 			SWIG_exception(SWIG_ValueError, "Could not get context for initial sid");
 		}
@@ -1328,43 +1442,45 @@ typedef struct qpol_isid {} qpol_isid_t;
 		return ctx;
 	};
 };
+%inline %{
+	qpol_isid_t *qpol_isid_from_void(void *x) {
+		return (qpol_isid_t*)x;
+	};
+%}
 
 /* qpol netifcon */
 typedef struct qpol_netifcon {} qpol_netifcon_t;
 %extend qpol_netifcon_t {
-	qpol_netifcon_t(qpol_policy_t *p, char *name) {
-		qpol_netifcon_t *n;
+	qpol_netifcon_t(qpol_policy_t *p, const char *name) {
+		const qpol_netifcon_t *n;
 		if (qpol_policy_get_netifcon_by_name(p, name, &n)) {
 			SWIG_exception(SWIG_RuntimeError, "Netifcon statement does not exist");
 		}
 	fail:
-		return n;
-	};
-	qpol_netifcon_t(void *x) {
-		return (qpol_netifcon_t*)x;
+		return (qpol_netifcon_t*)n;
 	};
 	~qpol_netifcon_t() {
 		/* no op */
 		return;
 	};
 	const char *get_name(qpol_policy_t *p) {
-		char *name;
+		const char *name;
 		if (qpol_netifcon_get_name(p, self, &name)) {
 			SWIG_exception(SWIG_ValueError, "Could not get name for netifcon statement");
 		}
 	fail:
 		return name;
 	};
-	qpol_context_t *get_msg_con(qpol_policy_t *p) {
-		qpol_context_t *ctx;
+	const qpol_context_t *get_msg_con(qpol_policy_t *p) {
+		const qpol_context_t *ctx;
 		if (qpol_netifcon_get_msg_con(p, self, &ctx)) {
 			SWIG_exception(SWIG_ValueError, "Could not get message context for netifcon statement");
 		}
 	fail:
 		return ctx;
 	};
-	qpol_context_t *get_if_con(qpol_policy_t *p) {
-		qpol_context_t *ctx;
+	const qpol_context_t *get_if_con(qpol_policy_t *p) {
+		const qpol_context_t *ctx;
 		if (qpol_netifcon_get_if_con(p, self, &ctx)) {
 			SWIG_exception(SWIG_ValueError, "Could not get interface context for netifcon statement");
 		}
@@ -1372,6 +1488,11 @@ typedef struct qpol_netifcon {} qpol_netifcon_t;
 		return ctx;
 	};
 };
+%inline %{
+	qpol_netifcon_t *qpol_netifcon_from_void(void *x) {
+		return (qpol_netifcon_t*)x;
+	};
+%}
 
 /* qpol nodecon */
 #define QPOL_IPV4 0
@@ -1391,29 +1512,26 @@ typedef struct qpol_nodecon {} qpol_nodecon_t;
 	fail:
 		return n;
 	}
-	qpol_nodecon_t(void *x) {
-		return (qpol_nodecon_t*)x;
-	};
 	~qpol_nodecon_t() {
 		free(self);
 	};
-	int *get_addr(qpol_policy_t *p) {
+	uint32_t *get_addr(qpol_policy_t *p) {
 		uint32_t *a;
 		unsigned char proto; /* currently dropped; stores the protocol - call get_protocol() */
 		if (qpol_nodecon_get_addr(p, self, &a, &proto)) {
 			SWIG_exception(SWIG_ValueError, "Could not get address of nodecon statement");
 		}
 	fail:
-		return (int*)a;
+		return a;
 	};
-	int *get_mask(qpol_policy_t *p) {
+	uint32_t *get_mask(qpol_policy_t *p) {
 		uint32_t *m;
 		unsigned char proto; /* currently dropped; stores the protocol - call get_protocol() */
 		if (qpol_nodecon_get_mask(p, self, &m, &proto)) {
 			SWIG_exception(SWIG_ValueError, "Could not get mask of nodecon statement");
 		}
 	fail:
-			return (int*)m;
+			return m;
 	};
 	int get_protocol(qpol_policy_t *p) {
 		unsigned char proto;
@@ -1423,8 +1541,8 @@ typedef struct qpol_nodecon {} qpol_nodecon_t;
 	fail:
 		return proto;
 	};
-	qpol_context_t *get_context(qpol_policy_t *p) {
-		qpol_context_t *ctx;
+	const qpol_context_t *get_context(qpol_policy_t *p) {
+		const qpol_context_t *ctx;
 		if (qpol_nodecon_get_context(p, self, &ctx)) {
 			SWIG_exception(SWIG_ValueError, "Could not get context for nodecon statement");
 		}
@@ -1432,6 +1550,11 @@ typedef struct qpol_nodecon {} qpol_nodecon_t;
 		return ctx;
 	};
 };
+%inline %{
+	qpol_nodecon_t *qpol_nodecon_from_void(void *x) {
+		return (qpol_nodecon_t*)x;
+	};
+%}
 
 /* qpol portcon */
 /* from netinet/in.h */
@@ -1439,16 +1562,13 @@ typedef struct qpol_nodecon {} qpol_nodecon_t;
 #define IPPROTO_UDP 17
 typedef struct qpol_portcon {} qpol_portcon_t;
 %extend qpol_portcon_t {
-	qpol_portcon_t(void *x) {
-		return (qpol_portcon_t*)x;
-	};
 	qpol_portcon_t(qpol_policy_t *p, uint16_t low, uint16_t high, uint8_t protocol) {
-		qpol_portcon_t *qp;
+		const qpol_portcon_t *qp;
 		if (qpol_policy_get_portcon_by_port(p, low, high, protocol, &qp)) {
 			SWIG_exception(SWIG_RuntimeError, "Portcon statement does not exist");
 		}
 	fail:
-		return qp;
+		return (qpol_portcon_t*)qp;
 	};
 	~qpol_portcon_t() {
 		/* no op */
@@ -1478,8 +1598,8 @@ typedef struct qpol_portcon {} qpol_portcon_t;
 	fail:
 		return proto;
 	};
-	qpol_context_t *get_context(qpol_policy_t *p) {
-		qpol_context_t *ctx;
+	const qpol_context_t *get_context(qpol_policy_t *p) {
+		const qpol_context_t *ctx;
 		if (qpol_portcon_get_context(p, self, &ctx)) {
 			SWIG_exception(SWIG_ValueError, "Could not get context for portcon statement");
 		}
@@ -1487,25 +1607,32 @@ typedef struct qpol_portcon {} qpol_portcon_t;
 		return ctx;
 	};
 }
+%inline %{
+	qpol_portcon_t *qpol_portcon_from_void(void *x) {
+		return (qpol_portcon_t*)x;
+	};
+%}
 
 /* qpol constraint */
 typedef struct qpol_constraint {} qpol_constraint_t;
 %extend qpol_constraint_t {
-	qpol_constraint_t(void *x) {
-		return (qpol_constraint_t*)x;
+	qpol_constraint_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_constraint_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_constraint_t() {
 		free(self);
 	};
-	qpol_class_t *get_class(qpol_policy_t *p) {
-		qpol_class_t *cls;
+	const qpol_class_t *get_class(qpol_policy_t *p) {
+		const qpol_class_t *cls;
 		if (qpol_constraint_get_class(p, self, &cls)) {
 			SWIG_exception(SWIG_ValueError, "Could not get class for constraint");
 		}
 	fail:
 		return cls;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_constraint_get_perm_iter(p, self, &iter)) {
@@ -1514,7 +1641,7 @@ typedef struct qpol_constraint {} qpol_constraint_t;
 	fail:
 		return iter;
 	};
-	%newobject get_expr_iter;
+	%newobject get_expr_iter(qpol_policy_t*);
 	qpol_iterator_t *get_expr_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_constraint_get_expr_iter(p, self, &iter)) {
@@ -1524,25 +1651,32 @@ typedef struct qpol_constraint {} qpol_constraint_t;
 			return iter;
 	};
 };
+%inline %{
+	qpol_constraint_t *qpol_constraint_from_void(void *x) {
+		return (qpol_constraint_t*)x;
+	};
+%}
 
 /* qpol validatetrans */
 typedef struct qpol_validatetrans {} qpol_validatetrans_t;
 %extend qpol_validatetrans_t {
-	qpol_validatetrans_t(void *x) {
-		return (qpol_validatetrans_t*)x;
+	qpol_validatetrans_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_validatetrans_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_validatetrans_t() {
 		free(self);
 	};
-	qpol_class_t *get_class(qpol_policy_t *p) {
-		qpol_class_t *cls;
+	const qpol_class_t *get_class(qpol_policy_t *p) {
+		const qpol_class_t *cls;
 		if (qpol_validatetrans_get_class(p, self, &cls)) {
-			SWIG_exception(SWIG_ValueError, "Could not get class for constraint");
+			SWIG_exception(SWIG_ValueError, "Could not get class for validatetrans");
 		}
 	fail:
 		return cls;
 	};
-	%newobject get_expr_iter();
+	%newobject get_expr_iter(qpol_policy_t*);
 	qpol_iterator_t *get_expr_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_validatetrans_get_expr_iter(p, self, &iter)) {
@@ -1552,6 +1686,11 @@ typedef struct qpol_validatetrans {} qpol_validatetrans_t;
 			return iter;
 	};
 };
+%inline %{
+	qpol_validatetrans_t *qpol_validatetrans_from_void(void *x) {
+		return (qpol_validatetrans_t*)x;
+	};
+%}
 
 /* qpol constraint expression node */
 /* expr_type values */
@@ -1580,8 +1719,10 @@ typedef struct qpol_validatetrans {} qpol_validatetrans_t;
 #define QPOL_CEXPR_OP_INCOMP 5
 typedef struct qpol_constraint_expr_node {} qpol_constraint_expr_node_t;
 %extend qpol_constraint_expr_node_t {
-	qpol_constraint_expr_node_t(void *x) {
-		return (qpol_constraint_expr_node_t*)x;
+	qpol_constraint_expr_node_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_constraint_expr_node_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_constraint_expr_node_t() {
 		/* no op */
@@ -1611,7 +1752,7 @@ typedef struct qpol_constraint_expr_node {} qpol_constraint_expr_node_t;
 	fail:
 		return (int) op;
 	};
-	%newobject get_names_iter;
+	%newobject get_names_iter(qpol_policy_t*);
 	qpol_iterator_t *get_names_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_constraint_expr_node_get_names_iter(p, self, &iter)) {
@@ -1621,27 +1762,34 @@ typedef struct qpol_constraint_expr_node {} qpol_constraint_expr_node_t;
 		return iter;
 	};
 };
+%inline %{
+	qpol_constraint_expr_node_t *qpol_constraint_expr_node_from_void(void *x) {
+		return (qpol_constraint_expr_node_t*)x;
+	};
+%}
 
 /* qpol role allow */
 typedef struct qpol_role_allow {} qpol_role_allow_t;
 %extend qpol_role_allow_t {
-	qpol_role_allow_t(void *x) {
-		return (qpol_role_allow_t*)x;
+	qpol_role_allow_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_role_allow_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_role_allow_t() {
 		/* no op */
 		return;
 	};
-	qpol_role_t *get_source_role(qpol_policy_t *p) {
-		qpol_role_t *r;
+	const qpol_role_t *get_source_role(qpol_policy_t *p) {
+		const qpol_role_t *r;
 		if (qpol_role_allow_get_source_role(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get source for role allow rule");
 		}
 	fail:
 		return r;
 	};
-	qpol_role_t *get_target_role(qpol_policy_t *p) {
-		qpol_role_t *r;
+	const qpol_role_t *get_target_role(qpol_policy_t *p) {
+		const qpol_role_t *r;
 		if (qpol_role_allow_get_target_role(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get target for role allow rule");
 		}
@@ -1649,35 +1797,42 @@ typedef struct qpol_role_allow {} qpol_role_allow_t;
 		return r;
 	};
 };
+%inline %{
+	qpol_role_allow_t *qpol_role_allow_from_void(void *x) {
+		return (qpol_role_allow_t*)x;
+	};
+%}
 
 /* qpol role trans */
 typedef struct qpol_role_trans {} qpol_role_trans_t;
 %extend qpol_role_trans_t {
-	qpol_role_trans_t(void *x) {
-		return (qpol_role_trans_t*)x;
+	qpol_role_trans_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_role_trans_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_role_trans_t() {
 		/* no op */
 		return;
 	};
-	qpol_role_t *get_source_role(qpol_policy_t *p) {
-		qpol_role_t *r;
+	const qpol_role_t *get_source_role(qpol_policy_t *p) {
+		const qpol_role_t *r;
 		if (qpol_role_trans_get_source_role(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get source for role_transition rule");
 		}
 	fail:
 		return r;
 	};
-	qpol_type_t *get_target_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_target_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_role_trans_get_target_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get target for role_transition rule");
 		}
 	fail:
 		return t;
 	};
-	qpol_role_t *get_default_role(qpol_policy_t *p) {
-		qpol_role_t *r;
+	const qpol_role_t *get_default_role(qpol_policy_t *p) {
+		const qpol_role_t *r;
 		if (qpol_role_trans_get_default_role(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get default for role_transition rule");
 		}
@@ -1685,41 +1840,48 @@ typedef struct qpol_role_trans {} qpol_role_trans_t;
 		return r;
 	};
 };
+%inline %{
+	qpol_role_trans_t *qpol_role_trans_from_void(void *x) {
+		return (qpol_role_trans_t*)x;
+	};
+%}
 
 /* qpol range trans */
 typedef struct qpol_range_trans {} qpol_range_trans_t;
 %extend qpol_range_trans_t {
-	qpol_range_trans_t(void *x) {
-		return (qpol_range_trans_t*)x;
+	qpol_range_trans_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_range_trans_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_range_trans_t() {
 		/* no op */
 		return;
 	};
-	qpol_type_t *get_source_type (qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_source_type (qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_range_trans_get_source_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get source for range_transition rule");
 		}
 	fail:
 		return t;
 	};
-	qpol_type_t *get_target_type (qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_target_type (qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_range_trans_get_target_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get target for range_transition rule");		}
 	fail:
 		return t;
 	};
-	qpol_class_t *get_target_class(qpol_policy_t *p) {
-		qpol_class_t *cls;
+	const qpol_class_t *get_target_class(qpol_policy_t *p) {
+		const qpol_class_t *cls;
 		if (qpol_range_trans_get_target_class(p, self, &cls)) {
 			SWIG_exception(SWIG_ValueError, "Could not get class for range_transition rule");		}
 	fail:
 		return cls;
 	};
-	qpol_mls_range_t *get_range(qpol_policy_t *p) {
-		qpol_mls_range_t *r;
+	const qpol_mls_range_t *get_range(qpol_policy_t *p) {
+		const qpol_mls_range_t *r;
 		if (qpol_range_trans_get_range(p, self, &r)) {
 			SWIG_exception(SWIG_ValueError, "Could not get range for range_transition rule");
 		}
@@ -1727,6 +1889,11 @@ typedef struct qpol_range_trans {} qpol_range_trans_t;
 		return r;
 	};
 };
+%inline %{
+	qpol_range_trans_t *qpol_range_trans_from_void(void *x) {
+		return (qpol_range_trans_t*)x;
+	};
+%}
 
 /* qpol av rule */
 #define QPOL_RULE_ALLOW         1
@@ -1735,8 +1902,10 @@ typedef struct qpol_range_trans {} qpol_range_trans_t;
 #define QPOL_RULE_DONTAUDIT     4
 typedef struct qpol_avrule {} qpol_avrule_t;
 %extend qpol_avrule_t {
-	qpol_avrule_t(void *x) {
-		return (qpol_avrule_t*)x;
+	qpol_avrule_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_avrule_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_avrule_t() {
 		/* no op */
@@ -1750,24 +1919,24 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 	fail:
 		return (int) rt;
 	};
-	qpol_type_t *get_source_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_source_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_avrule_get_source_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get source for av rule");
 		}
 	fail:
 		return t;
 	};
-	qpol_type_t *get_target_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_target_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_avrule_get_target_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get target for av rule");
 		}
 	fail:
 		return t;
 	};
-	qpol_class_t *get_object_class(qpol_policy_t *p) {
-		qpol_class_t *cls;
+	const qpol_class_t *get_object_class(qpol_policy_t *p) {
+		const qpol_class_t *cls;
 		if (qpol_avrule_get_object_class(p, self, &cls)) {
 			SWIG_exception(SWIG_ValueError, "Could not get class for av rule");
 		}
@@ -1783,8 +1952,8 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 	fail:
 		return iter;
 	};
-	qpol_cond_t *get_cond(qpol_policy_t *p) {
-		qpol_cond_t *c;
+	const qpol_cond_t *get_cond(qpol_policy_t *p) {
+		const qpol_cond_t *c;
 		if (qpol_avrule_get_cond(p, self, &c)) {
 			SWIG_exception(SWIG_ValueError, "Could not get conditional for av rule");
 		}
@@ -1800,7 +1969,7 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 		return (int) e;
 	};
 	int get_which_list(qpol_policy_t *p) {
-		qpol_cond_t *c;
+		const qpol_cond_t *c;
 		uint32_t which = 0;
 		qpol_avrule_get_cond(p, self, &c);
 		if (c == NULL) {
@@ -1811,7 +1980,7 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 	fail:
 		return (int) which;
 	};
-	%newobject get_syn_avrule_iter();
+	%newobject get_syn_avrule_iter(qpol_policy_t*);
 	qpol_iterator_t *get_syn_avrule_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_avrule_get_syn_avrule_iter(p, self, &iter)) {
@@ -1821,6 +1990,11 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 		return iter;
 	};
 };
+%inline %{
+	qpol_avrule_t *qpol_avrule_from_void(void *x) {
+		return (qpol_avrule_t*)x;
+	};
+%}
 
 /* qpol te rule */
 #define QPOL_RULE_TYPE_TRANS   16
@@ -1828,8 +2002,10 @@ typedef struct qpol_avrule {} qpol_avrule_t;
 #define QPOL_RULE_TYPE_MEMBER  32
 typedef struct qpol_terule {} qpol_terule_t;
 %extend qpol_terule_t {
-	qpol_terule_t(void *x) {
-		return (qpol_terule_t*)x;
+	qpol_terule_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_terule_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_terule_t() {
 		/* no op */
@@ -1843,40 +2019,40 @@ typedef struct qpol_terule {} qpol_terule_t;
 	fail:
 		return (int) rt;
 	};
-	qpol_type_t *get_source_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_source_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_terule_get_source_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get source for te rule");
 		}
 	fail:
 		return t;
 	};
-	qpol_type_t *get_target_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_target_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_terule_get_target_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get target for te rule");
 		}
 	fail:
 		return t;
 	};
-	qpol_class_t *get_object_class(qpol_policy_t *p) {
-		qpol_class_t *cls;
+	const qpol_class_t *get_object_class(qpol_policy_t *p) {
+		const qpol_class_t *cls;
 		if (qpol_terule_get_object_class(p, self, &cls)) {
 			SWIG_exception(SWIG_ValueError, "Could not get class for te rule");
 		}
 	fail:
 		return cls;
 	};
-	qpol_type_t *get_default_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_default_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_terule_get_default_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get default for te rule");
 		}
 	fail:
 		return t;
 	};
-	qpol_cond_t *get_cond(qpol_policy_t *p) {
-		qpol_cond_t *c;
+	const qpol_cond_t *get_cond(qpol_policy_t *p) {
+		const qpol_cond_t *c;
 		if (qpol_terule_get_cond(p, self, &c)) {
 			SWIG_exception(SWIG_ValueError, "Could not get conditional for te rule");
 		}
@@ -1892,7 +2068,7 @@ typedef struct qpol_terule {} qpol_terule_t;
 		return (int) e;
 	};
 	int get_which_list(qpol_policy_t *p) {
-		qpol_cond_t *c;
+		const qpol_cond_t *c;
 		uint32_t which = 0;
 		qpol_terule_get_cond(p, self, &c);
 		if (c == NULL) {
@@ -1903,7 +2079,7 @@ typedef struct qpol_terule {} qpol_terule_t;
 	fail:
 		return (int) which;
 	};
-	%newobject get_syn_terule_iter();
+	%newobject get_syn_terule_iter(qpol_policy_t*);
 	qpol_iterator_t *get_syn_terule_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_terule_get_syn_terule_iter(p, self, &iter)) {
@@ -1913,18 +2089,25 @@ typedef struct qpol_terule {} qpol_terule_t;
 		return iter;
 	};
 };
+%inline %{
+	qpol_terule_t *qpol_terule_from_void(void *x) {
+		return (qpol_terule_t*)x;
+	};
+%}
 
 /* qpol conditional */
 typedef struct qpol_cond {} qpol_cond_t;
 %extend qpol_cond_t {
-	qpol_cond_t(void *x) {
-		return (qpol_cond_t*)x;
+	qpol_cond_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_cond_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_cond_t() {
 		/* no op */
 		return;
 	};
-	%newobject get_expr_node_iter();
+	%newobject get_expr_node_iter(qpol_policy_t*);
 	qpol_iterator_t *get_expr_node_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_expr_node_iter(p, self, &iter)) {
@@ -1933,7 +2116,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_av_true_iter();
+	%newobject get_av_true_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_av_true_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_av_true_iter(p, self, rule_types, &iter)) {
@@ -1942,7 +2125,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_av_false_iter();
+	%newobject get_av_false_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_av_false_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_av_false_iter(p, self, rule_types, &iter)) {
@@ -1951,7 +2134,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_te_true_iter();
+	%newobject get_te_true_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_te_true_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_te_true_iter(p, self, rule_types, &iter)) {
@@ -1960,7 +2143,7 @@ typedef struct qpol_cond {} qpol_cond_t;
 	fail:
 		return iter;
 	};
-	%newobject get_te_false_iter();
+	%newobject get_te_false_iter(qpol_policy_t*, int);
 	qpol_iterator_t *get_te_false_iter(qpol_policy_t *p, int rule_types) {
 		qpol_iterator_t *iter;
 		if (qpol_cond_get_te_false_iter(p, self, rule_types, &iter)) {
@@ -1978,6 +2161,11 @@ typedef struct qpol_cond {} qpol_cond_t;
 		return (int) e;
 	};
 };
+%inline %{
+	qpol_cond_t *qpol_cond_from_void(void *x) {
+		return (qpol_cond_t*)x;
+	};
+%}
 
 /* qpol conditional expression node */
 #define QPOL_COND_EXPR_BOOL 1      /* plain bool */
@@ -1989,8 +2177,10 @@ typedef struct qpol_cond {} qpol_cond_t;
 #define QPOL_COND_EXPR_NEQ  7      /* bool != bool */
 typedef struct qpol_cond_expr_node {} qpol_cond_expr_node_t;
 %extend qpol_cond_expr_node_t {
-	qpol_cond_expr_node_t(void *x) {
-		return (qpol_cond_expr_node_t*)x;
+	qpol_cond_expr_node_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_cond_expr_node_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_cond_expr_node_t() {
 		/* no op */
@@ -2017,18 +2207,25 @@ typedef struct qpol_cond_expr_node {} qpol_cond_expr_node_t;
 		return b;
 	};
 };
+%inline %{
+	qpol_cond_expr_node_t *qpol_cond_expr_node_from_void(void *x) {
+		return (qpol_cond_expr_node_t*)x;
+	};
+%}
 
 /* qpol type set */
 typedef struct qpol_type_set {} qpol_type_set_t;
 %extend qpol_type_set_t {
-	qpol_type_set_t(void *x) {
-		return (qpol_type_set_t*)x;
+	qpol_type_set_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_type_set_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_type_set_t() {
 		/* no op */
 		return;
 	};
-	%newobject get_included_types_iter();
+	%newobject get_included_types_iter(qpol_policy_t*);
 	qpol_iterator_t *get_included_types_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_type_set_get_included_types_iter(p, self, &iter)) {
@@ -2037,7 +2234,7 @@ typedef struct qpol_type_set {} qpol_type_set_t;
 	fail:
 		return iter;
 	};
-	%newobject get_subtracted_types_iter();
+	%newobject get_subtracted_types_iter(qpol_policy_t*);
 	qpol_iterator_t *get_subtracted_types_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_type_set_get_subtracted_types_iter(p, self, &iter)) {
@@ -2063,12 +2260,19 @@ typedef struct qpol_type_set {} qpol_type_set_t;
 		return (int) c;
 	};
 };
+%inline %{
+	qpol_type_set_t *qpol_type_set_from_void(void *x) {
+		return (qpol_type_set_t*)x;
+	};
+%}
 
 /* qpol syn av rule */
 typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 %extend qpol_syn_avrule_t {
-	qpol_syn_avrule_t(void *x) {
-		return (qpol_syn_avrule_t*)x;
+	qpol_syn_avrule_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_syn_avrule_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_syn_avrule_t() {
 		/* no op */
@@ -2082,16 +2286,16 @@ typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 	fail:
 		return (int) rt;
 	};
-	qpol_type_set_t *get_source_type_set(qpol_policy_t *p) {
-		qpol_type_set_t *ts;
+	const qpol_type_set_t *get_source_type_set(qpol_policy_t *p) {
+		const qpol_type_set_t *ts;
 		if (qpol_syn_avrule_get_source_type_set(p, self, &ts)) {
 			SWIG_exception(SWIG_ValueError, "Could not get source type set for syn av rule");
 		}
 	fail:
 		return ts;
 	};
-	qpol_type_set_t *get_target_type_set(qpol_policy_t *p) {
-		qpol_type_set_t *ts;
+	const qpol_type_set_t *get_target_type_set(qpol_policy_t *p) {
+		const qpol_type_set_t *ts;
 		if (qpol_syn_avrule_get_target_type_set(p, self, &ts)) {
 			SWIG_exception(SWIG_ValueError, "Could not get target type set for syn av rule");
 		}
@@ -2106,7 +2310,7 @@ typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 	fail:
 		return (int) i;
 	};
-	%newobject get_class_iter();
+	%newobject get_class_iter(qpol_policy_t*);
 	qpol_iterator_t *get_class_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_syn_avrule_get_class_iter(p, self, &iter)) {
@@ -2115,7 +2319,7 @@ typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 	fail:
 		return iter;
 	};
-	%newobject get_perm_iter();
+	%newobject get_perm_iter(qpol_policy_t*);
 	qpol_iterator_t *get_perm_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_syn_avrule_get_perm_iter(p, self, &iter)) {
@@ -2132,8 +2336,8 @@ typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 	fail:
 		return (long)l;
 	};
-	qpol_cond_t *get_cond(qpol_policy_t *p) {
-		qpol_cond_t *c;
+	const qpol_cond_t *get_cond(qpol_policy_t *p) {
+		const qpol_cond_t *c;
 		if (qpol_syn_avrule_get_cond(p, self, &c)) {
 			SWIG_exception(SWIG_ValueError, "Could not get conditional for syn av rule");
 		}
@@ -2149,12 +2353,19 @@ typedef struct qpol_syn_avrule {} qpol_syn_avrule_t;
 		return e;
 	};
 };
+%inline %{
+	qpol_syn_avrule_t *qpol_syn_avrule_from_void(void *x) {
+		return (qpol_syn_avrule_t*)x;
+	};
+%}
 
 /* qpol syn te rule */
 typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 %extend qpol_syn_terule_t {
-	qpol_syn_terule_t(void *x) {
-		return (qpol_syn_terule_t*)x;
+	qpol_syn_terule_t() {
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_syn_terule_t objects");
+	fail:
+		return NULL;
 	};
 	~qpol_syn_terule_t() {
 		/* no op */
@@ -2168,23 +2379,23 @@ typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 	fail:
 		return rt;
 	};
-	qpol_type_set_t *get_source_type_set(qpol_policy_t *p) {
-		qpol_type_set_t *ts;
+	const qpol_type_set_t *get_source_type_set(qpol_policy_t *p) {
+		const qpol_type_set_t *ts;
 		if (qpol_syn_terule_get_source_type_set(p, self, &ts)) {
 			SWIG_exception(SWIG_ValueError, "Could not get source type set for syn te rule");
 		}
 	fail:
 		return ts;
 	};
-	qpol_type_set_t *get_target_type_set(qpol_policy_t *p) {
-		qpol_type_set_t *ts;
+	const qpol_type_set_t *get_target_type_set(qpol_policy_t *p) {
+		const qpol_type_set_t *ts;
 		if (qpol_syn_terule_get_target_type_set(p, self, &ts)) {
 			SWIG_exception(SWIG_ValueError, "Could not get target type set for syn te rule");
 		}
 	fail:
 		return ts;
 	};
-	%newobject get_class_iter();
+	%newobject get_class_iter(qpol_policy_t*);
 	qpol_iterator_t *get_class_iter(qpol_policy_t *p) {
 		qpol_iterator_t *iter;
 		if (qpol_syn_terule_get_class_iter(p, self, &iter)) {
@@ -2193,8 +2404,8 @@ typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 	fail:
 			return iter;
 	};
-	qpol_type_t *get_default_type(qpol_policy_t *p) {
-		qpol_type_t *t;
+	const qpol_type_t *get_default_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
 		if (qpol_syn_terule_get_default_type(p, self, &t)) {
 			SWIG_exception(SWIG_ValueError, "Could not get default type for syn te rule");
 		}
@@ -2209,8 +2420,8 @@ typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 	fail:
 		return (long)l;
 	};
-	qpol_cond_t *get_cond(qpol_policy_t *p) {
-		qpol_cond_t *c;
+	const qpol_cond_t *get_cond(qpol_policy_t *p) {
+		const qpol_cond_t *c;
 		if (qpol_syn_terule_get_cond(p, self, &c)) {
 			SWIG_exception(SWIG_ValueError, "Could not get conditional for syn te rule");
 		}
@@ -2226,3 +2437,8 @@ typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 		return (int) e;
 	};
 };
+%inline %{
+	qpol_syn_terule_t *qpol_syn_terule_from_void(void *x) {
+		return (qpol_syn_terule_t*)x;
+	};
+%}

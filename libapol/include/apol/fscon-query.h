@@ -55,7 +55,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_genfscon_get_by_query(apol_policy_t * p, apol_genfscon_query_t * g, apol_vector_t ** v);
+	extern int apol_genfscon_get_by_query(const apol_policy_t * p, const apol_genfscon_query_t * g, apol_vector_t ** v);
 
 /**
  * Allocate and return a new genfscon query structure.	All fields are
@@ -88,7 +88,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_genfscon_query_set_filesystem(apol_policy_t * p, apol_genfscon_query_t * g, const char *fs);
+	extern int apol_genfscon_query_set_filesystem(const apol_policy_t * p, apol_genfscon_query_t * g, const char *fs);
 
 /**
  * Set a genfscon query to return only genfscons that act upon this
@@ -102,7 +102,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_genfscon_query_set_path(apol_policy_t * p, apol_genfscon_query_t * g, const char *path);
+	extern int apol_genfscon_query_set_path(const apol_policy_t * p, apol_genfscon_query_t * g, const char *path);
 
 /**
  * Set a genfscon query to return only genfscons that act upon this
@@ -116,7 +116,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_genfscon_query_set_objclass(apol_policy_t * p, apol_genfscon_query_t * g, int objclass);
+	extern int apol_genfscon_query_set_objclass(const apol_policy_t * p, apol_genfscon_query_t * g, int objclass);
 
 /**
  * Set a genfscon query to return only genfscons matching a context.
@@ -133,7 +133,7 @@ extern "C"
  *
  * @return Always returns 0.
  */
-	extern int apol_genfscon_query_set_context(apol_policy_t * p,
+	extern int apol_genfscon_query_set_context(const apol_policy_t * p,
 						   apol_genfscon_query_t * g, apol_context_t * context, unsigned int range_match);
 
 /**
@@ -145,7 +145,7 @@ extern "C"
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-	extern char *apol_genfscon_render(apol_policy_t * p, qpol_genfscon_t * genfscon);
+	extern char *apol_genfscon_render(const apol_policy_t * p, const qpol_genfscon_t * genfscon);
 
 /******************** fs_use queries ********************/
 
@@ -163,7 +163,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_fs_use_get_by_query(apol_policy_t * p, apol_fs_use_query_t * f, apol_vector_t ** v);
+	extern int apol_fs_use_get_by_query(const apol_policy_t * p, const apol_fs_use_query_t * f, apol_vector_t ** v);
 
 /**
  * Allocate and return a new fs_use query structure. All fields are
@@ -195,7 +195,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_fs_use_query_set_filesystem(apol_policy_t * p, apol_fs_use_query_t * f, const char *fs);
+	extern int apol_fs_use_query_set_filesystem(const apol_policy_t * p, apol_fs_use_query_t * f, const char *fs);
 
 /**
  * Set a fs_use query to return only fs_use statements with this
@@ -209,7 +209,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_fs_use_query_set_behavior(apol_policy_t * p, apol_fs_use_query_t * f, int behavior);
+	extern int apol_fs_use_query_set_behavior(const apol_policy_t * p, apol_fs_use_query_t * f, int behavior);
 
 /**
  * Set a fs_use query to return only fs_use statements matching a
@@ -228,7 +228,7 @@ extern "C"
  *
  * @return Always returns 0.
  */
-	extern int apol_fs_use_query_set_context(apol_policy_t * p,
+	extern int apol_fs_use_query_set_context(const apol_policy_t * p,
 						 apol_fs_use_query_t * f, apol_context_t * context, unsigned int range_match);
 
 /**
@@ -240,7 +240,7 @@ extern "C"
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-	extern char *apol_fs_use_render(apol_policy_t * p, qpol_fs_use_t * fsuse);
+	extern char *apol_fs_use_render(const apol_policy_t * p, const qpol_fs_use_t * fsuse);
 
 #ifdef	__cplusplus
 }

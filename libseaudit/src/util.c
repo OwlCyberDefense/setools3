@@ -24,6 +24,7 @@
  */
 
 #include <config.h>
+#include <seaudit/util.h>
 
 const char *libseaudit_get_version(void)
 {

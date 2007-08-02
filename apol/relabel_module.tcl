@@ -1,6 +1,3 @@
-#############################################################
-#  relabel_module.tcl
-# -----------------------------------------------------------
 #  Copyright (C) 2003-2007 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,13 +12,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-#
-#  Requires tcl and tk 8.4+, with BWidget
-#  Author: <jtang@tresys.com>
-# -----------------------------------------------------------
-#
-# This is the implementation of the interface for
-# Relabeling Analysis
 
 namespace eval Apol_Analysis_relabel {
     variable vals
@@ -29,25 +19,80 @@ namespace eval Apol_Analysis_relabel {
     Apol_Analysis::registerAnalysis "Apol_Analysis_relabel" "Direct Relabel"
 }
 
+proc Apol_Analysis_relabel::create {options_frame} {
+    variable vals
+    variable widgets
+
+    _reinitializeVals
+
+    set mode_tf [TitleFrame $options_frame.mode -text "Mode"]
+    pack $mode_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set object_mode [radiobutton [$mode_tf getframe].object \
+                         -text "Object" -value "object" \
+                         -variable Apol_Analysis_relabel::vals(mode)]
+    pack $object_mode -anchor w
+    set widgets(mode:to) [checkbutton [$mode_tf getframe].to \
+                              -text "To" \
+                              -variable Apol_Analysis_relabel::vals(mode:to)]
+    $widgets(mode:to) configure -command \
+        [list Apol_Analysis_relabel::_toggleToFromPushed $widgets(mode:to)]
+    set widgets(mode:from) [checkbutton [$mode_tf getframe].from \
+                                -text "From" \
+                                -variable Apol_Analysis_relabel::vals(mode:from)]
+    $widgets(mode:from) configure -command \
+        [list Apol_Analysis_relabel::_toggleToFromPushed $widgets(mode:from)]
+    pack $widgets(mode:to) $widgets(mode:from) -anchor w -padx 8
+    set subject_mode [radiobutton [$mode_tf getframe].subject \
+                          -text "Subject" -value "subject" \
+                          -variable Apol_Analysis_relabel::vals(mode)]
+    pack $subject_mode -anchor w -pady 4
+    trace add variable Apol_Analysis_relabel::vals(mode) write \
+        Apol_Analysis_relabel::_toggleModeSelected
+
+    set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
+    pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set l [label [$req_tf getframe].l -textvariable Apol_Analysis_relabel::vals(type:label)]
+    pack $l -anchor w
+    set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
+    pack $widgets(type)
+
+    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
+    pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
+    set advanced_f [frame [$filter_tf getframe].advanced]
+    pack $advanced_f -side left -anchor nw
+    set access_enable [checkbutton $advanced_f.enable -text "Use advanced filters" \
+                           -variable Apol_Analysis_relabel::vals(advanced_enable)]
+    pack $access_enable -anchor w
+    set widgets(advanced) [button $advanced_f.adv -text "Advanced Filters" \
+                               -command Apol_Analysis_relabel::_createAdvancedDialog \
+                               -state disabled]
+    pack $widgets(advanced) -anchor w -padx 4
+    trace add variable Apol_Analysis_relabel::vals(advanced_enable) write \
+        Apol_Analysis_relabel::_toggleAdvancedSelected
+    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
+    $widgets(regexp).cb configure -text "Filter result types using regular expression"
+    pack $widgets(regexp) -side left -anchor nw -padx 8
+}
+
 proc Apol_Analysis_relabel::open {} {
     variable vals
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
     set vals(classes:inc) {}
-    foreach class $Apol_Class_Perms::class_list {
-        set perms [apol_GetAllPermsForClass $class]
+    foreach class [Apol_Class_Perms::getClasses] {
+        set perms [Apol_Class_Perms::getPermsForClass $class]
         if {[lsearch $perms "relabelto"] >= 0 && [lsearch $perms "relabelfrom"] >= 0} {
             lappend vals(classes:inc) $class
         }
     }
-    set vals(subjects:inc) $Apol_Types::typelist
-    set vals(subjects:inc_all) $Apol_Types::typelist
+    set vals(subjects:inc) [Apol_Types::getTypes]
+    set vals(subjects:inc_all) $vals(subjects:inc)
 }
 
 proc Apol_Analysis_relabel::close {} {
     variable widgets
-    reinitializeVals
-    reinitializeWidgets
+    _reinitializeVals
+    _reinitializeWidgets
     Apol_Widget::clearTypeCombobox $widgets(type)
 }
 
@@ -78,93 +123,33 @@ operations. Note, excluded subjects are ignored in subject mode
 because only the selected subject type is used as a subject."
 }
 
-proc Apol_Analysis_relabel::create {options_frame} {
-    variable vals
-    variable widgets
-
-    reinitializeVals
-
-    set mode_tf [TitleFrame $options_frame.mode -text "Mode"]
-    pack $mode_tf -side left -padx 2 -pady 2 -expand 0 -fill y
-    set object_mode [radiobutton [$mode_tf getframe].object \
-                         -text "Object" -value "object" \
-                         -variable Apol_Analysis_relabel::vals(mode)]
-    pack $object_mode -anchor w
-    set widgets(mode:to) [checkbutton [$mode_tf getframe].to \
-                                -text "To" \
-                                -variable Apol_Analysis_relabel::vals(mode:to)]
-    $widgets(mode:to) configure -command \
-        [list Apol_Analysis_relabel::toggleToFromPushed $widgets(mode:to)]
-    set widgets(mode:from) [checkbutton [$mode_tf getframe].from \
-                                -text "From" \
-                                -variable Apol_Analysis_relabel::vals(mode:from)]
-    $widgets(mode:from) configure -command \
-        [list Apol_Analysis_relabel::toggleToFromPushed $widgets(mode:from)]
-    pack $widgets(mode:to) $widgets(mode:from) -anchor w -padx 8
-    set subject_mode [radiobutton [$mode_tf getframe].subject \
-                          -text "Subject" -value "subject" \
-                          -variable Apol_Analysis_relabel::vals(mode)]
-    pack $subject_mode -anchor w -pady 4
-    trace add variable Apol_Analysis_relabel::vals(mode) write \
-        Apol_Analysis_relabel::toggleModeSelected
-
-    set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
-    pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
-    set l [label [$req_tf getframe].l -textvariable Apol_Analysis_relabel::vals(type:label)]
-    pack $l -anchor w
-    set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
-    pack $widgets(type)
-
-    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
-    pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
-    set advanced_f [frame [$filter_tf getframe].advanced]
-    pack $advanced_f -side left -anchor nw
-    set access_enable [checkbutton $advanced_f.enable -text "Use advanced filters" \
-                           -variable Apol_Analysis_relabel::vals(advanced_enable)]
-    pack $access_enable -anchor w
-    set widgets(advanced) [button $advanced_f.adv -text "Advanced Filters" \
-                               -command Apol_Analysis_relabel::createAdvancedDialog \
-                               -state disabled]
-    pack $widgets(advanced) -anchor w -padx 4
-    trace add variable Apol_Analysis_relabel::vals(advanced_enable) write \
-        Apol_Analysis_relabel::toggleAdvancedSelected
-    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
-    $widgets(regexp).cb configure -text "Filter result types using regular expression"
-    pack $widgets(regexp) -side left -anchor nw -padx 8
-}
-
 proc Apol_Analysis_relabel::newAnalysis {} {
-    if {[set rt [checkParams]] != {}} {
+    if {[set rt [_checkParams]] != {}} {
         return $rt
     }
-    if {[catch {analyze} results]} {
-        return $results
-    }
-    set f [createResultsDisplay]
-    if {[catch {renderResults $f $results} rt]} {
-        Apol_Analysis::deleteCurrentResults
-        return $rt
-    }
+    set results [_analyze]
+    set f [_createResultsDisplay]
+    _renderResults $f $results
+    #results -acquire
+    $results -delete
     return {}
 }
 
 proc Apol_Analysis_relabel::updateAnalysis {f} {
-    if {[set rt [checkParams]] != {}} {
+    if {[set rt [_checkParams]] != {}} {
         return $rt
     }
-    if {[catch {analyze} results]} {
-        return $results
-    }
-    clearResultsDisplay $f
-    if {[catch {renderResults $f $results} rt]} {
-        return $rt
-    }
+    set results [_analyze]
+    _clearResultsDisplay $f
+    _renderResults $f $results
+    $results -acquire
+    $results -delete
     return {}
 }
 
 proc Apol_Analysis_relabel::reset {} {
-    reinitializeVals
-    reinitializeWidgets
+    _reinitializeVals
+    _reinitializeWidgets
     open
 }
 
@@ -172,7 +157,7 @@ proc Apol_Analysis_relabel::switchTab {query_options} {
     variable vals
     variable widgets
     array set vals $query_options
-    reinitializeWidgets
+    _reinitializeWidgets
 }
 
 proc Apol_Analysis_relabel::saveQuery {channel} {
@@ -249,23 +234,16 @@ proc Apol_Analysis_relabel::loadQuery {channel} {
     }
     set vals(subjects:exc_all) [lsort $vals(subjects:exc_all)]
     set vals(subjects:exc) [lsort $vals(subjects:exc)]
-    reinitializeWidgets
+    _reinitializeWidgets
 }
 
-proc Apol_Analysis_relabel::gotoLine {tab line_num} {
-    set searchResults [$tab.right getframe].res
-    Apol_Widget::gotoLineSearchResults $searchResults $line_num
+proc Apol_Analysis_relabel::getTextWidget {tab} {
+    return [$tab.right getframe].res
 }
-
-proc Apol_Analysis_relabel::search {tab str case_Insensitive regExpr srch_Direction } {
-    set textbox [$tab.right getframe].res.tb
-    ApolTop::textSearch $textbox $str $case_Insensitive $regExpr $srch_Direction
-}
-
 
 #################### private functions below ####################
 
-proc Apol_Analysis_relabel::reinitializeVals {} {
+proc Apol_Analysis_relabel::_reinitializeVals {} {
     variable vals
 
     array set vals {
@@ -287,7 +265,7 @@ proc Apol_Analysis_relabel::reinitializeVals {} {
     }
 }
 
-proc Apol_Analysis_relabel::reinitializeWidgets {} {
+proc Apol_Analysis_relabel::_reinitializeWidgets {} {
     variable vals
     variable widgets
 
@@ -297,10 +275,10 @@ proc Apol_Analysis_relabel::reinitializeWidgets {} {
         Apol_Widget::setTypeComboboxValue $widgets(type) $vals(type)
     }
     Apol_Widget::setRegexpEntryValue $widgets(regexp) $vals(regexp:enable) $vals(regexp)
-    updateTypeLabel
+    _updateTypeLabel
 }
 
-proc Apol_Analysis_relabel::toggleModeSelected {name1 name2 op} {
+proc Apol_Analysis_relabel::_toggleModeSelected {name1 name2 op} {
     variable vals
     variable widgets
     if {$vals(mode) == "object"} {
@@ -310,19 +288,19 @@ proc Apol_Analysis_relabel::toggleModeSelected {name1 name2 op} {
         $widgets(mode:to) configure -state disabled
         $widgets(mode:from) configure -state disabled
     }
-    updateTypeLabel
+    _updateTypeLabel
 }
 
 # disallow both to and from to be deselected
-proc Apol_Analysis_relabel::toggleToFromPushed {cb} {
+proc Apol_Analysis_relabel::_toggleToFromPushed {cb} {
     variable vals
     if {!$vals(mode:to) && !$vals(mode:from)} {
         $cb select
     }
-    updateTypeLabel
+    _updateTypeLabel
 }
 
-proc Apol_Analysis_relabel::updateTypeLabel {} {
+proc Apol_Analysis_relabel::_updateTypeLabel {} {
     variable vals
     if {$vals(mode) == "subject"} {
         set vals(type:label) "Subject"
@@ -335,7 +313,7 @@ proc Apol_Analysis_relabel::updateTypeLabel {} {
     }
 }
 
-proc Apol_Analysis_relabel::toggleAdvancedSelected {name1 name2 op} {
+proc Apol_Analysis_relabel::_toggleAdvancedSelected {name1 name2 op} {
     variable vals
     variable widgets
     if {$vals(advanced_enable)} {
@@ -347,7 +325,7 @@ proc Apol_Analysis_relabel::toggleAdvancedSelected {name1 name2 op} {
 
 ################# functions that do advanced filters #################
 
-proc Apol_Analysis_relabel::createAdvancedDialog {} {
+proc Apol_Analysis_relabel::_createAdvancedDialog {} {
     destroy .relabel_analysis_adv
     variable vals
 
@@ -356,16 +334,16 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
 
     set tf [TitleFrame [$d getframe].objs -text "Filter By Object Classes"]
     pack $tf -side top -expand 1 -fill both -padx 2 -pady 4
-    createAdvancedFilter [$tf getframe] "Object Classes" classes 0
+    _createAdvancedFilter [$tf getframe] "Object Classes" classes 0
     set l [label [$tf getframe].l -text "Only showing object classes that have both 'relabelto' and 'relabelfrom' permissions."]
     grid $l - - -padx 4 -pady 2
 
     set tf [TitleFrame [$d getframe].types -text "Filter By Subject Types"]
     pack $tf -side top -expand 1 -fill both -padx 2 -pady 4
     if {$vals(mode) == "object"} {
-        createAdvancedFilter [$tf getframe] "Subject Types" subjects 0
+        _createAdvancedFilter [$tf getframe] "Subject Types" subjects 0
     } else {
-        createAdvancedFilter [$tf getframe] "Subject Types" subjects 1
+        _createAdvancedFilter [$tf getframe] "Subject Types" subjects 1
     }
     set inc [$tf getframe].inc
     set exc [$tf getframe].exc
@@ -379,15 +357,15 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
                         -values $Apol_Types::attriblist \
                         -textvariable Apol_Analysis_relabel::vals(subjects:attrib)]
     $attrib_enable configure -command \
-        [list Apol_Analysis_relabel::attribEnabled $attrib_box]
+        [list Apol_Analysis_relabel::_attribEnabled $attrib_box]
     # remove any old traces on the attribute
     trace remove variable Apol_Analysis_relabel::vals(subjects:attrib) write \
-        [list Apol_Analysis_relabel::attribChanged]
+        [list Apol_Analysis_relabel::_attribChanged]
     trace add variable Apol_Analysis_relabel::vals(subjects:attrib) write \
-        [list Apol_Analysis_relabel::attribChanged]
+        [list Apol_Analysis_relabel::_attribChanged]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
-    attribEnabled $attrib_box
+    _attribEnabled $attrib_box
     if {$vals(mode) == "subject"} {
         $attrib_enable configure -state disabled
         $attrib_box configure -state disabled
@@ -396,7 +374,7 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
     $d draw
 }
 
-proc Apol_Analysis_relabel::createAdvancedFilter {f title varname disabled} {
+proc Apol_Analysis_relabel::_createAdvancedFilter {f title varname disabled} {
     set l1 [label $f.l1 -text "Included $title"]
     set l2 [label $f.l2 -text "Excluded $title"]
     grid $l1 x $l2 -sticky w
@@ -410,8 +388,8 @@ proc Apol_Analysis_relabel::createAdvancedFilter {f title varname disabled} {
     set inc_lb [Apol_Widget::getScrolledListbox $inc]
     set exc_lb [Apol_Widget::getScrolledListbox $exc]
     set bb [ButtonBox $f.bb -homogeneous 1 -orient vertical -spacing 4]
-    $bb add -text "-->" -width 10 -command [list Apol_Analysis_relabel::moveToExclude $varname $inc_lb $exc_lb]
-    $bb add -text "<--" -width 10 -command [list Apol_Analysis_relabel::moveToInclude $varname $inc_lb $exc_lb]
+    $bb add -text "-->" -width 10 -command [list Apol_Analysis_relabel::_moveToExclude $varname $inc_lb $exc_lb]
+    $bb add -text "<--" -width 10 -command [list Apol_Analysis_relabel::_moveToInclude $varname $inc_lb $exc_lb]
     grid $inc $bb $exc -sticky nsew
 
     set inc_bb [ButtonBox $f.inc_bb -homogeneous 1 -spacing 4]
@@ -435,7 +413,7 @@ proc Apol_Analysis_relabel::createAdvancedFilter {f title varname disabled} {
     }
 }
 
-proc Apol_Analysis_relabel::moveToExclude {varname inc exc} {
+proc Apol_Analysis_relabel::_moveToExclude {varname inc exc} {
     variable vals
     if {[set selection [$inc curselection]] == {}} {
         return
@@ -459,7 +437,7 @@ proc Apol_Analysis_relabel::moveToExclude {varname inc exc} {
     $exc selection clear 0 end
 }
 
-proc Apol_Analysis_relabel::moveToInclude {varname inc exc} {
+proc Apol_Analysis_relabel::_moveToInclude {varname inc exc} {
     variable vals
     if {[set selection [$exc curselection]] == {}} {
         return
@@ -483,28 +461,42 @@ proc Apol_Analysis_relabel::moveToInclude {varname inc exc} {
     $exc selection clear 0 end
 }
 
-proc Apol_Analysis_relabel::attribEnabled {cb} {
+proc Apol_Analysis_relabel::_attribEnabled {cb} {
     variable vals
     if {$vals(subjects:attribenable)} {
         $cb configure -state normal
-        filterTypeLists $vals(subjects:attrib)
+        _filterTypeLists $vals(subjects:attrib)
     } else {
         $cb configure -state disabled
-        filterTypeLists ""
+        _filterTypeLists ""
     }
 }
 
-proc Apol_Analysis_relabel::attribChanged {name1 name2 op} {
+proc Apol_Analysis_relabel::_attribChanged {name1 name2 op} {
     variable vals
     if {$vals(subjects:attribenable)} {
-        filterTypeLists $vals(subjects:attrib)
+        _filterTypeLists $vals(subjects:attrib)
     }
 }
 
-proc Apol_Analysis_relabel::filterTypeLists {attrib} {
+proc Apol_Analysis_relabel::_filterTypeLists {attrib} {
     variable vals
-    if {$attrib != ""} {
-        set typesList [lindex [apol_GetAttribs $attrib] 0 1]
+    if {$attrib != {}} {
+        set typesList {}
+        if {[Apol_Types::isAttributeInPolicy $attrib]} {
+            set qpol_type_datum [qpol_type_from_void $::ApolTop::qpolicy $attrib]
+            set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
+            foreach t [iter_to_list $i] {
+                set t [qpol_type_from_void $t]
+                lappend typesList [$t get_name $::ApolTop::qpolicy]
+            }
+            $i -acquire
+            $i -delete
+        }
+        if {$typesList == {}} {
+            # unknown attribute, so don't change listboxes
+            return
+        }
         set vals(subjects:inc) {}
         set vals(subjects:exc) {}
         foreach t $typesList {
@@ -525,15 +517,18 @@ proc Apol_Analysis_relabel::filterTypeLists {attrib} {
 
 #################### functions that do analyses ####################
 
-proc Apol_Analysis_relabel::checkParams {} {
+proc Apol_Analysis_relabel::_checkParams {} {
     variable vals
     variable widgets
     if {![ApolTop::is_policy_open]} {
-        return "No current policy file is opened!"
+        return "No current policy file is opened."
     }
     set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
     if {[lindex $type 0] == {}} {
         return "No type was selected."
+    }
+    if {![Apol_Types::isTypeInPolicy [lindex $type 0]]} {
+        return "[lindex $type 0] is not a type within the policy."
     }
     set vals(type) [lindex $type 0]
     set vals(type:attrib) [lindex $type 1]
@@ -555,18 +550,18 @@ proc Apol_Analysis_relabel::checkParams {} {
     return {}  ;# all parameters passed, now ready to do search
 }
 
-proc Apol_Analysis_relabel::analyze {} {
+proc Apol_Analysis_relabel::_analyze {} {
     variable vals
     if {$vals(mode) == "object"} {
         if {$vals(mode:to) && $vals(mode:from)} {
-            set mode "both"
+            set mode $::APOL_RELABEL_DIR_BOTH
         } elseif {$vals(mode:to)} {
-            set mode "to"
+            set mode $::APOL_RELABEL_DIR_TO
         } else {
-            set mode "from"
+            set mode $::APOL_RELABEL_DIR_FROM
         }
     } else {
-        set mode "subject"
+        set mode $::APOL_RELABEL_DIR_SUBJECT
     }
     if {$vals(advanced_enable) && $vals(classes:exc) != {}} {
         set classes $vals(classes:inc)
@@ -583,12 +578,26 @@ proc Apol_Analysis_relabel::analyze {} {
     } else {
         set regexp {}
     }
-    apol_RelabelAnalysis $mode $vals(type) $classes $subjects $regexp
+
+    set q [new_apol_relabel_analysis_t]
+    $q set_dir $::ApolTop::policy $mode
+    $q set_type $::ApolTop::policy $vals(type)
+    foreach c $classes {
+        $q append_class $::ApolTop::policy $c
+    }
+    foreach s $subjects {
+        $q append_subject $::ApolTop::policy $s
+    }
+    $q set_result_regex $::ApolTop::policy $regexp
+    set results [$q run $::ApolTop::policy]
+    $q -acquire
+    $q -delete
+    return $results
 }
 
 ################# functions that control analysis output #################
 
-proc Apol_Analysis_relabel::createResultsDisplay {} {
+proc Apol_Analysis_relabel::_createResultsDisplay {} {
     variable vals
 
     set f [Apol_Analysis::createResultTab "Relabel" [array get vals]]
@@ -621,19 +630,19 @@ proc Apol_Analysis_relabel::createResultsDisplay {} {
     $res.tb tag configure type_tag -foreground blue -font {Helvetica 12 bold}
     pack $res -expand 1 -fill both
 
-    $tree configure -selectcommand [list Apol_Analysis_relabel::treeSelect $res]
+    $tree configure -selectcommand [list Apol_Analysis_relabel::_treeSelect $res]
     return $f
 }
 
-proc Apol_Analysis_relabel::treeSelect {res tree node} {
+proc Apol_Analysis_relabel::_treeSelect {res tree node} {
     if {$node != {}} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
         set data [$tree itemcget $node -data]
         if {[string index $node 0] == "o"} {
-            renderResultsRuleObject $res $tree $node $data
+            _renderResultsRuleObject $res $tree $node $data
         } elseif {[string index $node 0] == "s"} {
-            renderResultsRuleSubject $res $tree $node $data
+            _renderResultsRuleSubject $res $tree $node $data
         } else {
             # an informational node, whose data has already been rendered
             eval $res.tb insert end $data
@@ -642,7 +651,7 @@ proc Apol_Analysis_relabel::treeSelect {res tree node} {
     }
 }
 
-proc Apol_Analysis_relabel::clearResultsDisplay {f} {
+proc Apol_Analysis_relabel::_clearResultsDisplay {f} {
     variable vals
 
     set tree [[$f.left getframe].sw getframe].tree
@@ -652,7 +661,7 @@ proc Apol_Analysis_relabel::clearResultsDisplay {f} {
     Apol_Analysis::setResultTabCriteria [array get vals]
 }
 
-proc Apol_Analysis_relabel::renderResults {f results} {
+proc Apol_Analysis_relabel::_renderResults {f results} {
     variable vals
 
     set tree [[$f.left getframe].sw getframe].tree
@@ -660,18 +669,23 @@ proc Apol_Analysis_relabel::renderResults {f results} {
 
     $tree insert end root top -text $vals(type) -open 1 -drawcross auto
     if {$vals(mode) == "object"} {
-        set top_text [renderResultsObject $results $tree]
+        set top_text [_renderResultsObject $results $tree]
     } else {  ;# subject mode
-        set top_text [renderResultsSubject $results $tree]
+        set top_text [_renderResultsSubject $results $tree]
     }
     $tree itemconfigure top -data $top_text
     $tree selection set top
     $tree opentree top
-    update idletasks
     $tree see top
 }
 
-proc Apol_Analysis_relabel::renderResultsObject {results tree} {
+proc Apol_Analysis_relabel::_result_type_sort {a b} {
+    set t1 [[$a get_result_type] get_name $::ApolTop::qpolicy]
+    set t2 [[$b get_result_type] get_name $::ApolTop::qpolicy]
+    string compare $t1 $t2
+}
+
+proc Apol_Analysis_relabel::_renderResultsObject {results tree} {
     variable vals
     if {$vals(mode:from) && $vals(mode:to)} {
         set dir both
@@ -680,9 +694,18 @@ proc Apol_Analysis_relabel::renderResultsObject {results tree} {
     } else {
         set dir from
     }
-    foreach r [lsort -index 0 $results] {
-        foreach {type to from both} $r {break}
-        set pairs [lsort -unique [concat $to $from $both]]
+
+    foreach r [lsort -command _result_type_sort [relabel_result_vector_to_list $results]] {
+        set type [[$r get_result_type] get_name $::ApolTop::qpolicy]
+        set to [relabel_result_pair_vector_to_list [$r get_to]]
+        set from [relabel_result_pair_vector_to_list [$r get_from]]
+        set both [relabel_result_pair_vector_to_list [$r get_both]]
+        set pairs {}
+        foreach pair [concat $to $from $both] {
+            set intermed [[$pair get_intermediate_type] get_name $::ApolTop::qpolicy]
+            lappend pairs [list [$pair get_ruleA] [$pair get_ruleB] $intermed]
+        }
+        set pairs [lsort -unique $pairs]
         $tree insert end top o:$dir:\#auto -text $type -data $pairs
     }
 
@@ -695,13 +718,13 @@ proc Apol_Analysis_relabel::renderResultsObject {results tree} {
     lappend top_text $vals(type) title_type \
         "\n\n" title \
         $vals(type) type_tag
-    if {[llength $results]} {
+    if {[$results get_size]} {
         switch -- $dir {
             both { lappend top_text " can be relabeled to and from " {} }
             to   { lappend top_text " can be relabeled to " {} }
             from { lappend top_text " can be relabeled from " {} }
         }
-        lappend top_text [llength $results] num \
+        lappend top_text [$results get_size] num \
             " type(s).\n\n" {} \
             "This tab provides the results of a Direct Relabel Analysis beginning\n" {}
         switch -- $dir {
@@ -724,7 +747,7 @@ proc Apol_Analysis_relabel::renderResultsObject {results tree} {
     }
 }
 
-proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
+proc Apol_Analysis_relabel::_renderResultsRuleObject {res tree node data} {
     set header [list [$tree itemcget top -text] title_type]
     lappend header " can be relabeled:\n" {}
     eval $res.tb insert end $header
@@ -732,9 +755,10 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
     set dir [lindex [split $node :] 1]
     set target_type [$tree itemcget $node -text]
     foreach rule_pairs $data {
-        set class [apol_RenderAVRuleClass [lindex $rule_pairs 0]]
+        set class [[[lindex $rule_pairs 0] get_object_class $::ApolTop::qpolicy] get_name $::ApolTop::qpolicy]
         lappend classes($class) $rule_pairs
     }
+
     foreach key [lsort [array names classes]] {
         $res.tb configure -state normal
         $res.tb insert end "\n$key:\n" title
@@ -745,8 +769,15 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
             if {$dir == "to" || $dir == "from"} {
                 set dir_string $dir
             } else {
-                set a_perms [apol_RenderAVRulePerms $a_rule]
-                set b_perms [apol_RenderAVRulePerms $b_rule]
+                set i [$a_rule get_perm_iter $::ApolTop::qpolicy]
+                set a_perms [iter_to_str_list $i]
+                $i -acquire
+                $i -delete
+                set i [$b_rule get_perm_iter $::ApolTop::qpolicy]
+                set b_perms [iter_to_str_list $i]
+                $i -acquire
+                $i -delete
+
                 if {[lsearch $a_perms "relabelto"] >= 0 && \
                         [lsearch $a_perms "relabelfrom"] >= 0 && \
                         [lsearch $b_perms "relabelto"] >= 0 && \
@@ -759,34 +790,50 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
                     set dir_string "from"
                 }
             }
+
             $res.tb configure -state normal
             $res.tb insert end "\n  $dir_string " num \
                 $target_type type_tag \
                 " by " {} \
                 $intermed type_tag \
                 "\n" {}
-            Apol_Widget::appendSearchResultAVRules $res 6 $a_rule
+
+            set v [new_apol_vector_t]
+            $v append $a_rule
+            Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+            $v -acquire
+            $v -delete
             if {$a_rule != $b_rule} {
-                Apol_Widget::appendSearchResultAVRules $res 6 $b_rule
+                set v [new_apol_vector_t]
+                $v append $b_rule
+                Apol_Widget::appendSearchResultRules $res 6 $v qpol_avrule_from_void
+                $v -acquire
+                $v -delete
             }
         }
     }
 }
 
-proc Apol_Analysis_relabel::renderResultsSubject {results tree} {
+proc Apol_Analysis_relabel::_renderResultsSubject {results tree} {
     variable vals
     set to_count 0
     set from_count 0
 
-    foreach r $results {
-        foreach {type to from both} $r {break}
-        foreach rule [concat $to $both] {
-            lappend to_types($type) [lindex $rule 0]  ;# second half of pair is NULL
+    foreach r [relabel_result_vector_to_list $results] {
+        set type [[$r get_result_type] get_name $::ApolTop::qpolicy]
+        set to [relabel_result_pair_vector_to_list [$r get_to]]
+        set from [relabel_result_pair_vector_to_list [$r get_from]]
+        set both [relabel_result_pair_vector_to_list [$r get_both]]
+
+        foreach pair [concat $to $both] {
+            lappend to_types($type) [$pair get_ruleA]
         }
-        foreach rule [concat $from $both] {
-            lappend from_types($type) [lindex $rule 0]
+        foreach pair [concat $from $both] {
+            lappend from_types($type) [$pair get_ruleA]
         }
+
     }
+
     set to_count [llength [array names to_types]]
     if {$to_count} {
         set to_text [list $vals(type) title_type " can relabel to " {} ]
@@ -831,12 +878,18 @@ proc Apol_Analysis_relabel::renderResultsSubject {results tree} {
     }
 }
 
-proc Apol_Analysis_relabel::renderResultsRuleSubject {res tree node data} {
+proc Apol_Analysis_relabel::_renderResultsRuleSubject {res tree node data} {
     foreach {dir rules} $data {break}
     set header [list [$tree itemcget top -text] title_type]
     lappend header " can relabel $dir " {} \
         [$tree itemcget $node -text] title_type \
         "\n\n" {}
     eval $res.tb insert end $header
-    Apol_Widget::appendSearchResultAVRules $res 0 $rules
+    set v [new_apol_vector_t]
+    foreach r $rules {
+        $v append $r
+    }
+    Apol_Widget::appendSearchResultRules $res 0 $v qpol_avrule_from_void
+    $v -acquire
+    $v -delete
 }

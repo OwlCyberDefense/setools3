@@ -33,6 +33,20 @@ extern "C"
 #include <poldiff/poldiff.h>
 #include <apol/bst.h>
 
+	typedef enum
+	{
+		AVRULE_OFFSET_ALLOW = 0, AVRULE_OFFSET_AUDITALLOW,
+		AVRULE_OFFSET_DONTAUDIT, AVRULE_OFFSET_NEVERALLOW,
+		AVRULE_OFFSET_MAX
+	} avrule_offset_e;
+
+	typedef enum
+	{
+		TERULE_OFFSET_CHANGE = 0, TERULE_OFFSET_MEMBER,
+		TERULE_OFFSET_TRANS,
+		TERULE_OFFSET_MAX
+	} terule_offset_e;
+
 #include "attrib_internal.h"
 #include "avrule_internal.h"
 #include "bool_internal.h"
@@ -89,7 +103,7 @@ extern "C"
 		/** set of POLDIF_DIFF_* bits for diffs run */
 		uint32_t diff_status;
 		struct poldiff_attrib_summary *attrib_diffs;
-		struct poldiff_avrule_summary *avrule_diffs;
+		struct poldiff_avrule_summary *avrule_diffs[AVRULE_OFFSET_MAX];
 		struct poldiff_bool_summary *bool_diffs;
 		struct poldiff_cat_summary *cat_diffs;
 		struct poldiff_class_summary *class_diffs;
@@ -99,64 +113,16 @@ extern "C"
 		struct poldiff_role_summary *role_diffs;
 		struct poldiff_role_allow_summary *role_allow_diffs;
 		struct poldiff_role_trans_summary *role_trans_diffs;
-		struct poldiff_terule_summary *terule_diffs;
+		struct poldiff_terule_summary *terule_diffs[TERULE_OFFSET_MAX];
 		struct poldiff_type_summary *type_diffs;
 		struct poldiff_user_summary *user_diffs;
 		/* and so forth if we want ocon_diffs */
 		type_map_t *type_map;
+		/** most recently used flags to open the two policies */
+		int policy_opts;
 		/** set if type mapping was changed since last run */
 		int remapped;
 	};
-
-/**
- *  Callback function signature for getting an array of statistics for the
- *  number of differences of each form for a given item.
- *  @param diff The policy difference structure from which to get the stats.
- *  @param stats Array into which to write the numbers (array must be
- *  pre-allocated). The order of the values written to the array is as follows:
- *  number of items of form POLDIFF_FORM_ADDED, number of POLDIFF_FORM_REMOVED,
- *  number of POLDIFF_FORM_MODIFIED, number of form POLDIFF_FORM_ADD_TYPE, and
- *  number of POLDIFF_FORM_REMOVE_TYPE.
- */
-	typedef void (*poldiff_get_item_stats_fn_t) (poldiff_t * diff, size_t stats[5]);
-
-/**
- *  Callback function signature for getting a vector of all result
- *  items that were created during a call to poldiff_do_item_diff().
- *  @param diff Policy diff structure containing results.
- *  @return A vector of result items, which the caller may not modify
- *  or destroy.  Upon error, return NULL and set errno.
- */
-	typedef apol_vector_t *(*poldiff_get_result_items_fn_t) (poldiff_t * diff);
-
-/**
- *  Callback function signature for getting the form of difference for
- *  a result item.
- *  @param diff The policy difference structure associated with the item.
- *  @param item The item from which to get the form.
- *  @return One of the POLDIFF_FORM_* enumeration.
- */
-	typedef poldiff_form_e(*poldiff_item_get_form_fn_t) (const void *item);
-
-/**
- *  Callback function signature for obtaining a newly allocated string
- *  representation of a difference item.
- *  @param diff The policy difference structure associated with the item.
- *  @param item The item from which to generate the string.
- *  @return Expected return value from this function is a newly allocated
- *  string representation of the item or NULL on error; if the call fails,
- *  it is expected to set errno.
- */
-	typedef char *(*poldiff_item_to_string_fn_t) (poldiff_t * diff, const void *item);
-
-/**
- *  Callbackfunction signature for resetting the diff results for an item.
- *  called when mapping of the symbols used by the diff change.
- *  @param diff The policy difference structure containing the diffs to reset.
- *  @return 0 on success and < 0 on error; if the call fails,
- *  it is expected to set errno.
- */
-	typedef int (*poldiff_reset_fn_t) (poldiff_t * diff);
 
 /**
  *  Callback function signature for getting a vector of all unique
@@ -165,14 +131,14 @@ extern "C"
  *
  *  @param diff Policy diff error handler.
  *  @param policy The policy from which to get the items.
- *  @return a newly allocated vector of all unique items
- *  of the appropriate kind on success, or NULL on error;
- *  if the call fails, errno will be set.
+ *  @return a newly allocated vector of all unique items of the
+ *  appropriate kind on success, or NULL on error; if the call fails,
+ *  errno will be set.
  */
-	typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, apol_policy_t * policy);
+	typedef apol_vector_t *(*poldiff_get_items_fn_t) (poldiff_t * diff, const apol_policy_t * policy);
 
 /**
- *  Callback funtion signature for quickly comparing two items to
+ *  Callback function signature for quickly comparing two items to
  *  determine if they are semantically the same item.  This operation
  *  should quickly determine if the two are obviously different or
  *  not.
@@ -187,7 +153,7 @@ extern "C"
  *  This must be able to return a defined stable ordering for all items
  *  not semantically equivalent.
  */
-	typedef int (*poldiff_item_comp_fn_t) (const void *x, const void *y, poldiff_t * diff);
+	typedef int (*poldiff_item_comp_fn_t) (const void *x, const void *y, const poldiff_t * diff);
 
 /**
  *  Callback function signature for creating, initializing and inserting
@@ -219,15 +185,14 @@ extern "C"
 	typedef int (*poldiff_deep_diff_fn_t) (poldiff_t * diff, const void *x, const void *y);
 
 /**
- * Build the BST for classes, permissions, and booleans if the
- * policies have changed.  This effectively provides a partial mapping
- * of rules from one policy to the other.
- *
- * @param diff Policy difference structure containing policies to diff.
- *
- * @return 0 on success, < 0 on error.
+ *  Callback function signature for resetting the diff results for an
+ *  item.  called when mapping of the symbols used by the diff change.
+ *  @param diff The policy difference structure containing the diffs
+ *  to reset.
+ *  @return 0 on success and < 0 on error; if the call fails,
+ *  it is expected to set errno.
  */
-	int poldiff_build_bsts(poldiff_t * diff);
+	typedef int (*poldiff_reset_fn_t) (poldiff_t * diff);
 
 /******************** error handling code below ********************/
 
@@ -246,8 +211,7 @@ extern "C"
  * POLDIFF_MSG_WARN, or POLDIFF_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
-	__attribute__ ((format(printf, 3, 4)))
-	extern void poldiff_handle_msg(poldiff_t * p, int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4))) extern void poldiff_handle_msg(const poldiff_t * p, int level, const char *fmt, ...);
 
 #undef ERR
 #undef WARN
@@ -256,6 +220,17 @@ extern "C"
 #define ERR(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_ERR, format, __VA_ARGS__)
 #define WARN(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_WARN, format, __VA_ARGS__)
 #define INFO(handle, format, ...) poldiff_handle_msg(handle, POLDIFF_MSG_INFO, format, __VA_ARGS__)
+
+/**
+ * Build the BST for classes, permissions, and booleans if the
+ * policies have changed.  This effectively provides a partial mapping
+ * of rules from one policy to the other.
+ *
+ * @param diff Policy difference structure containing policies to diff.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	int poldiff_build_bsts(poldiff_t * diff);
 
 #ifdef	__cplusplus
 }

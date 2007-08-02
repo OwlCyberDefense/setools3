@@ -33,8 +33,6 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include "vector.h"
 
 	typedef struct apol_policy_path apol_policy_path_t;

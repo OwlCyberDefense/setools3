@@ -61,18 +61,14 @@ int domain_and_file_register(sechk_lib_t * lib)
 		"practice to use the same type for a domain and its data objects because it \n"
 		"requires that less restrictive access be granted to these types.\n";
 	mod->opt_description = "Module requirements:\n" "   attribute names\n"
-#ifdef LIBSEFS
 		"   file_contexts\n"
-#endif
 		"Module dependencies:\n" "   find_domains module\n" "   find_file_types module\n" "Module options:\n" "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
 	nv = sechk_name_value_new(SECHK_REQ_POLICY_CAP, SECHK_REQ_CAP_ATTRIB_NAMES);
 	apol_vector_append(mod->requirements, (void *)nv);
-#ifdef LIBSEFS
 	nv = sechk_name_value_new(SECHK_REQ_FILE_CONTEXTS, NULL);
 	apol_vector_append(mod->requirements, (void *)nv);
-#endif
 
 	/* assign dependencies */
 	apol_vector_append(mod->dependencies, sechk_name_value_new("module", "find_domains"));
@@ -236,7 +232,7 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
 		sechk_item_t *type_item;
 		qpol_type_t *type;
-		char *type_name;
+		const char *type_name;
 
 		type_item = apol_vector_get_element(type_vector, i);
 		type = type_item->item;
@@ -244,7 +240,7 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		for (j = 0; j < apol_vector_get_size(domain_vector); j++) {
 			sechk_item_t *domain_item;
 			qpol_type_t *domain;
-			char *domain_name;
+			const char *domain_name;
 
 			domain_item = apol_vector_get_element(domain_vector, j);
 			domain = domain_item->item;
@@ -331,11 +327,6 @@ int domain_and_file_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	return -1;
 }
 
-void domain_and_file_data_free(void *data)
-{
-	free(data);
-}
-
 int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unsigned char outformat = 0x00;
@@ -344,7 +335,7 @@ int domain_and_file_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

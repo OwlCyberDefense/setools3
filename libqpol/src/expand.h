@@ -39,9 +39,10 @@ extern "C"
  * this function.  
  *
  * @param base the module to expand.
+ * @param neverallows if non-zero expand neverallows.
  * @return 0 on success, -1 on error.
  */
-	int qpol_expand_module(qpol_policy_t * base);
+	int qpol_expand_module(qpol_policy_t * base, int neverallows);
 
 #ifdef	__cplusplus
 }

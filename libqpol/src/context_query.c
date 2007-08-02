@@ -36,7 +36,7 @@
 #include <sepol/policydb/context.h>
 #include "qpol_internal.h"
 
-int qpol_context_get_user(qpol_policy_t * policy, qpol_context_t * context, qpol_user_t ** user)
+int qpol_context_get_user(const qpol_policy_t * policy, const qpol_context_t * context, const qpol_user_t ** user)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -58,7 +58,7 @@ int qpol_context_get_user(qpol_policy_t * policy, qpol_context_t * context, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_role(qpol_policy_t * policy, qpol_context_t * context, qpol_role_t ** role)
+int qpol_context_get_role(const qpol_policy_t * policy, const qpol_context_t * context, const qpol_role_t ** role)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -80,7 +80,7 @@ int qpol_context_get_role(qpol_policy_t * policy, qpol_context_t * context, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_type(qpol_policy_t * policy, qpol_context_t * context, qpol_type_t ** type)
+int qpol_context_get_type(const qpol_policy_t * policy, const qpol_context_t * context, const qpol_type_t ** type)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -102,7 +102,7 @@ int qpol_context_get_type(qpol_policy_t * policy, qpol_context_t * context, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_range(qpol_policy_t * policy, qpol_context_t * context, qpol_mls_range_t ** range)
+int qpol_context_get_range(const qpol_policy_t * policy, const qpol_context_t * context, const qpol_mls_range_t ** range)
 {
 	context_struct_t *internal_context = NULL;
 

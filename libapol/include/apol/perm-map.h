@@ -51,15 +51,20 @@ extern "C"
  * that does not exist within the policy) then generate a warning
  * string and send it to the error handler stored within the policy.
  *
- * If a permission map was already loaded, then it will be first
- * destroyed.
+ * If a permission map was already loaded, then the existing one will
+ * be destroyed.
  *
  * @param p Policy to which store permission map.
  * @param filename Name of file containing permission map.
  *
  * @return 0 on success, > 0 on success with warnings, < 0 on error.
  */
-	extern int apol_permmap_load(apol_policy_t * p, const char *filename);
+	extern int apol_policy_open_permmap(apol_policy_t * p, const char *filename);
+
+/**
+ * @deprecated Use apol_policy_open_permmap().
+ */
+	extern int apol_permmap_load(apol_policy_t * p, const char *filename) __attribute__ ((deprecated));
 
 /**
  * Write the contents of permission map to a file.  Any existing file
@@ -70,7 +75,12 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int apol_permmap_save(apol_policy_t * p, const char *filename);
+	extern int apol_policy_save_permmap(const apol_policy_t * p, const char *filename);
+
+/**
+ * @deprecated Use apol_policy_save_permmap().
+ */
+	extern int apol_permmap_save(apol_policy_t * p, const char *filename) __attribute__ ((deprecated));
 
 /**
  * Given a class and permission name, look up that permission mapping
@@ -88,7 +98,14 @@ extern "C"
  * @return 0 if class and permission were found, < 0 on error or if
  * not found.
  */
-	extern int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight);
+	extern int apol_policy_get_permmap(const apol_policy_t * p, const char *class_name, const char *perm_name, int *map,
+					   int *weight);
+
+/**
+ * @deprecated Use apol_policy_get_permmap().
+ */
+	extern int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
+		__attribute__ ((deprecated));
 
 /**
  * Given a class and permission name, set that permission's map and
@@ -105,7 +122,13 @@ extern "C"
  * @return 0 if permission map was changed, < 0 on error or if not
  * found.
  */
-	extern int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight);
+	extern int apol_policy_set_permmap(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight);
+
+/**
+ * @deprecated Use apol_policy_set_permmap().
+ */
+	extern int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
+		__attribute__ ((deprecated));
 
 #ifdef	__cplusplus
 }

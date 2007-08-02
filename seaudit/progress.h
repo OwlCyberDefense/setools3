@@ -126,7 +126,7 @@ void progress_update(progress_t * progress, char *fmt, ...) __attribute__ ((form
  * dialog's display.  To use this, pass the progress_t object as
  * seaudit_log_create()'s callback_arg parameter.
  */
-void progress_seaudit_handle_func(void *arg, seaudit_log_t * log, int level, const char *fmt, va_list va_args);
+void progress_seaudit_handle_func(void *arg, const seaudit_log_t * log, int level, const char *fmt, va_list va_args);
 
 /**
  * Implementation of a libapol message callback function.  This will
@@ -134,6 +134,6 @@ void progress_seaudit_handle_func(void *arg, seaudit_log_t * log, int level, con
  * display.  To use this, pass the progress_t object as
  * apol_policy_open()'s varg parameter.
  */
-void progress_apol_handle_func(void *varg, apol_policy_t * p, int level, const char *fmt, va_list argp);
+void progress_apol_handle_func(void *varg, const apol_policy_t * p, int level, const char *fmt, va_list argp);
 
 #endif

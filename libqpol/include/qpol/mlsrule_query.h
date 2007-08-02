@@ -47,7 +47,7 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_range_trans_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_range_trans_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the source type from a range transition rule.
@@ -58,7 +58,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-	extern int qpol_range_trans_get_source_type(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_type_t ** source);
+	extern int qpol_range_trans_get_source_type(const qpol_policy_t * policy, const qpol_range_trans_t * rule,
+						    const qpol_type_t ** source);
 
 /**
  *  Get the target type from a range transition rule.
@@ -69,7 +70,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-	extern int qpol_range_trans_get_target_type(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_type_t ** target);
+	extern int qpol_range_trans_get_target_type(const qpol_policy_t * policy, const qpol_range_trans_t * rule,
+						    const qpol_type_t ** target);
 
 /**
  *  Get the target class from a range transition rule.
@@ -80,7 +82,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-	extern int qpol_range_trans_get_target_class(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_class_t ** target);
+	extern int qpol_range_trans_get_target_class(const qpol_policy_t * policy, const qpol_range_trans_t * rule,
+						     const qpol_class_t ** target);
 
 /**
  *  Get the range from a range transition rule.
@@ -91,7 +94,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *range will be NULL.
  */
-	extern int qpol_range_trans_get_range(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_mls_range_t ** range);
+	extern int qpol_range_trans_get_range(const qpol_policy_t * policy, const qpol_range_trans_t * rule,
+					      const qpol_mls_range_t ** range);
 
 #ifdef	__cplusplus
 }

@@ -1,6 +1,6 @@
 /**
 *  @file
-*  Defines the public interface for searching and iterating over nodecon statements. 
+*  Defines the public interface for searching and iterating over nodecon statements.
 *
 *  @author Kevin Carr kcarr@tresys.com
 *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -40,7 +40,7 @@ struct qpol_nodecon
 	unsigned char protocol;
 };
 
-int qpol_policy_get_nodecon_by_node(qpol_policy_t * policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol,
+int qpol_policy_get_nodecon_by_node(const qpol_policy_t * policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol,
 				    qpol_nodecon_t ** ocon)
 {
 	policydb_t *db = NULL;
@@ -105,7 +105,7 @@ static void node_state_free(void *ns)
 	free(ns);
 }
 
-static int node_state_end(qpol_iterator_t * iter)
+static int node_state_end(const qpol_iterator_t * iter)
 {
 	node_state_t *ns = NULL;
 
@@ -119,7 +119,7 @@ static int node_state_end(qpol_iterator_t * iter)
 	return (ns->v4state->cur == NULL && ns->v6state->cur == NULL);
 }
 
-static void *node_state_get_cur(qpol_iterator_t * iter)
+static void *node_state_get_cur(const qpol_iterator_t * iter)
 {
 	node_state_t *ns = NULL;
 	qpol_nodecon_t *node = NULL;
@@ -142,7 +142,7 @@ static void *node_state_get_cur(qpol_iterator_t * iter)
 	return node;
 }
 
-static size_t node_state_size(qpol_iterator_t * iter)
+static size_t node_state_size(const qpol_iterator_t * iter)
 {
 	node_state_t *ns = NULL;
 	size_t count = 0;
@@ -190,7 +190,7 @@ static int node_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_nodecon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_nodecon_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -248,7 +248,7 @@ int qpol_policy_get_nodecon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_addr(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_t ** addr, unsigned char *protocol)
+int qpol_nodecon_get_addr(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** addr, unsigned char *protocol)
 {
 	if (addr != NULL)
 		*addr = NULL;
@@ -272,7 +272,7 @@ int qpol_nodecon_get_addr(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_mask(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_t ** mask, unsigned char *protocol)
+int qpol_nodecon_get_mask(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, uint32_t ** mask, unsigned char *protocol)
 {
 	if (mask != NULL)
 		*mask = NULL;
@@ -296,7 +296,7 @@ int qpol_nodecon_get_mask(qpol_policy_t * policy, qpol_nodecon_t * ocon, uint32_
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_protocol(qpol_policy_t * policy, qpol_nodecon_t * ocon, unsigned char *protocol)
+int qpol_nodecon_get_protocol(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, unsigned char *protocol)
 {
 	if (protocol != NULL)
 		*protocol = 0;
@@ -312,7 +312,7 @@ int qpol_nodecon_get_protocol(qpol_policy_t * policy, qpol_nodecon_t * ocon, uns
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_context(qpol_policy_t * policy, qpol_nodecon_t * ocon, qpol_context_t ** context)
+int qpol_nodecon_get_context(const qpol_policy_t * policy, const qpol_nodecon_t * ocon, const qpol_context_t ** context)
 {
 	if (context != NULL)
 		*context = NULL;

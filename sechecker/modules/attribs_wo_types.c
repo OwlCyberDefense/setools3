@@ -230,7 +230,7 @@ int attribs_wo_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	apol_attr_get_by_query(policy, NULL, &attr_vector);
 	for (i = 0; i < apol_vector_get_size(attr_vector); i++) {
 		qpol_type_t *attr;
-		char *attr_name;
+		const char *attr_name;
 		int at_end;
 
 		attr = apol_vector_get_element(attr_vector, i);
@@ -303,7 +303,7 @@ int attribs_wo_types_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

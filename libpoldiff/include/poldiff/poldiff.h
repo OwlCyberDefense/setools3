@@ -43,7 +43,6 @@ extern "C"
 #include <stdint.h>
 
 	typedef struct poldiff poldiff_t;
-	typedef void (*poldiff_handle_fn_t) (void *arg, poldiff_t * diff, int level, const char *fmt, va_list va_args);
 
 /**
  *  Form of a difference. This enumeration describes the kind of change
@@ -71,6 +70,8 @@ extern "C"
 		POLDIFF_FORM_REMOVE_TYPE
 	} poldiff_form_e;
 
+	typedef void (*poldiff_handle_fn_t) (void *arg, const poldiff_t * diff, int level, const char *fmt, va_list va_args);
+
 #include <poldiff/attrib_diff.h>
 #include <poldiff/avrule_diff.h>
 #include <poldiff/cat_diff.h>
@@ -88,20 +89,31 @@ extern "C"
 #include <poldiff/util.h>
 
 /* NOTE: while defined OCONS are not currently supported */
-#define POLDIFF_DIFF_CLASSES     0x00000001
-#define POLDIFF_DIFF_COMMONS     0x00000002
-#define POLDIFF_DIFF_TYPES       0x00000004
-#define POLDIFF_DIFF_ATTRIBS     0x00000008
-#define POLDIFF_DIFF_ROLES       0x00000010
-#define POLDIFF_DIFF_USERS       0x00000020
-#define POLDIFF_DIFF_BOOLS       0x00000040
-#define POLDIFF_DIFF_LEVELS      0x00000080
-#define POLDIFF_DIFF_CATS        0x00000100
-#define POLDIFF_DIFF_AVRULES     0x00000200
-#define POLDIFF_DIFF_TERULES     0x00000400
-#define POLDIFF_DIFF_ROLE_ALLOWS 0x00000800
-#define POLDIFF_DIFF_ROLE_TRANS  0x00001000
-#define POLDIFF_DIFF_RANGE_TRANS 0x00002000
+#define POLDIFF_DIFF_CLASSES       0x00000001U
+#define POLDIFF_DIFF_COMMONS       0x00000002U
+#define POLDIFF_DIFF_TYPES         0x00000004U
+#define POLDIFF_DIFF_ATTRIBS       0x00000008U
+#define POLDIFF_DIFF_ROLES         0x00000010U
+#define POLDIFF_DIFF_USERS         0x00000020U
+#define POLDIFF_DIFF_BOOLS         0x00000040U
+#define POLDIFF_DIFF_LEVELS        0x00000080U
+#define POLDIFF_DIFF_CATS          0x00000100U
+#define POLDIFF_DIFF_ROLE_ALLOWS   0x00000800U
+#define POLDIFF_DIFF_ROLE_TRANS    0x00001000U
+#define POLDIFF_DIFF_RANGE_TRANS   0x00002000U
+#define POLDIFF_DIFF_AVALLOW       0x10000000U
+#define POLDIFF_DIFF_AVAUDITALLOW  0x20000000U
+#define POLDIFF_DIFF_AVDONTAUDIT   0x40000000U
+#define POLDIFF_DIFF_AVNEVERALLOW  0x80000000U
+#define POLDIFF_DIFF_TECHANGE      0x01000000U
+#define POLDIFF_DIFF_TEMEMBER      0x02000000U
+#define POLDIFF_DIFF_TETRANS       0x04000000U
+
+#define POLDIFF_DIFF_TERULES_COMPAT 0x00000400U	/**< deprecated */
+#define POLDIFF_DIFF_AVRULES_COMPAT 0x00000200U	/**< deprecated */
+
+#define POLDIFF_DIFF_AVRULES     (POLDIFF_DIFF_AVALLOW | POLDIFF_DIFF_AVNEVERALLOW | POLDIFF_DIFF_AVAUDITALLOW | POLDIFF_DIFF_AVDONTAUDIT)
+#define POLDIFF_DIFF_TERULES     (POLDIFF_DIFF_TEMEMBER | POLDIFF_DIFF_TECHANGE | POLDIFF_DIFF_TETRANS)
 /*
  * Add ocons here and modify POLDIFF_DIFF_OCONS below
  * #define POLDIFF_DIFF_ *
@@ -117,7 +129,11 @@ extern "C"
 /**
  *  Allocate and initialize a new policy difference structure.  This
  *  function takes ownership of the supplied policies and will handle
- *  their destruction upon poldiff_destroy().
+ *  their destruction upon poldiff_destroy().  The poldiff object will
+ *  be responsible for rebuilding the policy (such as if neverallows
+ *  are requested).  It is still safe to access elements within the
+ *  policies, but avoid making changes to the policy while the poldiff
+ *  object still exists.
  *  @param orig_policy The original policy.
  *  @param mod_policy The new (modified) policy.
  *  @param fn Function to be called by the error handler.  If NULL
@@ -161,7 +177,7 @@ extern "C"
  *  @return 1 if all indicated diffs were run, 0 if any were not, < 0
  *  on error.
  */
-	extern int poldiff_is_run(poldiff_t * diff, uint32_t flags);
+	extern int poldiff_is_run(const poldiff_t * diff, uint32_t flags);
 
 /**
  *  Get a total of the differences of each form for a given item (or set
@@ -177,15 +193,15 @@ extern "C"
  *  number of POLDIFF_FORM_REMOVE_TYPE.
  *  @return 0 on success and < 0 on error; if the call fails, errno will be set.
  */
-	extern int poldiff_get_stats(poldiff_t * diff, uint32_t flags, size_t stats[5]);
+	extern int poldiff_get_stats(const poldiff_t * diff, uint32_t flags, size_t stats[5]);
 
 /**
  *  Enable line numbers for all rule differences.  If not called, line
- *  numbers will not be available when displaying differences. This
+ *  numbers will not be available when displaying differences.  This
  *  function is safe to call multiple times and will have no effect
  *  after the first time.  It also has no effect if one policy (or
- *  both of them) does not support line numbers.  Be aware that if
- *  line numbers will need to be re-enabled each time poldiff_run() is
+ *  both of them) does not support line numbers.  Be aware that line
+ *  numbers will need to be re-enabled each time poldiff_run() is
  *  called.
  *
  *  @param diff The policy difference structure.

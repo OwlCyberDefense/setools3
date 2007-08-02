@@ -36,7 +36,7 @@ typedef struct role_allow_state
 	role_allow_t *cur;
 } role_allow_state_t;
 
-static int role_allow_state_end(qpol_iterator_t * iter)
+static int role_allow_state_end(const qpol_iterator_t * iter)
 {
 	role_allow_state_t *ras = NULL;
 
@@ -48,10 +48,10 @@ static int role_allow_state_end(qpol_iterator_t * iter)
 	return ras->cur ? 0 : 1;
 }
 
-static void *role_allow_state_get_cur(qpol_iterator_t * iter)
+static void *role_allow_state_get_cur(const qpol_iterator_t * iter)
 {
 	role_allow_state_t *ras = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 
 	if (!iter || !(ras = qpol_iterator_state(iter)) || !(db = qpol_iterator_policy(iter)) || role_allow_state_end(iter)) {
 		errno = EINVAL;
@@ -64,7 +64,7 @@ static void *role_allow_state_get_cur(qpol_iterator_t * iter)
 static int role_allow_state_next(qpol_iterator_t * iter)
 {
 	role_allow_state_t *ras = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 
 	if (!iter || !(ras = qpol_iterator_state(iter)) || !(db = qpol_iterator_policy(iter))) {
 		errno = EINVAL;
@@ -81,10 +81,10 @@ static int role_allow_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t role_allow_state_size(qpol_iterator_t * iter)
+static size_t role_allow_state_size(const qpol_iterator_t * iter)
 {
 	role_allow_state_t *ras = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 	role_allow_t *tmp = NULL;
 	size_t count = 0;
 
@@ -99,7 +99,7 @@ static size_t role_allow_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_policy_get_role_allow_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_role_allow_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	role_allow_state_t *ras = NULL;
@@ -136,7 +136,7 @@ int qpol_policy_get_role_allow_iter(qpol_policy_t * policy, qpol_iterator_t ** i
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_allow_get_source_role(qpol_policy_t * policy, qpol_role_allow_t * rule, qpol_role_t ** source)
+int qpol_role_allow_get_source_role(const qpol_policy_t * policy, const qpol_role_allow_t * rule, const qpol_role_t ** source)
 {
 	policydb_t *db = NULL;
 	role_allow_t *ra = NULL;
@@ -159,7 +159,7 @@ int qpol_role_allow_get_source_role(qpol_policy_t * policy, qpol_role_allow_t * 
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_allow_get_target_role(qpol_policy_t * policy, qpol_role_allow_t * rule, qpol_role_t ** target)
+int qpol_role_allow_get_target_role(const qpol_policy_t * policy, const qpol_role_allow_t * rule, const qpol_role_t ** target)
 {
 	policydb_t *db = NULL;
 	role_allow_t *ra = NULL;
@@ -188,7 +188,7 @@ typedef struct role_trans_state
 	role_trans_t *cur;
 } role_trans_state_t;
 
-static int role_trans_state_end(qpol_iterator_t * iter)
+static int role_trans_state_end(const qpol_iterator_t * iter)
 {
 	role_trans_state_t *rts = NULL;
 
@@ -200,10 +200,10 @@ static int role_trans_state_end(qpol_iterator_t * iter)
 	return rts->cur ? 0 : 1;
 }
 
-static void *role_trans_state_get_cur(qpol_iterator_t * iter)
+static void *role_trans_state_get_cur(const qpol_iterator_t * iter)
 {
 	role_trans_state_t *rts = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 
 	if (!iter || !(rts = qpol_iterator_state(iter)) || !(db = qpol_iterator_policy(iter)) || role_trans_state_end(iter)) {
 		errno = EINVAL;
@@ -216,7 +216,7 @@ static void *role_trans_state_get_cur(qpol_iterator_t * iter)
 static int role_trans_state_next(qpol_iterator_t * iter)
 {
 	role_trans_state_t *rts = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 
 	if (!iter || !(rts = qpol_iterator_state(iter)) || !(db = qpol_iterator_policy(iter))) {
 		errno = EINVAL;
@@ -233,10 +233,10 @@ static int role_trans_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t role_trans_state_size(qpol_iterator_t * iter)
+static size_t role_trans_state_size(const qpol_iterator_t * iter)
 {
 	role_trans_state_t *rts = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 	role_trans_t *tmp = NULL;
 	size_t count = 0;
 
@@ -251,7 +251,7 @@ static size_t role_trans_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_policy_get_role_trans_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_role_trans_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	role_trans_state_t *rts = NULL;
@@ -288,7 +288,7 @@ int qpol_policy_get_role_trans_iter(qpol_policy_t * policy, qpol_iterator_t ** i
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_trans_get_source_role(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_role_t ** source)
+int qpol_role_trans_get_source_role(const qpol_policy_t * policy, const qpol_role_trans_t * rule, const qpol_role_t ** source)
 {
 	policydb_t *db = NULL;
 	role_trans_t *rt = NULL;
@@ -311,7 +311,7 @@ int qpol_role_trans_get_source_role(qpol_policy_t * policy, qpol_role_trans_t * 
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_trans_get_target_type(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_type_t ** target)
+int qpol_role_trans_get_target_type(const qpol_policy_t * policy, const qpol_role_trans_t * rule, const qpol_type_t ** target)
 {
 	policydb_t *db = NULL;
 	role_trans_t *rt = NULL;
@@ -334,7 +334,7 @@ int qpol_role_trans_get_target_type(qpol_policy_t * policy, qpol_role_trans_t * 
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_trans_get_default_role(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_role_t ** dflt)
+int qpol_role_trans_get_default_role(const qpol_policy_t * policy, const qpol_role_trans_t * rule, const qpol_role_t ** dflt)
 {
 	policydb_t *db = NULL;
 	role_trans_t *rt = NULL;

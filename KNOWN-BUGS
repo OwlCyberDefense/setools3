@@ -1,62 +1,66 @@
-SETools version 3.2
+SETools version 3.3
 Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
 
-April 1, 2007
+August 1, 2007
 
 
 CURRENT BUGS AND ISSUES
 
-This file contains a description of the bugs of which we are currently
-aware. There are undoubtedly more; please report any new bugs you may
-find to setools-bugs@tresys.com.
+This file contains a description of the currently aware issues with
+SETools.  There are undoubtedly more; please report any new problems
+to setools-bugs@tresys.com.
 
 SETOOLS
 
-1. There is a critical error in libsepol versions 1.16.2 & 2.0.2 that
-   prevents SETools from opening source policies.  The supplied
+1. There is a critical error in libsepol versions 1.16.2 and 2.0.2
+   that prevents SETools from opening source policies.  The supplied
    configure script will detect and abort if it finds this particular
    version.
 
 APOL
-   
+
 1. Double clicking on listbox items may not display popup windows in
-   certain window managers.  You must right-click on the item in order
-   to display popup windows.  This is due to Tk's event buffer and is
-   not fixable.  (Ref: http://tinyurl.com/ltmuh)
-   
-2. The use of some fonts may cause widgets in the GUI to be obscured.
-   If you experience this problem, you may edit the fonts in the .apol
-   file in your home directory.  Apol is designed to fit on a 1024x768
-   display; users will have problems with resolutions less than this.
-   
-3. Apol will correctly load policies with aliases, but the alias names
+   certain window managers.  Instead the user can right-click on the
+   item in order to display popup windows.  This is due to Tk's event
+   buffer and is not fixable.  (Ref: http://tinyurl.com/ltmuh)
+
+2. Apol will correctly load policies with aliases, but the alias names
    will be lost (the root type name is used instead).  Therefore,
    aliases are not displayed and queries should not use them as
    parameters.
 
-4. Certain older source policies will not load if complemented type 
+3. Certain older source policies will not load if complemented type 
    sets are used outside of neverallow rules.  This is due to apol using
    a similar parser to checkpolicy, which no longer accepts this use of
    the complement operator (~).
 
 SEAUDIT
 
-1. Sorting by date will not work correctly if your audit log spans 
-   through a new calendar year.  For example, if your audit log 
-   includes entries from December 2003 and January 2004, when you sort 
-   by date January 2004 will come before December 2003 entire.  This 
-   is because audit logs do not include a year so we assign the same 
-   year to all dates.
+1. Sorting by date will not work correctly if an audit log spans 
+   through a new calendar year.  For example, if the audit log 
+   includes entries from December 2003 and January 2004, when sorted
+   by date January 2004 will come before the December 2003 entry.  This 
+   is because audit logs do not include a year; all messages are
+   assumed to have occurred on the same year.
+
+2. Audit messages that span multiple lines are not parsed correctly.
+   This will be addressed in a future revision of SETools.
+
+LIBPOLDIFF-SWIG-JAVA
+
+1. There is currently an issue with SWIG Java bindings that prevents
+   disowning an object, and there is an issue in libsepol that prevents the
+   duplication of a policy. Pending the availability of one of these features,
+   it will not be possible to safely use libpoldiff in Java. Future revisions
+   to the policy representation are expected to permit the duplication of
+   policies.
 
 TESTING INFORMATION
 
 Operating Systems:
-  Fedora Core 5 and 6
-  
-SELinux version:
-  2.6
+  Fedora Core 5, 6, and 7, both i386 and x86_64 architectures
 
 SELinux monolithic policy versions:
   12, 15, 16, 17, 18
@@ -64,12 +68,6 @@ SELinux monolithic policy versions:
 
 SELinux modular policy versions:
   5, 6
-
-Tcl/Tk versions:
-  8.4.9 and 8.4.12
-
-Desktop environments:
-  Gnome, KDE
 
 Please report any new bugs or comments to setools-bugs@tresys.com.
 Thank you for using SETools!

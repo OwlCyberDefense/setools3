@@ -36,18 +36,16 @@ information.
 SETools includes the following graphical tools, command-line tools,
 and libraries:
 
-  apol          Tcl/Tk-based policy analysis tool
-  awish         customized wish interpreter
+  apol          policy analysis tool
   libapol       policy analysis library
-  libapol-tcl   bindings between apol and libapol
   libpoldiff    semantic policy difference library
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
-  libsefs       SELinux filesystem database library
+  libsefs       open and search SELinux file contexts
   seaudit       audit log analysis tools: seaudit and seaudit-report
   sechecker     SELinux policy checking tool
   secmds        command line tools: seinfo, sesearch, findcon,
-                replcon, indexcon, and searchcon
+                replcon, and indexcon
   sediff        semantic policy difference tools: sediff and sediffx
 
 Each of these components is in a subdirectory under the top-level
@@ -75,19 +73,21 @@ compilation:
   libselinux-1.30.27 or greater
   libsepol-1.12.27 or greater, but NOT libsepol-2.0.2
   libxml-2.0
+  sqlite3-3.2.0 or greater
 
 The following are not strictly required but highly recommended:
+  swig 1.3.28 or greater
   tcl-8.4.9-devel or greater
-  tk-8.4.9-devel or greater
+  tk-8.4.9 or greater
   glib2-2.0
   gtk2-2.8
   libglade2
 These packages are needed to build SETools's graphical tools.
 
-To build the SETools SWIG wrappers, these packages are required:
-  swig 1.3.28 or greater
-  python-devel 2.3 or greater
+To build additional SETools SWIG wrappers, these packages are
+required:
   Java JDK 1.2 or greater
+  python-devel 2.3 or greater
 
 Apol requires BWidget-1.7 or greater to run.  The BWidget toolkit is
 part of the tcllib package and is often not present in Linux
@@ -107,13 +107,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.2
+  $ cd setools-3.3
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.2, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.3, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 
@@ -155,7 +155,7 @@ You can customize your SETools build using the flags given to
 
   --disable-gui
       Build only the command-line tools: seinfo, sesearch, findcon,
-      indexcon, replcon, searchcon, sechecker, and sediff.
+      indexcon, replcon, sechecker, and sediff.
 
   --disable-bwidget-check
       Assume that BWidget 1.8 is installed on the system.  The
@@ -170,20 +170,19 @@ You can customize your SETools build using the flags given to
       disable parts of SETools.  By specifying this flag,
       'configure' will not disable parts of SETools.
 
-  --disable-sefs
-      Disable sefs support.  Use this flag if SETools will be
-      deployed on systems not running SELinux.  For example, sediff
-      does not need an SELinux-enabled kernel to operate.
+  --enable-swig-java
+      Build SWIG interfaces for Java.  This permits third-party
+      developers who prefer Java to use the SETools libraries for
+      their own projects.
 
   --enable-swig-python
       Build SWIG interfaces for Python.  This permits third-party
       developers who prefer Python to use the SETools libraries for
       their own projects.
 
-  --enable-swig-java
-      Build SWIG interfaces for Java.  This permits third-party
-      developers who prefer Java to use the SETools libraries for
-      their own projects.
+  --enable-swig-tcl
+      Build SWIG interfaces for Tcl.  This is needed for the apol
+      tool.  By default this flag is enabled.
 
   --enable-sepol-src=PATH
       Look for libsepol source files in PATH.  Use this flag when
@@ -216,6 +215,10 @@ You can customize your SETools build using the flags given to
       Explicitly use PATH as the default SELinux policy source file,
       instead of inferring its location based upon the return value
       of selinux_policy_root().
+
+  --with-test-policies=PATH
+      Use the policies in PATH as input to the SETools tests; these
+      tests are invoked upon `make check'.
 
 Of course, `configure' accepts other usual flags such as --prefix.
 
@@ -299,10 +302,6 @@ The main emphasis of SETools is the graphical analysis tools.
       policy, examine the policy's components and rules, and perform
       various types of analyses.
 
-  awish:
-      A customized wish interpreter built against SETools libraries.
-      It is used to test features of apol.
-
   seaudit:
       A GTK+ graphical audit log analysis tool for SELinux.  This
       tool allows users to sort and filter the system's audit log,
@@ -334,23 +333,17 @@ secmds subdirectory; the rest are in their own directories.
       SELinux policy.
 
   findcon:
-      A tool to search the system's filesystem for files matching a
-      certain search string.  The search string can specify complete
-      security contexts, partial contexts, and shell globbing-style
-      wildcards.
+      A tool to search files with a matching SELinux file context.
+      The tool can search a filesystem directly, a file_contexts file,
+      or a database as created by indexcon.
 
   replcon:
       A tool to search the filesystem, replacing a matched file's
       context with a different one.
 
   indexcon:
-      A tool to create a SQLite3 database that indexes the security
-      contexts of a SELinux filesystem.
-
-  searchcon:
-      A tool to query a database created by indexcon for specific
-      pathnames and/or for pathnames whose label contains a
-      particular type name and/or user name.
+      A tool to create a database that indexes the security contexts
+      of a SELinux filesystem.
 
   sechecker:
       A tool for performing modular checks on an SELinux policy.
@@ -407,21 +400,18 @@ maintain compatibility beginning with SETools version 3.0.
       them.  Its main users are sediff and sediffx.
 
   libsefs:
-      Create a snapshot of SELinux filesystem security contexts and
-      stores them into a SQLite3 database.  Routines exist to create
-      and execute SQL queries into the database.  This library also
-      has functions to parse the system's default file_contexts.
+      Create a represention of file contexts, by reading contexts
+      directly from a filesystem, from a file_contexts file, or from a
+      specially formatted database.  Queries can then be created and
+      executed against those file contexts
 
-  libapol-tcl:
-      Glue code that provides bindings between apol (a Tcl/Tk
-      application) and libapol/libqpol.  The functions within are
-      not meant to be used by any other program.
-
-The first four libraries have SWIG wrappers that are built if
---enable-swig-python and/or --enable-swig-java are given during
-configuration time.  The generated Python wrappers will be installed
-to Python's site-packages directory; Java wrappers will be in placed
-in $PREFIX/lib and $PREFIX/lib/setools.
+These libraries have SWIG wrappers that are built if
+--enable-swig-java, --enable-swig-python, and/or --enable-swig-tcl are
+given during configuration time.  The generated Java wrappers will be
+in placed $PREFIX/lib; symlinks to jar files will be in
+$PREFIX/share/java.  Python wrappers will be installed to Python's
+site-packages directory.  Tcl wrappers are built as Tcl packages
+(e.g., `package require apol') and placed in $PREFIX/lib/setools.
 
 
 4. Obtaining SETools

@@ -164,19 +164,21 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	apol_vector_t *perm_vector2 = NULL, *perm_intersection = NULL;
 	apol_vector_t *tmp_v = NULL;
 	size_t i, j, k, l, tmp_counter;
-	qpol_avrule_t *rule1, *rule2;
-	qpol_type_t *source, *target;
-	qpol_class_t *object;
+	const qpol_avrule_t *rule1, *rule2;
+	const qpol_type_t *source, *target;
+	const qpol_class_t *object;
 	qpol_iterator_t *perm_iter1, *perm_iter2;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *string1, *string2, *tmp, *src_name, *tgt_name, *obj_name, *perms;
+	char *string1, *string2, *tmp;
+	const char *src_name, *tgt_name, *obj_name, *perms;
 
 	error = rule_found = 0;
 	allow_rules = auditallow_rules = dontaudit_rules = perm_vector1 = perm_vector2 = perm_intersection = NULL;
 	rule1 = rule2 = 0;
 	source = target = NULL;
 	perm_iter1 = perm_iter2 = NULL;
-	string1 = string2 = tmp = src_name = tgt_name = obj_name = perms = NULL;
+	string1 = string2 = tmp = NULL;
+	src_name = tgt_name = obj_name = perms = NULL;
 
 	if (!mod || !policy) {
 		ERR(NULL, "%s", strerror(EINVAL));
@@ -356,7 +358,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 							ERR(policy, "%s", strerror(error));
 							goto spurious_audit_run_fail;
 						}
-						item->item = rule1;	/* item is the dontaudit rule */
+						item->item = (void *)rule1;	/* item is the dontaudit rule */
 					}
 					if (!item->proof) {
 						item->proof = apol_vector_create(sechk_proof_free);
@@ -504,7 +506,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					goto spurious_audit_run_fail;
 				}
 			}
-			item->item = rule1;
+			item->item = (void *)rule1;
 			if (!item->proof) {
 				item->proof = apol_vector_create(sechk_proof_free);
 				if (!item->proof) {
@@ -597,7 +599,7 @@ int spurious_audit_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 					goto spurious_audit_run_fail;
 				}
 			}
-			item->item = rule1;
+			item->item = (void *)rule1;
 			/* proof is the lack of Allow rule */
 			proof = sechk_proof_new(NULL);
 			if (!proof) {

@@ -13,15 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SELinux policy analysis
-# Requires tcl and tk 8.4+, with BWidget
-
-
-##############################################################
-# ::Apol_TE
-#
-# The TE Rules page
-##############################################################
 namespace eval Apol_TE {
     variable vals
     variable widgets
@@ -29,158 +20,13 @@ namespace eval Apol_TE {
     variable enabled
 }
 
-########################################################################
-# ::goto_line
-#	- goes to indicated line in text box
-#
-proc Apol_TE::goto_line { line_num } {
-    variable widgets
-    variable tabs
-    if {[$widgets(results) pages] != {}} {
-        set raisedPage [$widgets(results) raise]
-        if {$raisedPage != {}} {
-            Apol_Widget::gotoLineSearchResults $tabs($raisedPage) $line_num
-	}
-    }
-}
-
-##############################################################
-# ::search
-#	- Search text widget for a string
-#
-proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
-    variable widgets
-    variable tabs
-    if {[$widgets(results) pages] != {}} {
-        set raisedPage [$widgets(results) raise]
-        if {$raisedPage != {}} {
-            ApolTop::textSearch $tabs($raisedPage).tb $str $case_Insensitive $regExpr $srch_Direction
-	}
-    }
-}
-
-
-proc Apol_TE::set_Focus_to_Text { tab } {
-    variable widgets
-    variable tabs
-    if {[$widgets(results) pages] != {}} {
-        set raisedPage [$widgets(results) raise]
-        if {$raisedPage != {}} {
-            focus $tabs($raisedPage)
-	}
-    }
-}
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::get_results_raised_tab
-# -----------------------------------------------------------------------------
-proc Apol_TE::get_results_raised_tab {} {
-    variable widgets
-    $widgets(results) raise
-}
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::open
-# -----------------------------------------------------------------------------
-proc Apol_TE::open { } {
-    reinitialize_default_search_options
-    reinitialize_search_widgets
-    reinitialize_tabs
-
-    variable vals
-    variable enabled
-    set vals(cp:classes) $Apol_Class_Perms::class_list
-    set enabled(cp:classes) 1
-    set enabled(cp:perms) 1
-}
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::close
-# -----------------------------------------------------------------------------
-proc Apol_TE::close { } {
-    reinitialize_tabs
-    reinitialize_search_widgets
-    reinitialize_default_search_options
-    set enabled(cp:perms) 1
-}
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::reinitialize_default_search_options
-# -----------------------------------------------------------------------------
-proc Apol_TE::reinitialize_default_search_options { } {
-    variable vals
-    array set vals {
-        rs:allow 1       rs:type_transition 1
-        rs:neverallow 1  rs:type_member 1
-        rs:auditallow 1  rs:type_change 1
-        rs:dontaudit 1
-
-        oo:enabled 0
-        oo:regexp 0
-
-        ta:use_source 0
-        ta:source_indirect 1
-        ta:source_which source
-        ta:source_sym,types 1 ta:source_sym,attribs 0
-        ta:source_sym {}
-
-        ta:use_target 0
-        ta:target_indirect 1
-        ta:target_sym,types 1 ta:target_sym,attribs 0
-        ta:target_sym {}
-
-        ta:use_default 0
-        ta:default_sym,types 1 ta:default_sym,attribs 0
-        ta:default_sym {}
-
-        cp:classes {}
-        cp:classes_selected {}
-        cp:perms {}
-        cp:perms_selected {}
-        cp:perms_toshow all
-    }
-
-    variable enabled
-    array set enabled {
-        ta:use_source 1
-        ta:use_target 1
-        ta:use_default 1
-
-        cp:classes 0
-        cp:perms 0
-    }
-}
-
-proc Apol_TE::reinitialize_tabs {} {
-    variable widgets
-    variable tabs
-    array set tabs {
-        next_result_id 1
-    }
-    foreach p [$widgets(results) pages 0 end] {
-        delete_results $p
-    }
-}
-
-proc Apol_TE::reinitialize_search_widgets {} {
-    variable widgets
-    $widgets(search_opts) raise typeattrib
-
-    $widgets(cp:classes) selection clear 0 end
-    $widgets(cp:perms) selection clear 0 end
-}
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::create
-# -----------------------------------------------------------------------------
-proc Apol_TE::create {nb} {
+proc Apol_TE::create {tab_name nb} {
     variable vals
     variable widgets
 
-    reinitialize_default_search_options
+    _initializeVars
 
-    # Layout Frames
-    set frame [$nb insert end $ApolTop::terules_tab -text "TE Rules"]
+    set frame [$nb insert end $tab_name -text "TE Rules"]
     set pw [PanedWindow $frame.pw -side left -weights extra]
     set topf [$pw add -weight 0]
     set bottomf [$pw add -weight 1]
@@ -208,26 +54,33 @@ proc Apol_TE::create {nb} {
     # Rule selection subframe
     set fm_rules [$rsbox getframe]
     set allow [checkbutton $fm_rules.allow -text "allow" \
-                   -variable Apol_TE::vals(rs:allow)]
+                   -onvalue $::QPOL_RULE_ALLOW -offvalue 0 \
+                   -variable Apol_TE::vals(rs:avrule_allow)]
     set neverallow [checkbutton $fm_rules.neverallow -text "neverallow" \
-                        -variable Apol_TE::vals(rs:neverallow)]
+                        -onvalue $::QPOL_RULE_NEVERALLOW -offvalue 0 \
+                        -variable Apol_TE::vals(rs:avrule_neverallow)]
     set auditallow [checkbutton $fm_rules.auditallow -text "auditallow" \
-                        -variable Apol_TE::vals(rs:auditallow)]
+                        -onvalue $::QPOL_RULE_AUDITALLOW -offvalue 0 \
+                        -variable Apol_TE::vals(rs:avrule_auditallow)]
     set dontaudit [checkbutton $fm_rules.dontaudit -text "dontaudit" \
-                       -variable Apol_TE::vals(rs:dontaudit)]
+                       -onvalue $::QPOL_RULE_DONTAUDIT -offvalue 0 \
+                       -variable Apol_TE::vals(rs:avrule_dontaudit)]
     set type_transition [checkbutton $fm_rules.type_transition -text "type_trans" \
+                             -onvalue $::QPOL_RULE_TYPE_TRANS -offvalue 0 \
                              -variable Apol_TE::vals(rs:type_transition)]
     set type_member [checkbutton $fm_rules.type_member -text "type_member" \
+                         -onvalue $::QPOL_RULE_TYPE_MEMBER -offvalue 0 \
                          -variable Apol_TE::vals(rs:type_member)]
     set type_change [checkbutton $fm_rules.type_change -text "type_change" \
+                         -onvalue $::QPOL_RULE_TYPE_CHANGE -offvalue 0 \
                          -variable Apol_TE::vals(rs:type_change)]
     grid $allow $type_transition -sticky w -padx 2
-    grid $neverallow $type_member -sticky w -padx 2
-    grid $auditallow $type_change -sticky w -padx 2
-    grid $dontaudit x -sticky w -padx 2
+    grid $auditallow $type_member -sticky w -padx 2
+    grid $dontaudit $type_change -sticky w -padx 2
+    grid $neverallow x -sticky w -padx 2
     foreach x {allow neverallow auditallow dontaudit type_transition type_member type_change} {
         trace add variable Apol_TE::vals(rs:$x) write \
-            [list Apol_TE::toggle_rule_selection]
+            [list Apol_TE::_toggle_rule_selection]
     }
 
     # Other search options subframe
@@ -238,16 +91,16 @@ proc Apol_TE::create {nb} {
                     -variable Apol_TE::vals(oo:regexp)]
     pack $enabled $regexp -expand 0 -fill none -anchor w
 
-    createTypesAttribsTab
-    createClassesPermsTab
+    _createTypesAttribsTab
+    _createClassesPermsTab
 
     # Action buttons
     set widgets(new) [button $abox.new -text "New Search" -width 12 \
-                       -command [list Apol_TE::search_terules new]]
+                       -command [list Apol_TE::_search_terules new]]
     set widgets(update) [button $abox.update -text "Update Search" -width 12 -state disabled \
-                             -command [list Apol_TE::search_terules update]]
+                             -command [list Apol_TE::_search_terules update]]
     set widgets(reset) [button $abox.reset -text "Reset Criteria" -width 12 \
-                            -command Apol_TE::reset]
+                            -command Apol_TE::_reset]
     pack $widgets(new) $widgets(update) $widgets(reset) \
         -side top -pady 5 -padx 5 -anchor ne
 
@@ -256,33 +109,209 @@ proc Apol_TE::create {nb} {
     # Popup menu widget
     set popupTab_Menu [menu .popup_terules -tearoff 0]
     set tab_menu_callbacks \
-        [list {"Close Tab" Apol_TE::delete_results} \
-             {"Rename Tab" Apol_TE::display_rename_tab_dialog}]
+        [list {"Close Tab" Apol_TE::_delete_results} \
+             {"Rename Tab" Apol_TE::_display_rename_tab_dialog}]
 
     # Notebook creation for results
     set widgets(results) [NoteBook [$rbox getframe].results]
-    $widgets(results) bindtabs <Button-1> Apol_TE::switch_to_tab
+    $widgets(results) bindtabs <Button-1> Apol_TE::_switch_to_tab
     $widgets(results) bindtabs <Button-3> \
-        [list ApolTop::popup_Tab_Menu \
+        [list ApolTop::popup \
              %W %x %y $popupTab_Menu $tab_menu_callbacks]
     set close [button [$rbox getframe].close -text "Close Tab" \
-                   -command Apol_TE::delete_current_results]
+                   -command Apol_TE::_delete_current_results]
     pack $widgets(results) -expand 1 -fill both -padx 4
     pack $close -expand 0 -fill x -padx 4 -pady 2
 
-    reinitialize_tabs
+    _initializeVars
 
     return $frame
 }
 
+proc Apol_TE::open {ppath} {
+    _initializeVars
+    _initializeWidgets
+    _initializeTabs
+
+    variable vals
+    variable enabled
+    set vals(cp:classes) [Apol_Class_Perms::getClasses]
+    set enabled(cp:classes) 1
+    set enabled(cp:perms) 1
+}
+
+proc Apol_TE::close {} {
+    _initializeTabs
+    _initializeWidgets
+    _initializeVars
+    set enabled(cp:perms) 1
+}
+
+proc Apol_TE::getTextWidget {} {
+    variable widgets
+    variable tabs
+    if {[$widgets(results) pages] != {}} {
+        set raisedPage [$widgets(results) raise]
+        if {$raisedPage != {}} {
+            return $tabs($raisedPage)
+	}
+    }
+    return {}
+}
+
+proc Apol_TE::save_query_options {file_channel query_file} {
+    variable vals
+    foreach {key value} [array get vals] {
+        if {$key != "cp:classes" && $key != "cp:perms"} {
+            puts $file_channel "$key $value"
+        }
+    }
+}
+
+proc Apol_TE::load_query_options {file_channel} {
+    variable vals
+    variable widgets
+    variable enabled
+    _initializeVars
+
+    # load as many values as possible
+    set classes_selected {}
+    set perms_selected {}
+    while {[gets $file_channel line] >= 0} {
+        set line [string trim $line]
+        # Skip empty lines and comments
+        if {$line == {} || [string index $line 0] == "#"} {
+            continue
+        }
+        regexp -line -- {^(\S+)( (.+))?} $line -> key --> value
+        if {$key == "cp:classes_selected"} {
+            set classes_selected $value
+        } elseif {$key == "cp:perms_selected"} {
+            set perms_selected $value
+        } else {
+            set vals($key) $value
+        }
+    }
+
+    # update the display
+    _initializeWidgets
+    set vals(cp:classes) [Apol_Class_Perms::getClasses]
+    set enabled(cp:classes) 1
+    set enabled(cp:perms) 1
+    _toggle_perms_toshow -> -> reset
+
+    # then verify that selected object classes and permissions exist
+    # for this policy
+
+    set unknowns {}
+    set vals(cp:classes_selected) {}
+    foreach class $classes_selected {
+        if {[set i [lsearch $vals(cp:classes) $class]] >= 0} {
+            $widgets(cp:classes) selection set $i
+            lappend vals(cp:classes_selected) $class
+        } else {
+            lappend unknowns $class
+        }
+    }
+    if {[llength $unknowns] > 0} {
+        tk_messageBox -icon warning -type ok -title "Open Apol Query" \
+            -message "The following object classes do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
+            -parent .
+    }
+
+    _toggle_perms_toshow {} {} {}
+    set unknowns {}
+    set vals(cp:perms_selected) {}
+    foreach perm $perms_selected {
+        if {[set i [lsearch $vals(cp:perms) $perm]] >= 0} {
+            $widgets(cp:perms) selection set $i
+            lappend vals(cp:perms_selected) $perm
+        } else {
+            lappend unknowns $perm
+        }
+    }
+    if {[llength $unknowns] > 0} {
+        tk_messageBox -icon warning -type ok -title "Open Apol Query" \
+            -message "The following permissions do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
+            -parent $parentDlg
+    }
+}
+
 #### private functions below ####
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::createTypesAttribsTab
-#
-#  Description: This function is called by Apol_TE::create.
-# -----------------------------------------------------------------------------
-proc Apol_TE::createTypesAttribsTab {} {
+proc Apol_TE::_initializeVars {} {
+    variable vals
+    array set vals [list \
+                        rs:avrule_allow $::QPOL_RULE_ALLOW \
+                        rs:avrule_neverallow 0 \
+                        rs:avrule_auditallow $::QPOL_RULE_AUDITALLOW \
+                        rs:avrule_dontaudit $::QPOL_RULE_DONTAUDIT \
+                        rs:type_transition $::QPOL_RULE_TYPE_TRANS \
+                        rs:type_member $::QPOL_RULE_TYPE_MEMBER \
+                        rs:type_change $::QPOL_RULE_TYPE_CHANGE \
+                        ta:source_sym,types $::APOL_QUERY_SYMBOL_IS_TYPE \
+                        ta:target_sym,types $::APOL_QUERY_SYMBOL_IS_TYPE \
+                        ta:default_sym,types $::APOL_QUERY_SYMBOL_IS_TYPE \
+                       ]
+
+    array set vals {
+        oo:enabled 0
+        oo:regexp 0
+
+        ta:use_source 0
+        ta:source_indirect 1
+        ta:source_which source
+        ta:source_sym,attribs 0
+        ta:source_sym {}
+
+        ta:use_target 0
+        ta:target_indirect 1
+        ta:target_sym,attribs 0
+        ta:target_sym {}
+
+        ta:use_default 0
+        ta:default_sym,attribs 0
+        ta:default_sym {}
+
+        cp:classes {}
+        cp:classes_selected {}
+        cp:perms {}
+        cp:perms_selected {}
+        cp:perms_toshow all
+        cp:perms_matchall 0
+    }
+
+    variable enabled
+    array set enabled {
+        ta:use_source 1
+        ta:use_target 1
+        ta:use_default 1
+
+        cp:classes 0
+        cp:perms 0
+    }
+}
+
+proc Apol_TE::_initializeTabs {} {
+    variable widgets
+    variable tabs
+    array set tabs {
+        next_result_id 1
+    }
+    foreach p [$widgets(results) pages 0 end] {
+        _delete_results $p
+    }
+}
+
+proc Apol_TE::_initializeWidgets {} {
+    variable widgets
+    $widgets(search_opts) raise typeattrib
+
+    $widgets(cp:classes) selection clear 0 end
+    $widgets(cp:perms) selection clear 0 end
+}
+
+proc Apol_TE::_createTypesAttribsTab {} {
     variable vals
     variable widgets
     variable enabled
@@ -297,14 +326,14 @@ proc Apol_TE::createTypesAttribsTab {} {
     }
     grid rowconfigure $ta_tab 0 -weight 1
 
-    create_ta_box source $fm_source "Source type/attribute" 1 1 1
-    create_ta_box target $fm_target "Target type/attribute" 1 0 1
-    create_ta_box default $fm_default "Default type" 0 0 0
+    _create_ta_box source $fm_source "Source type/attribute" 1 1 1
+    _create_ta_box target $fm_target "Target type/attribute" 1 0 1
+    _create_ta_box default $fm_default "Default type" 0 0 0
 
     $widgets(search_opts) raise typeattrib
 }
 
-proc Apol_TE::create_ta_box {prefix f title has_indirect has_which has_attribs} {
+proc Apol_TE::_create_ta_box {prefix f title has_indirect has_which has_attribs} {
     variable vals
     variable widgets
 
@@ -312,7 +341,7 @@ proc Apol_TE::create_ta_box {prefix f title has_indirect has_which has_attribs} 
                                        -variable Apol_TE::vals(ta:use_${prefix})]
     pack $widgets(ta:use_${prefix}) -side top -anchor w
     trace add variable Apol_TE::vals(ta:use_${prefix}) write \
-        [list Apol_TE::toggle_ta_box $prefix]
+        [list Apol_TE::_toggle_ta_box $prefix]
 
     set w {}
 
@@ -332,13 +361,15 @@ proc Apol_TE::create_ta_box {prefix f title has_indirect has_which has_attribs} 
         set ta_frame [frame $f.ta]
         pack $ta_frame -expand 0 -anchor center -pady 2
         set types [checkbutton $ta_frame.types -text "Types" -state disabled \
+                       -onvalue $::APOL_QUERY_SYMBOL_IS_TYPE -offvalue 0 \
                        -variable Apol_TE::vals(ta:${prefix}_sym,types)]
         set attribs [checkbutton $ta_frame.attribs -text "Attribs" -state disabled \
+                         -onvalue $::APOL_QUERY_SYMBOL_IS_ATTRIBUTE -offvalue 0 \
                          -variable Apol_TE::vals(ta:${prefix}_sym,attribs)]
-        $types configure -command [list Apol_TE::toggle_ta_pushed $prefix $types]
-        $attribs configure -command [list Apol_TE::toggle_ta_pushed $prefix $attribs]
+        $types configure -command [list Apol_TE::_toggle_ta_pushed $prefix $types]
+        $attribs configure -command [list Apol_TE::_toggle_ta_pushed $prefix $attribs]
         trace add variable Apol_TE::vals(ta:${prefix}_sym,attribs) write \
-            [list Apol_TE::toggle_ta_sym $prefix]
+            [list Apol_TE::_toggle_ta_sym $prefix]
         pack $types $attribs -side left -padx 2
         lappend w $types $attribs
     }
@@ -362,7 +393,7 @@ proc Apol_TE::create_ta_box {prefix f title has_indirect has_which has_attribs} 
                            -variable Apol_TE::vals(ta:${prefix}_which) \
                            -value either]
         trace add variable Apol_TE::vals(ta:${prefix}_which) write \
-            [list Apol_TE::toggle_which]
+            [list Apol_TE::_toggle_which]
         pack $which_source $which_any -side left -padx 2
         pack $which_fm -anchor w -padx 6
         lappend w $which_source $which_any
@@ -372,16 +403,16 @@ proc Apol_TE::create_ta_box {prefix f title has_indirect has_which has_attribs} 
     # is enabled; for default type, this is invoked by a call to
     # reinitialize_default_search_options
     trace add variable Apol_TE::vals(ta:${prefix}_sym,types) write \
-            [list Apol_TE::toggle_ta_sym $prefix]
+            [list Apol_TE::_toggle_ta_sym $prefix]
 
     set widgets(ta:${prefix}_widgets) $w
     trace add variable Apol_TE::enabled(ta:use_${prefix}) write \
-        [list Apol_TE::toggle_enable_ta ${prefix}]
+        [list Apol_TE::_toggle_enable_ta ${prefix}]
 }
 
-proc Apol_TE::toggle_rule_selection {name1 name2 op} {
-    maybe_enable_default_type
-    maybe_enable_perms
+proc Apol_TE::_toggle_rule_selection {name1 name2 op} {
+    _maybe_enable_default_type
+    _maybe_enable_perms
 }
 
 
@@ -390,26 +421,26 @@ proc Apol_TE::toggle_rule_selection {name1 name2 op} {
 
 # called when there is a change in state to the top checkbutton within
 # a ta box
-proc Apol_TE::toggle_ta_box {col name1 name2 op} {
+proc Apol_TE::_toggle_ta_box {col name1 name2 op} {
     variable vals
     variable enabled
     if {$col == "source"} {
-        maybe_enable_target_type
-        maybe_enable_default_type
+        _maybe_enable_target_type
+        _maybe_enable_default_type
     }
 
     # force a refresh of this box's state; this invokes
-    # toggle_enable_ta callback
+    # _toggle_enable_ta callback
     set enabled(ta:use_${col}) $enabled(ta:use_${col})
 }
 
 # disable target type/attrib and default type if source box is marked as "any"
-proc Apol_TE::toggle_which {name1 name2 op} {
-    maybe_enable_target_type
-    maybe_enable_default_type
+proc Apol_TE::_toggle_which {name1 name2 op} {
+    _maybe_enable_target_type
+    _maybe_enable_default_type
 }
 
-proc Apol_TE::maybe_enable_target_type {} {
+proc Apol_TE::_maybe_enable_target_type {} {
     variable vals
     variable enabled
 
@@ -424,7 +455,7 @@ proc Apol_TE::maybe_enable_target_type {} {
     }
 }
 
-proc Apol_TE::maybe_enable_default_type {} {
+proc Apol_TE::_maybe_enable_default_type {} {
     variable vals
     variable enabled
 
@@ -447,7 +478,7 @@ proc Apol_TE::maybe_enable_default_type {} {
 }
 
 # called whenever a ta box is enabled or disabled
-proc Apol_TE::toggle_enable_ta {col name1 name2 op} {
+proc Apol_TE::_toggle_enable_ta {col name1 name2 op} {
     variable vals
     variable widgets
     variable enabled
@@ -478,7 +509,7 @@ proc Apol_TE::toggle_enable_ta {col name1 name2 op} {
     }
 }
 
-proc Apol_TE::toggle_ta_sym {col name1 name2 op} {
+proc Apol_TE::_toggle_ta_sym {col name1 name2 op} {
     variable vals
     variable widgets
 
@@ -487,35 +518,33 @@ proc Apol_TE::toggle_ta_sym {col name1 name2 op} {
         return
     }
     if {$vals(ta:${col}_sym,types) && $vals(ta:${col}_sym,attribs)} {
-        set items [lsort [concat $Apol_Types::typelist $Apol_Types::attriblist]]
+        set items [lsort [concat [Apol_Types::getTypes] [Apol_Types::getAttributes]]]
     } elseif {$vals(ta:${col}_sym,types)} {
-        set items $Apol_Types::typelist
+        set items [Apol_Types::getTypes]
     } else {
-        set items $Apol_Types::attriblist
+        set items [Apol_Types::getAttributes]
     }
     $widgets(ta:${col}_sym) configure -values $items
 }
 
 # disallow both types and attribs to be deselected within a ta box
-proc Apol_TE::toggle_ta_pushed {col cb} {
+proc Apol_TE::_toggle_ta_pushed {col cb} {
     variable vals
     if {!$vals(ta:${col}_sym,types) && !$vals(ta:${col}_sym,attribs)} {
-
         $cb select
     }
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::createClassesPermsTab
-# -----------------------------------------------------------------------------
-proc Apol_TE::createClassesPermsTab {} {
+# code to create and handle the classe/permissions subtab
+
+proc Apol_TE::_createClassesPermsTab {} {
     variable vals
     variable widgets
     variable enabled
 
     set objects_tab [$widgets(search_opts) insert end classperms -text "Classes/Permissions"]
     set fm_objs [TitleFrame $objects_tab.objs -text "Object Classes"]
-    set fm_perms [TitleFrame $objects_tab.perms -text "Allow and Audit Rule Permissions"]
+    set fm_perms [TitleFrame $objects_tab.perms -text "AV Rule Permissions"]
     pack $fm_objs -side left -expand 0 -fill both -padx 2 -pady 2
     pack $fm_perms -side left -expand 1 -fill both -padx 2 -pady 2
 
@@ -530,10 +559,10 @@ proc Apol_TE::createClassesPermsTab {} {
     update
     grid propagate $sw 0
     bind $widgets(cp:classes) <<ListboxSelect>> \
-        [list Apol_TE::toggle_cp_select classes]
+        [list Apol_TE::_toggle_cp_select classes]
     pack $sw -expand 1 -fill both
     set clear [button [$fm_objs getframe].b -text "Clear" -width 6 -state disabled \
-                   -command [list Apol_TE::clear_cp_listbox $widgets(cp:classes) classes]]
+                   -command [list Apol_TE::_clear_cp_listbox $widgets(cp:classes) classes]]
     pack $clear -expand 0 -pady 2
     set widgets(cp:classes_widgets) [list $widgets(cp:classes) $clear]
 
@@ -548,12 +577,13 @@ proc Apol_TE::createClassesPermsTab {} {
     update
     grid propagate $sw 0
     bind $widgets(cp:perms) <<ListboxSelect>> \
-        [list Apol_TE::toggle_cp_select perms]
+        [list Apol_TE::_toggle_cp_select perms]
     set clear [button $f.clear -text "Clear" \
-                   -command [list Apol_TE::clear_cp_listbox $widgets(cp:perms) perms]]
+                   -command [list Apol_TE::_clear_cp_listbox $widgets(cp:perms) perms]]
     set reverse [button $f.reverse -text "Reverse" \
-                     -command [list Apol_TE::reverse_cp_listbox $widgets(cp:perms)]]
-    set perm_rb_f [frame $f.rb]
+                     -command [list Apol_TE::_reverse_cp_listbox $widgets(cp:perms)]]
+    set perm_opts_f [frame $f.perms]
+    set perm_rb_f [frame $perm_opts_f.rb]
     set l [label $perm_rb_f.l -text "Permissions to show:" -state disabled]
     set all [radiobutton $perm_rb_f.all -text "All" \
                        -variable Apol_TE::vals(cp:perms_toshow) -value all]
@@ -562,28 +592,31 @@ proc Apol_TE::createClassesPermsTab {} {
     set intersect [radiobutton $perm_rb_f.inter -text "Common to selected classes" \
                        -variable Apol_TE::vals(cp:perms_toshow) -value intersect]
     trace add variable Apol_TE::vals(cp:perms_toshow) write \
-        Apol_TE::toggle_perms_toshow
-    pack $l $all $union $intersect -anchor w -padx 4
-    grid $sw - $perm_rb_f -sticky nsw
+        Apol_TE::_toggle_perms_toshow
+    pack $l $all $union $intersect -anchor w
+    set all_perms [checkbutton $perm_opts_f.all -text "AV rule must have all selected permissions" \
+                       -variable Apol_TE::vals(cp:perms_matchall)]
+    pack $perm_rb_f $all_perms -anchor w -pady 4 -padx 4
+    grid $sw - $perm_opts_f -sticky nsw
     grid $clear $reverse ^ -pady 2 -sticky ew
     grid columnconfigure $f 0 -weight 0 -uniform 1 -pad 2
     grid columnconfigure $f 1 -weight 0 -uniform 1 -pad 2
     grid columnconfigure $f 2 -weight 1
     grid rowconfigure $f 0 -weight 1
     set widgets(cp:perms_widgets) \
-        [list $widgets(cp:perms) $clear $reverse $l $all $union $intersect]
+        [list $widgets(cp:perms) $clear $reverse $l $all $union $intersect $all_perms]
 
     trace add variable Apol_TE::vals(cp:classes_selected) write \
-        [list Apol_TE::update_cp_tabname]
+        [list Apol_TE::_update_cp_tabname]
     trace add variable Apol_TE::vals(cp:perms_selected) write \
-        [list Apol_TE::update_cp_tabname]
+        [list Apol_TE::_update_cp_tabname]
     trace add variable Apol_TE::enabled(cp:classes) write \
-        [list Apol_TE::toggle_enable_cp classes]
+        [list Apol_TE::_toggle_enable_cp classes]
     trace add variable Apol_TE::enabled(cp:perms) write \
-        [list Apol_TE::toggle_enable_cp perms]
+        [list Apol_TE::_toggle_enable_cp perms]
 }
 
-proc Apol_TE::toggle_enable_cp {prefix name1 name2 op} {
+proc Apol_TE::_toggle_enable_cp {prefix name1 name2 op} {
     variable vals
     variable widgets
     variable enabled
@@ -602,12 +635,12 @@ proc Apol_TE::toggle_enable_cp {prefix name1 name2 op} {
     set vals(cp:${prefix}_selected) $vals(cp:${prefix}_selected)
 }
 
-proc Apol_TE::maybe_enable_perms {} {
+proc Apol_TE::_maybe_enable_perms {} {
     variable vals
     variable enabled
 
     set avrule_set 0
-    foreach x {allow neverallow auditallow dontaudit} {
+    foreach x {avrule_allow avrule_neverallow avrule_auditallow avrule_dontaudit} {
         if {$vals(rs:$x)} {
             set avrule_set 1
             break
@@ -620,7 +653,7 @@ proc Apol_TE::maybe_enable_perms {} {
     }
 }
 
-proc Apol_TE::toggle_perms_toshow {name1 name2 op} {
+proc Apol_TE::_toggle_perms_toshow {name1 name2 op} {
     variable vals
     variable widgets
     if {$vals(cp:perms_toshow) == "all"} {
@@ -634,7 +667,7 @@ proc Apol_TE::toggle_perms_toshow {name1 name2 op} {
         set vals(cp:perms) {}
         set vals(cp:perms_selected) {}
         foreach class $vals(cp:classes_selected) {
-            set vals(cp:perms) [lsort -unique -dictionary [concat $vals(cp:perms) [get_perms $class]]]
+            set vals(cp:perms) [lsort -unique -dictionary [concat $vals(cp:perms) [Apol_Class_Perms::getPermsForClass $class]]]
         }
     } else {  ;# intersection
         set vals(cp:perms) {}
@@ -646,9 +679,9 @@ proc Apol_TE::toggle_perms_toshow {name1 name2 op} {
         if {$classes == {}} {
             return
         }
-        set vals(cp:perms) [get_perms [lindex $classes 0]]
+        set vals(cp:perms) [Apol_Class_Perms::getPermsForClass [lindex $classes 0]]
         foreach class [lrange $classes 1 end] {
-            set this_perms [get_perms $class]
+            set this_perms [Apol_Class_Perms::getPermsForClass $class]
             set new_perms {}
             foreach p $vals(cp:perms) {
                 if {[lsearch -exact $this_perms $p] >= 0} {
@@ -662,7 +695,7 @@ proc Apol_TE::toggle_perms_toshow {name1 name2 op} {
 
 # called whenever an item with a class/perm listbox is
 # selected/deselected
-proc Apol_TE::toggle_cp_select {col} {
+proc Apol_TE::_toggle_cp_select {col} {
     variable vals
     variable widgets
     set items {}
@@ -671,32 +704,20 @@ proc Apol_TE::toggle_cp_select {col} {
     }
     set vals(cp:${col}_selected) $items
     if {$col == "classes"} {
-        toggle_perms_toshow {} {} update
+        _toggle_perms_toshow {} {} update
     }
 }
 
-# given a class name, return all of the permissions, both this class's
-# and its common class
-proc Apol_TE::get_perms {class} {
-    foreach {class common perms} [lindex [apol_GetClasses $class] 0] {break}
-    if {$common != {}} {
-        foreach {common p classes} [lindex [apol_GetCommons $common] 0] {break}
-        lsort -dictionary -unique [concat $perms $p]
-    } else {
-        lsort -dictionary $perms
-    }
-}
-
-proc Apol_TE::clear_cp_listbox {lb prefix} {
+proc Apol_TE::_clear_cp_listbox {lb prefix} {
     variable vals
     $lb selection clear 0 end
     set vals(cp:${prefix}_selected) {}
     if {$prefix == "classes"} {
-        toggle_perms_toshow {} {} update
+        _toggle_perms_toshow {} {} update
     }
 }
 
-proc Apol_TE::reverse_cp_listbox {lb} {
+proc Apol_TE::_reverse_cp_listbox {lb} {
     variable vals
     set old_selection [$lb curselection]
     set items {}
@@ -711,7 +732,7 @@ proc Apol_TE::reverse_cp_listbox {lb} {
     set vals(cp:perms_selected) $items
 }
 
-proc Apol_TE::update_cp_tabname {name1 name2 op} {
+proc Apol_TE::_update_cp_tabname {name1 name2 op} {
     variable vals
     variable widgets
     variable enabled
@@ -723,12 +744,7 @@ proc Apol_TE::update_cp_tabname {name1 name2 op} {
     }
 }
 
-########################################################################
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::delete_results
-# -----------------------------------------------------------------------------
-proc Apol_TE::delete_results {pageID} {
+proc Apol_TE::_delete_results {pageID} {
     variable widgets
     variable tabs
 
@@ -740,17 +756,17 @@ proc Apol_TE::delete_results {pageID} {
 
     # try to raise the next tab
     if {[set next_id [$widgets(results) pages $curpos]] != {}} {
-        switch_to_tab $next_id
+        _switch_to_tab $next_id
     } elseif {$curpos > 0} {
         # raise the previous page instead
-        switch_to_tab [$widgets(results) pages [expr {$curpos - 1}]]
+        _switch_to_tab [$widgets(results) pages [expr {$curpos - 1}]]
     } else {
         # no tabs remaining
         $widgets(update) configure -state disabled
     }
 }
 
-proc Apol_TE::display_rename_tab_dialog {pageID} {
+proc Apol_TE::_display_rename_tab_dialog {pageID} {
     variable widgets
     variable tabs
     set d [Dialog .apol_te_tab_rename -homogeneous 1 -spacing 2 -cancel 1 \
@@ -770,14 +786,14 @@ proc Apol_TE::display_rename_tab_dialog {pageID} {
     }
 }
 
-proc Apol_TE::delete_current_results {} {
+proc Apol_TE::_delete_current_results {} {
     variable widgets
     if {[set curid [$widgets(results) raise]] != {}} {
-        delete_results $curid
+        _delete_results $curid
     }
 }
 
-proc Apol_TE::create_new_results_tab {} {
+proc Apol_TE::_create_new_results_tab {} {
     variable vals
     variable widgets
     variable tabs
@@ -794,7 +810,7 @@ proc Apol_TE::create_new_results_tab {} {
     return $tabs($id)
 }
 
-proc Apol_TE::switch_to_tab {pageID} {
+proc Apol_TE::_switch_to_tab {pageID} {
     variable vals
     variable widgets
     variable tabs
@@ -811,7 +827,7 @@ proc Apol_TE::switch_to_tab {pageID} {
     set classes_selected $tmp_vals(cp:classes_selected)
     set perms_selected $tmp_vals(cp:perms_selected)
     array set vals $tabs($pageID:vals)
-    reinitialize_search_widgets
+    _initializeWidgets
     set vals(cp:classes_selected) $classes_selected
     set vals(cp:perms_selected) $perms_selected
     foreach c $classes_selected {
@@ -825,245 +841,184 @@ proc Apol_TE::switch_to_tab {pageID} {
 
 ########################################################################
 
-proc Apol_TE::reset {} {
+proc Apol_TE::_reset {} {
     variable enabled
     set old_classes_enabled $enabled(cp:classes)
-    reinitialize_default_search_options
-    reinitialize_search_widgets
+    _initializeVars
+    _initializeWidgets
     if {[set enabled(cp:classes) $old_classes_enabled]} {
         variable vals
-        set vals(cp:classes) $Apol_Class_Perms::class_list
+        set vals(cp:classes) [Apol_Class_Perms::getClasses]
         set enabled(cp:classes) 1
         set enabled(cp:perms) 1
     }
 }
 
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::search_terules
-# -----------------------------------------------------------------------------
-
-proc Apol_TE::search_terules {whichButton} {
+proc Apol_TE::_search_terules {whichButton} {
     variable vals
     variable widgets
     variable enabled
     variable tabs
 
     if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No current policy file is opened."
         return
     }
 
     # check search options
     if {$enabled(ta:use_source) && $vals(ta:use_source) && $vals(ta:source_sym) == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No source type/attribute was selected."
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No source type/attribute was selected."
         return
     }
     if {$enabled(ta:use_target) && $vals(ta:use_target) && $vals(ta:target_sym) == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No target type/attribute was selected."
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No target type/attribute was selected."
         return
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default) && $vals(ta:default_sym) == {}} {
 
-        tk_messageBox -icon error -type ok -title "Error" -message "No default type selected."
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No default type selected."
         return
     }
 
-    set rule_selection {}
-    foreach {key value} [array get vals rs:*] {
-        if {$value} {
-            lappend rule_selection [string range $key 3 end]
-        }
+    set avrule_selection 0
+    foreach {key value} [array get vals rs:avrule_*] {
+        set avrule_selection [expr {$avrule_selection | $value}]
     }
-    if {$rule_selection == {}} {
-            tk_messageBox -icon error -type ok -title "Error" -message "At least one rule must be selected."
+    set terule_selection 0
+    foreach {key value} [array get vals rs:type_*] {
+        set terule_selection [expr {$terule_selection | $value}]
+    }
+    if {$avrule_selection == 0 && $terule_selection == 0} {
+            tk_messageBox -icon error -type ok -title "TE Rule Search" -message "At least one rule must be selected."
             return
     }
 
-    # gather other options
-    set source_any 0
+    # start building queries
+    set avq [new_apol_avrule_query_t]
+    set teq [new_apol_terule_query_t]
+
     if {$enabled(ta:use_source) && $vals(ta:use_source)} {
         if {$vals(ta:source_which) == "either"} {
-            set source_any 1
+            $avq set_source_any $::ApolTop::policy 1
         }
-        set source [list $vals(ta:source_sym) $vals(ta:source_indirect) $vals(ta:source_sym,types) $vals(ta:source_sym,attribs)]
-    } else {
-        set source {}
+        $avq set_source $::ApolTop::policy $vals(ta:source_sym) $vals(ta:source_indirect)
+        $avq set_source_component $::ApolTop::policy [expr {$vals(ta:source_sym,types) | $vals(ta:source_sym,attribs)}]
+        $teq set_source $::ApolTop::policy $vals(ta:source_sym) $vals(ta:source_indirect)
+        $teq set_source_component $::ApolTop::policy [expr {$vals(ta:source_sym,types) | $vals(ta:source_sym,attribs)}]
     }
     if {$enabled(ta:use_target) && $vals(ta:use_target)} {
-        set target [list $vals(ta:target_sym) $vals(ta:target_indirect) $vals(ta:target_sym,types) $vals(ta:target_sym,attribs)]
-    } else {
-        set target {}
+        $avq set_target $::ApolTop::policy $vals(ta:target_sym) $vals(ta:target_indirect)
+        $avq set_target_component $::ApolTop::policy [expr {$vals(ta:target_sym,types) | $vals(ta:target_sym,attribs)}]
+        $teq set_target $::ApolTop::policy $vals(ta:target_sym) $vals(ta:target_indirect)
+        $teq set_target_component $::ApolTop::policy [expr {$vals(ta:target_sym,types) | $vals(ta:target_sym,attribs)}]
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default)} {
-        set default [list $vals(ta:default_sym) 0 $vals(ta:default_sym,types) $vals(ta:default_sym,attribs)]
-    } else {
-        set default {}
+        $teq set_default $::ApolTop::policy $vals(ta:default_sym)
     }
+
     if {$enabled(cp:classes)} {
-        set classes $vals(cp:classes_selected)
-    } else {
-        set classes {}
+        foreach c $vals(cp:classes_selected) {
+            $avq append_class $::ApolTop::policy $c
+            $teq append_class $::ApolTop::policy $c
+        }
     }
     if {$enabled(cp:perms)} {
-        set perms $vals(cp:perms_selected)
-    } else {
-        set perms {}
+        foreach p $vals(cp:perms_selected) {
+            $avq append_perm $::ApolTop::policy $p
+        }
+        $avq set_all_perms $::ApolTop::policy $vals(cp:perms_matchall)
     }
-    set other_opts {}
-    if {$vals(oo:enabled)} {
-        lappend other_opts "only_enabled"
-    }
-    if {$vals(oo:regexp)} {
-        lappend other_opts "regex"
-    }
-    if {$source_any} {
-        lappend other_opts "source_any"
-    }
-    if {[ApolTop::is_capable "syntactic rules"]} {
-        lappend other_opts "syn_search"
-    }
+
+    $avq set_rules $::ApolTop::policy $avrule_selection
+    $teq set_rules $::ApolTop::policy $terule_selection
+    $avq set_enabled $::ApolTop::policy $vals(oo:enabled)
+    $teq set_enabled $::ApolTop::policy $vals(oo:enabled)
+    $avq set_regex $::ApolTop::policy $vals(oo:regexp)
+    $teq set_regex $::ApolTop::policy $vals(oo:regexp)
 
     foreach x {new update reset} {
         $widgets($x) configure -state disabled
     }
 
-    set tabs(searches_done) -1
-    set tabs(searches_text) "Searching for TE Rules..."
-    ProgressDlg .terules_busy -title "TE Rules Search" \
-        -type normal -stop {} -separator 1 -parent . -maximum 2 \
-        -textvariable Apol_TE::tabs(searches_text) -width 32 \
-        -variable Apol_TE::tabs(searches_done)
-    ApolTop::setBusyCursor
-    update idletasks
+    if {$vals(rs:avrule_neverallow)} {
+        ApolTop::loadNeverAllows
+    }
+    if {![ApolTop::is_capable "neverallow"]} {
+        set avrule_selection [expr {$avrule_selection & (~$::QPOL_RULE_NEVERALLOW)}]
+        $avq set_rules $::ApolTop::policy $avrule_selection
+    }
 
-    # run search here
-    set retval [catch {apol_SearchTERules $rule_selection $other_opts \
-                           $source $target $default $classes $perms} results]
+    Apol_Progress_Dialog::wait "TE Rules" "Searching rules" \
+        {
+            set avresults NULL
+            set teresults NULL
+            set num_avresults 0
+            set num_teresults 0
+            if {![ApolTop::is_capable "syntactic rules"]} {
+                if {$avrule_selection != 0} {
+                    set avresults [$avq run $::ApolTop::policy]
+                }
+                if {$terule_selection != 0} {
+                    set teresults [$teq run $::ApolTop::policy]
+                }
+            } else {
+                $::ApolTop::qpolicy build_syn_rule_table
+                if {$avrule_selection != 0} {
+                    set avresults [$avq run_syn $::ApolTop::policy]
+                }
+                if {$terule_selection != 0} {
+                    set teresults [$teq run_syn $::ApolTop::policy]
+                }
+            }
 
+            $avq -acquire
+            $avq -delete
+            $teq -acquire
+            $teq -delete
+            if {$avresults != "NULL"} {
+                set num_avresults [$avresults get_size]
+            }
+            if {$teresults != "NULL"} {
+                set num_teresults [$teresults get_size]
+            }
+
+            if {$whichButton == "new"} {
+                set sr [_create_new_results_tab]
+            } else {
+                set id [$widgets(results) raise]
+                set tabs($id:vals) [array get vals]
+                set sr $tabs($id)
+                Apol_Widget::clearSearchResults $sr
+            }
+
+            if {![ApolTop::is_capable "syntactic rules"]} {
+                apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_avresults AV rule results"
+                apol_tcl_terule_sort $::ApolTop::policy $teresults
+                set numAVs [Apol_Widget::appendSearchResultRules $sr 0 $avresults qpol_avrule_from_void]
+                apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_teresults TE rule results"
+                apol_tcl_avrule_sort $::ApolTop::policy $avresults
+                set numTEs [Apol_Widget::appendSearchResultRules $sr 0 $teresults qpol_terule_from_void]
+            } else {
+                apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_avresults AV rule results"
+                set numAVs [Apol_Widget::appendSearchResultSynRules $sr 0 $avresults qpol_syn_avrule_from_void]
+                apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_teresults TE rule results"
+                set numTEs [Apol_Widget::appendSearchResultSynRules $sr 0 $teresults qpol_syn_terule_from_void]
+            }
+            set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0]}]
+            set num_enabled [expr {[lindex $numAVs 1] + [lindex $numTEs 1]}]
+            set num_disabled [expr {[lindex $numAVs 2] + [lindex $numTEs 2]}]
+            set header "$num_rules rule"
+            if {$num_rules != 1} {
+                append header s
+            }
+            append header " match the search criteria.\n"
+            append header "Number of enabled conditional rules: $num_enabled\n"
+            append header "Number of disabled conditional rules: $num_disabled\n"
+            Apol_Widget::appendSearchResultHeader $sr $header
+        }
     $widgets(new) configure -state normal
     $widgets(reset) configure -state normal
-    if {$retval} {
-        ApolTop::resetBusyCursor
-        destroy .terules_busy
-        tk_messageBox -icon error -type ok -title Error -message "Error searching TE rules:\n$results"
-        focus -force .
-    } else {
-        set tabs(searches_text) "Collecting results..."
-        update idletasks
-        foreach {avresults teresults} $results {break}
-        if {$whichButton == "new"} {
-            set sr [create_new_results_tab]
-        } else {
-            set id [$widgets(results) raise]
-            set tabs($id:vals) [array get vals]
-            set sr $tabs($id)
-            Apol_Widget::clearSearchResults $sr
-        }
-        if {![ApolTop::is_capable "syntactic rules"]} {
-            set numAVs [Apol_Widget::appendSearchResultAVRules $sr 0 $avresults tabs(searches_text)]
-            set numTEs [Apol_Widget::appendSearchResultTERules $sr 0 $teresults tabs(searches_text)]
-        } else {
-            set numAVs [Apol_Widget::appendSearchResultSynAVRules $sr 0 $avresults tabs(searches_text)]
-            set numTEs [Apol_Widget::appendSearchResultSynTERules $sr 0 $teresults tabs(searches_text)]
-        }
-        set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0]}]
-        set num_enabled [expr {[lindex $numAVs 1] + [lindex $numTEs 1]}]
-        set num_disabled [expr {[lindex $numAVs 2] + [lindex $numTEs 2]}]
-        set header "$num_rules rule"
-        if {$num_rules != 1} {
-            append header s
-        }
-        append header " match the search criteria.\n"
-        append header "Number of enabled conditional rules: $num_enabled\n"
-        append header "Number of disabled conditional rules: $num_disabled\n"
-        Apol_Widget::appendSearchResultHeader $sr $header
-        ApolTop::resetBusyCursor
-        destroy .terules_busy
-        focus -force .
-    }
-
     if {[$widgets(results) pages] != {} || $retval == 0} {
         $widgets(update) configure -state normal
-    }
-}
-
-# -----------------------------------------------------------------------------
-#  Command Apol_TE::load_query_options
-# -----------------------------------------------------------------------------
-proc Apol_TE::load_query_options {file_channel parentDlg} {
-    variable vals
-    variable widgets
-    variable enabled
-    reinitialize_default_search_options
-
-    # load as many values as possible
-    set classes_selected {}
-    set perms_selected {}
-    while {[gets $file_channel line] >= 0} {
-        set line [string trim $line]
-        # Skip empty lines and comments
-        if {$line == {} || [string index $line 0] == "#"} {
-            continue
-        }
-        regexp -line -- {^(\S+)( (.+))?} $line -> key --> value
-        if {$key == "cp:classes_selected"} {
-            set classes_selected $value
-        } elseif {$key == "cp:perms_selected"} {
-            set perms_selected $value
-        } else {
-            set vals($key) $value
-        }
-    }
-
-    # update the display
-    reinitialize_search_widgets
-    set vals(cp:classes) $Apol_Class_Perms::class_list
-    set enabled(cp:classes) 1
-    set enabled(cp:perms) 1
-    toggle_perms_toshow -> -> reset
-
-    # then verify that selected object classes and permissions exist
-    # for this policy
-
-    set unknowns {}
-    set vals(cp:classes_selected) {}
-    foreach class $classes_selected {
-        if {[set i [lsearch $vals(cp:classes) $class]] >= 0} {
-            $widgets(cp:classes) selection set $i
-            lappend vals(cp:classes_selected) $class
-        } else {
-            lappend unknowns $class
-        }
-    }
-    if {[llength $unknowns] > 0} {
-        tk_messageBox -icon warning -type ok -title "Invalid Object Classes" \
-            -message "The following object classes do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
-            -parent $parentDlg
-    }
-
-    toggle_perms_toshow {} {} {}
-    set unknowns {}
-    set vals(cp:perms_selected) {}
-    foreach perm $perms_selected {
-        if {[set i [lsearch $vals(cp:perms) $perm]] >= 0} {
-            $widgets(cp:perms) selection set $i
-            lappend vals(cp:perms_selected) $perm
-        } else {
-            lappend unknowns $perm
-        }
-    }
-    if {[llength $unknowns] > 0} {
-        tk_messageBox -icon warning -type ok -title "Invalid Permissions" \
-            -message "The following permissions do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
-            -parent $parentDlg
-    }
-}
-
-proc Apol_TE::save_query_options {file_channel query_file} {
-    variable vals
-    foreach {key value} [array get vals] {
-        if {$key != "cp:classes" && $key != "cp:perms"} {
-            puts $file_channel "$key $value"
-        }
     }
 }

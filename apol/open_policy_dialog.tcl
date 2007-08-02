@@ -13,9 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget 1.7+
-
 namespace eval Apol_Open_Policy_Dialog {
     variable dialog {}
     variable widgets
@@ -30,29 +27,32 @@ proc Apol_Open_Policy_Dialog::getPolicyPath {defaultPath} {
     array unset vars
     _create_dialog .
 
-    if {$defaultPath == {}} {
-        set defaultPath [list monolithic {} {}]
-    }
-    set vars(path_type) [lindex $defaultPath 0]
-    if {[set vars(primary_file) [lindex $defaultPath 1]] != {}} {
-        $dialog itemconfigure 0 -state normal
-    }
-    set vars(last_module) $vars(primary_file)
+    set vars(path_type) "monolithic"
+    set vars(primary_file) {}
+    set vars(last_module) {}
     set vars(mod_names) {}
     set vars(mod_vers) {}
     set vars(mod_paths) {}
-    foreach m [lindex $defaultPath 2] {
-        if {[catch {apol_GetModuleInfo $m} info]} {
-            tk_messageBox -icon error -type ok -title "Open Module" -message $info
-        } else {
-            foreach {name vers} $info {break}
-            lappend vars(mod_names) $name
-            lappend vars(mod_vers) $vers
-            lappend vars(mod_paths) $m
-            set vars(last_module) $m
+
+    if {$defaultPath != {}} {
+        foreach {path_type primary modules} [policy_path_to_list $defaultPath] {break}
+        set vars(path_type) $path_type
+        if {[set vars(primary_file) $primary] != {}} {
+            $dialog itemconfigure 0 -state normal
+        }
+        set vars(last_module) $vars(primary_file)
+        foreach m $modules {
+            if {[catch {getModuleInfo $m} info]} {
+                tk_messageBox -icon error -type ok -title "Open Module" -message $info
+            } else {
+                foreach {name vers} $info {break}
+                lappend vars(mod_names) $name
+                lappend vars(mod_vers) $vers
+                lappend vars(mod_paths) $m
+                set vars(last_module) $m
+            }
         }
     }
-
     # force a recomputation of button sizes  (bug in ButtonBox)
     $dialog.bbox _redraw
     $dialog draw
@@ -94,7 +94,8 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     set e [entry $primary_f.f.e -width 32 -bg white \
                -textvariable Apol_Open_Policy_Dialog::vars(primary_file) \
                -validate key \
-               -vcmd [list Apol_Open_Policy_Dialog::validateEntryKey %P]]
+               -vcmd [list Apol_Open_Policy_Dialog::_validateEntryKey %P]]
+    bind $e <Key-Return> Apol_Open_Policy_Dialog::tryOpenPolicy
     set b [button $primary_f.f.b -text "Browse" \
                -command Apol_Open_Policy_Dialog::browsePrimary]
     pack $e -side left -expand 1 -fill x -padx 4
@@ -137,12 +138,12 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     trace add variable Apol_Open_Policy_Dialog::vars(path_type) write \
         [list Apol_Open_Policy_Dialog::togglePathType \
              [list $mlabel $vlabel $plabel] $dis_bg]
-    $dialog add -text "Ok" -command Apol_Open_Policy_Dialog::tryOpenPolicy \
+    $dialog add -text "OK" -command Apol_Open_Policy_Dialog::tryOpenPolicy \
         -state disabled
     $dialog add -text "Cancel"
 }
 
-proc Apol_Open_Policy_Dialog::validateEntryKey {newvalue} {
+proc Apol_Open_Policy_Dialog::_validateEntryKey {newvalue} {
     variable vars
     variable dialog
     variable widgets
@@ -228,7 +229,7 @@ proc Apol_Open_Policy_Dialog::addModule {f} {
         tk_messageBox -icon error -type ok -title "Open Module" -message "Module $f was already added."
         return
     }
-    if {[catch {apol_GetModuleInfo $f} info]} {
+    if {[catch {getModuleInfo $f} info]} {
         tk_messageBox -icon error -type ok -title "Open Module" -message $info
     } else {
         foreach {name vers} $info {break}
@@ -266,7 +267,7 @@ proc Apol_Open_Policy_Dialog::importList {} {
     if {$f == {}} {
         return
     }
-    if {[catch {apol_OpenPolicyList $f} ppath]} {
+    if {[catch {new_apol_policy_path_t $f} ppath]} {
         tk_messageBox -icon error -type ok -title "Import Policy List" \
             -message "Error importing policy list $f: $ppath"
         return
@@ -274,15 +275,18 @@ proc Apol_Open_Policy_Dialog::importList {} {
     foreach lb $widgets(listboxes) {
         $lb delete 0 end
     }
-    foreach {path_type base mods} $ppath {break}
+    foreach {path_type primary modules} [policy_path_to_list $ppath] {break}
     set vars(path_type) $path_type
-    set vars(primary_file) $base
-    validateEntryKey $base
-    if {$path_type == "modular"} {
-        foreach m $mods {
-            addModule $m
-        }
+    if {[set vars(primary_file) $primary] != {}} {
+        $dialog itemconfigure 0 -state normal
     }
+    set vars(last_module) $f
+    foreach m $modules {
+        addModule $m
+    }
+    _validateEntryKey $vars(primary_file)
+    $ppath -acquire
+    $ppath -delete
 }
 
 proc Apol_Open_Policy_Dialog::exportList {} {
@@ -292,8 +296,8 @@ proc Apol_Open_Policy_Dialog::exportList {} {
     if {$f == {}} {
         return
     }
-    set path [list $vars(path_type) $vars(primary_file) $vars(mod_paths)]
-    if {[catch {apol_SavePolicyList $path $f} err]} {
+    set ppath [list_to_policy_path $vars(path_type) $vars(primary_file) $vars(mod_paths)]
+    if {[catch {$ppath to_file $f} err]} {
         tk_messageBox -icon error -type ok -title "Export Policy List" \
             -message "Error exporting policy list $f: $err"
     }
@@ -336,8 +340,21 @@ proc Apol_Open_Policy_Dialog::tryOpenPolicy {} {
     variable dialog
     variable vars
 
-    set path [list $vars(path_type) $vars(primary_file) $vars(mod_paths)]
-    if {[ApolTop::openPolicyFile $path] == 0} {
-        $dialog enddialog {}
+    if {[string trim $vars(primary_file)] != {}} {
+        set ppath [list_to_policy_path $vars(path_type) $vars(primary_file) $vars(mod_paths)]
+        if {[ApolTop::openPolicyPath $ppath] == 0} {
+            $dialog enddialog {}
+        }
     }
+}
+
+# Retrieve information about a policy module file, either source or
+# binary, from disk.  This will be a 2-ple of module name and version.
+# The policy module will be closed afterwards.
+proc Apol_Open_Policy_Dialog::getModuleInfo {f} {
+    set mod [new_qpol_module_t $f]
+    set retval [list [$mod get_name] [$mod get_version]]
+    $mod -acquire
+    $mod -delete
+    return $retval
 }

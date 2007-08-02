@@ -95,7 +95,7 @@ void seaudit_report_destroy(seaudit_report_t ** report)
 	*report = NULL;
 }
 
-int seaudit_report_set_format(seaudit_log_t * log, seaudit_report_t * report, seaudit_report_format_e format)
+int seaudit_report_set_format(const seaudit_log_t * log, seaudit_report_t * report, seaudit_report_format_e format)
 {
 	if (report == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -109,7 +109,7 @@ int seaudit_report_set_format(seaudit_log_t * log, seaudit_report_t * report, se
 /**
  * Set the report's configuration file to the default system file.
  */
-static int report_set_default_configuration(seaudit_log_t * log, seaudit_report_t * report)
+static int report_set_default_configuration(const seaudit_log_t * log, seaudit_report_t * report)
 {
 	char *config_dir = apol_file_find(CONFIG_FILE);
 	int error;
@@ -140,7 +140,7 @@ static int report_set_default_configuration(seaudit_log_t * log, seaudit_report_
 	return 0;
 }
 
-int seaudit_report_set_configuration(seaudit_log_t * log, seaudit_report_t * report, const char *file)
+int seaudit_report_set_configuration(const seaudit_log_t * log, seaudit_report_t * report, const char *file)
 {
 	if (report == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -165,7 +165,7 @@ int seaudit_report_set_configuration(seaudit_log_t * log, seaudit_report_t * rep
 /**
  * Set the report's stylesheet to the default system stylesheet.
  */
-static int report_set_default_stylesheet(seaudit_log_t * log, seaudit_report_t * report)
+static int report_set_default_stylesheet(const seaudit_log_t * log, seaudit_report_t * report)
 {
 	char *dir = apol_file_find(STYLESHEET_FILE);
 	int error;
@@ -189,7 +189,7 @@ static int report_set_default_stylesheet(seaudit_log_t * log, seaudit_report_t *
 	return 0;
 }
 
-int seaudit_report_set_stylesheet(seaudit_log_t * log, seaudit_report_t * report, const char *file, const int use_stylesheet)
+int seaudit_report_set_stylesheet(const seaudit_log_t * log, seaudit_report_t * report, const char *file, const int use_stylesheet)
 {
 	if (report == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -213,7 +213,7 @@ int seaudit_report_set_stylesheet(seaudit_log_t * log, seaudit_report_t * report
 	}
 }
 
-int seaudit_report_set_malformed(seaudit_log_t * log, seaudit_report_t * report, const int do_malformed)
+int seaudit_report_set_malformed(const seaudit_log_t * log, seaudit_report_t * report, const int do_malformed)
 {
 	if (report == NULL) {
 		ERR(log, "%s", strerror(EINVAL));
@@ -229,7 +229,7 @@ int seaudit_report_set_malformed(seaudit_log_t * log, seaudit_report_t * report,
  * is not readable then generate a warning.  This is not an error
  * because the stylesheet is not strictly necessary.
  */
-static int report_import_html_stylesheet(seaudit_log_t * log, seaudit_report_t * report, FILE * outfile)
+static int report_import_html_stylesheet(const seaudit_log_t * log, const seaudit_report_t * report, FILE * outfile)
 {
 	char line[LINE_MAX], *line_ptr = NULL;
 	FILE *fp;
@@ -265,7 +265,7 @@ static int report_import_html_stylesheet(seaudit_log_t * log, seaudit_report_t *
 	return 0;
 }
 
-static int report_print_header(seaudit_log_t * log, seaudit_report_t * report, FILE * outfile)
+static int report_print_header(const seaudit_log_t * log, const seaudit_report_t * report, FILE * outfile)
 {
 	time_t ltime;
 
@@ -286,7 +286,7 @@ static int report_print_header(seaudit_log_t * log, seaudit_report_t * report, F
 	return 0;
 }
 
-static int report_print_footer(seaudit_report_t * report, FILE * outfile)
+static int report_print_footer(const seaudit_report_t * report, FILE * outfile)
 {
 	if (report->format == SEAUDIT_REPORT_FORMAT_HTML) {
 		fprintf(outfile, "</body>\n</html>\n");
@@ -314,8 +314,9 @@ static int report_is_valid_section_name(const char *name)
 	return 0;
 }
 
-static int report_parse_seaudit_report(seaudit_log_t * log, seaudit_report_t * report,
-				       xmlTextReaderPtr reader, xmlChar ** id_value, xmlChar ** title_value)
+static int report_parse_seaudit_report(const seaudit_log_t * log, const seaudit_report_t * report __attribute__ ((unused)),
+				       xmlTextReaderPtr reader, xmlChar ** id_value
+				       __attribute__ ((unused)), xmlChar ** title_value)
 {
 	int rt, error;
 	xmlChar *name = NULL;
@@ -348,7 +349,7 @@ static int report_parse_seaudit_report(seaudit_log_t * log, seaudit_report_t * r
 	return 0;
 }
 
-static int report_parse_standard_attribs(seaudit_log_t * log, seaudit_report_t * report,
+static int report_parse_standard_attribs(const seaudit_log_t * log, const seaudit_report_t * report __attribute__ ((unused)),
 					 xmlTextReaderPtr reader, xmlChar ** id_value, xmlChar ** title_value)
 {
 	int rt, error;
@@ -383,7 +384,7 @@ static int report_parse_standard_attribs(seaudit_log_t * log, seaudit_report_t *
 	return 0;
 }
 
-static int report_parse_custom_attribs(seaudit_log_t * log, seaudit_report_t * report,
+static int report_parse_custom_attribs(const seaudit_log_t * log, const seaudit_report_t * report __attribute__ ((unused)),
 				       xmlTextReaderPtr reader, xmlChar ** title_value)
 {
 	int rt, error;
@@ -421,11 +422,12 @@ static int report_parse_custom_attribs(seaudit_log_t * log, seaudit_report_t * r
  * Allocate and return a filter for setenforce toggles.  (Actually, it
  * can't filter on permissions.)
  */
-static seaudit_filter_t *report_enforce_toggle_filter_create(seaudit_log_t * log, seaudit_report_t * report)
+static seaudit_filter_t *report_enforce_toggle_filter_create(const seaudit_log_t * log, const seaudit_report_t * report
+							     __attribute__ ((unused)))
 {
 	seaudit_filter_t *filter = NULL;
 	apol_vector_t *type_v = NULL, *class_v;
-	int retval = -1, error;
+	int retval = -1, error = 0;
 	char *tgt_type = "security_t";
 	char *obj_class = "security";
 
@@ -458,7 +460,7 @@ static seaudit_filter_t *report_enforce_toggle_filter_create(seaudit_log_t * log
 	return filter;
 }
 
-static int report_print_enforce_toggles(seaudit_log_t * log, seaudit_report_t * report, FILE * outfile)
+static int report_print_enforce_toggles(const seaudit_log_t * log, const seaudit_report_t * report, FILE * outfile)
 {
 	seaudit_filter_t *filter = NULL;
 	seaudit_model_t *dup_model = NULL;
@@ -537,7 +539,7 @@ static int report_print_enforce_toggles(seaudit_log_t * log, seaudit_report_t * 
 	return retval;
 }
 
-static int report_print_policy_booleans(seaudit_log_t * log, seaudit_report_t * report, FILE * outfile)
+static int report_print_policy_booleans(const seaudit_log_t * log, const seaudit_report_t * report, FILE * outfile)
 {
 	size_t i, num = seaudit_model_get_num_bools(log, report->model);
 	apol_vector_t *v = seaudit_model_get_messages(log, report->model);
@@ -576,7 +578,7 @@ static int report_print_policy_booleans(seaudit_log_t * log, seaudit_report_t * 
 	return 0;
 }
 
-static int report_print_policy_loads(seaudit_log_t * log, seaudit_report_t * report, FILE * outfile)
+static int report_print_policy_loads(const seaudit_log_t * log, const seaudit_report_t * report, FILE * outfile)
 {
 	size_t i, num = seaudit_model_get_num_loads(log, report->model);
 	apol_vector_t *v = seaudit_model_get_messages(log, report->model);
@@ -615,7 +617,7 @@ static int report_print_policy_loads(seaudit_log_t * log, seaudit_report_t * rep
 	return 0;
 }
 
-static int report_print_avc_listing(seaudit_log_t * log, seaudit_report_t * report, seaudit_avc_message_type_e avc_type,
+static int report_print_avc_listing(const seaudit_log_t * log, const seaudit_report_t * report, seaudit_avc_message_type_e avc_type,
 				    FILE * outfile)
 {
 	size_t i, num;
@@ -661,7 +663,7 @@ static int report_print_avc_listing(seaudit_log_t * log, seaudit_report_t * repo
 	return 0;
 }
 
-static int report_print_stats(seaudit_log_t * log, seaudit_report_t * report, FILE * outfile)
+static int report_print_stats(const seaudit_log_t * log, const seaudit_report_t * report, FILE * outfile)
 {
 	apol_vector_t *v = seaudit_model_get_messages(log, report->model);
 	size_t num_messages = apol_vector_get_size(v);
@@ -692,7 +694,7 @@ static int report_print_stats(seaudit_log_t * log, seaudit_report_t * report, FI
 	return 0;
 }
 
-static int report_print_standard_section(seaudit_log_t * log, seaudit_report_t * report,
+static int report_print_standard_section(const seaudit_log_t * log, const seaudit_report_t * report,
 					 xmlChar * id, xmlChar * title, FILE * outfile)
 {
 	size_t sz, len, i;
@@ -741,7 +743,8 @@ static int report_print_standard_section(seaudit_log_t * log, seaudit_report_t *
 	return 0;
 }
 
-static int report_print_loaded_view(seaudit_log_t * log, seaudit_report_t * report, xmlChar * view_filePath, FILE * outfile)
+static int report_print_loaded_view(const seaudit_log_t * log, const seaudit_report_t * report, xmlChar * view_filePath,
+				    FILE * outfile)
 {
 	size_t i, filters_added = 0;
 	apol_vector_t *loaded_filters = NULL;
@@ -820,7 +823,7 @@ static int report_print_loaded_view(seaudit_log_t * log, seaudit_report_t * repo
 	return retval;
 }
 
-static int report_print_custom_section(seaudit_log_t * log, seaudit_report_t * report,
+static int report_print_custom_section(const seaudit_log_t * log, const seaudit_report_t * report,
 				       xmlTextReaderPtr reader, xmlChar * title, FILE * outfile)
 {
 	size_t len, i;
@@ -902,10 +905,11 @@ static int report_print_custom_section(seaudit_log_t * log, seaudit_report_t * r
 	return retval;
 }
 
-static int report_process_xmlNode(seaudit_log_t * log, seaudit_report_t * report, xmlTextReaderPtr reader, FILE * outfile)
+static int report_process_xmlNode(const seaudit_log_t * log, const seaudit_report_t * report, xmlTextReaderPtr reader,
+				  FILE * outfile)
 {
 	xmlChar *name = NULL, *id_attr = NULL, *title_attr = NULL;
-	int retval = -1, error;
+	int retval = -1, error = 0;
 
 	if ((name = xmlTextReaderName(reader)) == NULL) {
 		error = errno;
@@ -966,7 +970,7 @@ static int report_process_xmlNode(seaudit_log_t * log, seaudit_report_t * report
 	return retval;
 }
 
-static int report_print_malformed(seaudit_log_t * log, seaudit_report_t * report, FILE * outfile)
+static int report_print_malformed(const seaudit_log_t * log, const seaudit_report_t * report, FILE * outfile)
 {
 	size_t i, len;
 	apol_vector_t *v = seaudit_model_get_malformed_messages(log, report->model);
@@ -997,7 +1001,7 @@ static int report_print_malformed(seaudit_log_t * log, seaudit_report_t * report
 	return 0;
 }
 
-int seaudit_report_write(seaudit_log_t * log, seaudit_report_t * report, const char *out_file)
+int seaudit_report_write(const seaudit_log_t * log, const seaudit_report_t * report, const char *out_file)
 {
 	xmlTextReaderPtr reader;
 	FILE *outfile = NULL;

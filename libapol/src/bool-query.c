@@ -40,7 +40,7 @@ struct apol_bool_query
 
 /******************** booleans queries ********************/
 
-int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v)
+int apol_bool_get_by_query(const apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter;
 	int retval = -1;
@@ -53,14 +53,14 @@ int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		qpol_bool_t *bool;
-		if (qpol_iterator_get_item(iter, (void **)&bool) < 0) {
+		qpol_bool_t *qbool;
+		if (qpol_iterator_get_item(iter, (void **)&qbool) < 0) {
 			goto cleanup;
 		}
 		if (b != NULL) {
-			char *bool_name;
+			const char *bool_name;
 			int compval;
-			if (qpol_bool_get_name(p->p, bool, &bool_name) < 0) {
+			if (qpol_bool_get_name(p->p, qbool, &bool_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, bool_name, b->bool_name, b->flags, &(b->regex));
@@ -70,7 +70,7 @@ int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector
 				continue;
 			}
 		}
-		if (apol_vector_append(*v, bool)) {
+		if (apol_vector_append(*v, qbool)) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -100,12 +100,12 @@ void apol_bool_query_destroy(apol_bool_query_t ** b)
 	}
 }
 
-int apol_bool_query_set_bool(apol_policy_t * p, apol_bool_query_t * b, const char *name)
+int apol_bool_query_set_bool(const apol_policy_t * p, apol_bool_query_t * b, const char *name)
 {
 	return apol_query_set(p, &b->bool_name, &b->regex, name);
 }
 
-int apol_bool_query_set_regex(apol_policy_t * p, apol_bool_query_t * b, int is_regex)
+int apol_bool_query_set_regex(const apol_policy_t * p, apol_bool_query_t * b, int is_regex)
 {
 	return apol_query_set_regex(p, &b->flags, is_regex);
 }

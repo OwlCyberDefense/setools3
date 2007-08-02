@@ -17,7 +17,7 @@ DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so \
 	$(top_builddir)/libseaudit/src/libseaudit.so
 
-$(BUILT_SOURCES): $(dist_noinst_DATA)
+$(BUILT_SOURCES): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_PYTHON_OPT) -o $@ \
 	-I$(top_srcdir)/libseaudit/include -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<

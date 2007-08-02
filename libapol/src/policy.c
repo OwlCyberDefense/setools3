@@ -28,6 +28,7 @@
 #include <apol/perm-map.h>
 #include <apol/domain-trans-analysis.h>
 
+#include <qpol/policy.h>
 #include <qpol/policy_extend.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -35,32 +36,33 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void apol_handle_default_callback(void *varg __attribute__ ((unused)), apol_policy_t * p
+static void apol_handle_default_callback(void *varg __attribute__ ((unused)), const apol_policy_t * p
 					 __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
 	case APOL_MSG_INFO:
-		{
-			/* by default do not display these messages */
-			return;
-		}
+	{
+		/* by default do not display these messages */
+		return;
+	}
 	case APOL_MSG_WARN:
-		{
-			fprintf(stderr, "WARNING: ");
-			break;
-		}
+	{
+		fprintf(stderr, "WARNING: ");
+		break;
+	}
 	case APOL_MSG_ERR:
 	default:
-		{
-			fprintf(stderr, "ERROR: ");
-			break;
-		}
+	{
+		fprintf(stderr, "ERROR: ");
+		break;
+	}
 	}
 	vfprintf(stderr, fmt, va_args);
 	fprintf(stderr, "\n");
 }
 
-static void qpol_handle_route_to_callback(void *varg, qpol_policy_t * policy, int level, const char *fmt, va_list ap)
+static void qpol_handle_route_to_callback(void *varg, const qpol_policy_t * policy
+					  __attribute__ ((unused)), int level, const char *fmt, va_list ap)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
 	if (p == NULL) {
@@ -93,11 +95,7 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 	policy->msg_callback_arg = varg;
 	primary_path = apol_policy_path_get_primary(path);
 	INFO(policy, "Loading policy %s.", primary_path);
-	if (options & APOL_POLICY_OPTION_NO_RULES) {
-		policy_type = qpol_policy_open_from_file_no_rules(primary_path, &policy->p, qpol_handle_route_to_callback, policy);
-	} else {
-		policy_type = qpol_policy_open_from_file(primary_path, &policy->p, qpol_handle_route_to_callback, policy);
-	}
+	policy_type = qpol_policy_open_from_file(primary_path, &policy->p, qpol_handle_route_to_callback, policy, options);
 	if (policy_type < 0) {
 		ERR(policy, "Unable to open policy %s.", primary_path);
 		apol_policy_destroy(&policy);
@@ -130,7 +128,7 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 			}
 		}
 		INFO(policy, "%s", "Linking modules into base policy.");
-		if (qpol_policy_rebuild(policy->p)) {
+		if (qpol_policy_rebuild(policy->p, options)) {
 			apol_policy_destroy(&policy);
 			return NULL;
 		}
@@ -149,7 +147,7 @@ void apol_policy_destroy(apol_policy_t ** policy)
 	}
 }
 
-int apol_policy_get_policy_type(apol_policy_t * policy)
+int apol_policy_get_policy_type(const apol_policy_t * policy)
 {
 	if (policy == NULL) {
 		errno = EINVAL;
@@ -158,7 +156,7 @@ int apol_policy_get_policy_type(apol_policy_t * policy)
 	return policy->policy_type;
 }
 
-qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy)
+qpol_policy_t *apol_policy_get_qpol(const apol_policy_t * policy)
 {
 	if (policy == NULL) {
 		errno = EINVAL;
@@ -167,7 +165,7 @@ qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy)
 	return policy->p;
 }
 
-int apol_policy_is_mls(apol_policy_t * p)
+int apol_policy_is_mls(const apol_policy_t * p)
 {
 	if (p == NULL) {
 		return -1;
@@ -175,7 +173,7 @@ int apol_policy_is_mls(apol_policy_t * p)
 	return qpol_policy_has_capability(p->p, QPOL_CAP_MLS);
 }
 
-char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
+char *apol_policy_get_version_type_mls_str(const apol_policy_t * p)
 {
 	unsigned int version;
 	char *policy_type, *mls, buf[64];
@@ -207,7 +205,7 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t * p)
 	return strdup(buf);
 }
 
-void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...)
+void apol_handle_msg(const apol_policy_t * p, int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

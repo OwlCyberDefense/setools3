@@ -402,6 +402,7 @@ int apol_file_is_policy_path_list(const char *filename)
       cleanup:
 	if (f)
 		fclose(f);
+	free(line);
 	if (retval < 0)
 		errno = error;
 	return retval;

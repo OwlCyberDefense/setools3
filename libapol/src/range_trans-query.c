@@ -39,7 +39,7 @@ struct apol_range_trans_query
 	unsigned int flags;
 };
 
-int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * r, apol_vector_t ** v)
+int apol_range_trans_get_by_query(const apol_policy_t * p, const apol_range_trans_query_t * r, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL, *class_list = NULL;
@@ -81,7 +81,7 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 	}
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_range_trans_t *rule;
-		qpol_mls_range_t *mls_range;
+		const qpol_mls_range_t *mls_range;
 		int match_source = 0, match_target = 0, compval;
 		size_t i;
 		if (qpol_iterator_get_item(iter, (void **)&rule) < 0) {
@@ -90,7 +90,7 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 		if (source_list == NULL) {
 			match_source = 1;
 		} else {
-			qpol_type_t *source_type;
+			const qpol_type_t *source_type;
 			if (qpol_range_trans_get_source_type(p->p, rule, &source_type) < 0) {
 				goto cleanup;
 			}
@@ -109,7 +109,7 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 		if (target_list == NULL || (source_as_any && match_source)) {
 			match_target = 1;
 		} else {
-			qpol_type_t *target_type;
+			const qpol_type_t *target_type;
 			if (qpol_range_trans_get_target_type(p->p, rule, &target_type) < 0) {
 				goto cleanup;
 			}
@@ -123,7 +123,7 @@ int apol_range_trans_get_by_query(apol_policy_t * p, apol_range_trans_query_t * 
 		}
 
 		if (class_list != NULL) {
-			qpol_class_t *obj_class;
+			const qpol_class_t *obj_class;
 			if (qpol_range_trans_get_target_class(p->p, rule, &obj_class) < 0) {
 				goto cleanup;
 			}
@@ -185,19 +185,19 @@ void apol_range_trans_query_destroy(apol_range_trans_query_t ** r)
 	}
 }
 
-int apol_range_trans_query_set_source(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol, int is_indirect)
+int apol_range_trans_query_set_source(const apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol, int is_indirect)
 {
 	apol_query_set_flag(p, &r->flags, is_indirect, APOL_QUERY_SOURCE_INDIRECT);
 	return apol_query_set(p, &r->source, NULL, symbol);
 }
 
-int apol_range_trans_query_set_target(apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol, int is_indirect)
+int apol_range_trans_query_set_target(const apol_policy_t * p, apol_range_trans_query_t * r, const char *symbol, int is_indirect)
 {
 	apol_query_set_flag(p, &r->flags, is_indirect, APOL_QUERY_TARGET_INDIRECT);
 	return apol_query_set(p, &r->target, NULL, symbol);
 }
 
-int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class)
+int apol_range_trans_query_append_class(const apol_policy_t * p, apol_range_trans_query_t * r, const char *obj_class)
 {
 	char *s = NULL;
 	if (obj_class == NULL) {
@@ -211,7 +211,7 @@ int apol_range_trans_query_append_class(apol_policy_t * p, apol_range_trans_quer
 	return 0;
 }
 
-int apol_range_trans_query_set_range(apol_policy_t * p __attribute__ ((unused)),
+int apol_range_trans_query_set_range(const apol_policy_t * p __attribute__ ((unused)),
 				     apol_range_trans_query_t * r, apol_mls_range_t * range, unsigned int range_match)
 {
 	if (r->range != NULL) {
@@ -222,29 +222,25 @@ int apol_range_trans_query_set_range(apol_policy_t * p __attribute__ ((unused)),
 	return 0;
 }
 
-int apol_range_trans_query_set_enabled(apol_policy_t * p, apol_range_trans_query_t * r, int is_enabled)
-{
-	return apol_query_set_flag(p, &r->flags, is_enabled, APOL_QUERY_ONLY_ENABLED);
-}
-
-int apol_range_trans_query_set_source_any(apol_policy_t * p, apol_range_trans_query_t * r, int is_any)
+int apol_range_trans_query_set_source_any(const apol_policy_t * p, apol_range_trans_query_t * r, int is_any)
 {
 	return apol_query_set_flag(p, &r->flags, is_any, APOL_QUERY_SOURCE_AS_ANY);
 }
 
-int apol_range_trans_query_set_regex(apol_policy_t * p, apol_range_trans_query_t * r, int is_regex)
+int apol_range_trans_query_set_regex(const apol_policy_t * p, apol_range_trans_query_t * r, int is_regex)
 {
 	return apol_query_set_regex(p, &r->flags, is_regex);
 }
 
-char *apol_range_trans_render(apol_policy_t * policy, qpol_range_trans_t * rule)
+char *apol_range_trans_render(const apol_policy_t * policy, const qpol_range_trans_t * rule)
 {
-	char *tmp = NULL, *tmp_name = NULL;
+	char *tmp = NULL;
+	const char *tmp_name = NULL;
 	int error = 0;
 	size_t tmp_sz = 0;
-	qpol_type_t *type = NULL;
-	qpol_class_t *target_class = NULL;
-	qpol_mls_range_t *range = NULL;
+	const qpol_type_t *type = NULL;
+	const qpol_class_t *target_class = NULL;
+	const qpol_mls_range_t *range = NULL;
 	apol_mls_range_t *arange = NULL;
 
 	if (!policy || !rule) {
@@ -298,19 +294,20 @@ char *apol_range_trans_render(apol_policy_t * policy, qpol_range_trans_t * rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (!(tmp_name = apol_mls_range_render(policy, arange))) {
+	char *tmp_range_str = NULL;
+	if (!(tmp_range_str = apol_mls_range_render(policy, arange))) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 	apol_mls_range_destroy(&arange);
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, ";")) {
-		free(tmp_name);
+	if (apol_str_append(&tmp, &tmp_sz, tmp_range_str) || apol_str_append(&tmp, &tmp_sz, ";")) {
+		free(tmp_range_str);
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	free(tmp_name);
+	free(tmp_range_str);
 	return tmp;
 
       err:

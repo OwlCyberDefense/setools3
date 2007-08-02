@@ -185,14 +185,16 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 	sechk_result_t *find_domains_res = NULL;
 	apol_domain_trans_analysis_t *domain_trans = NULL;
 	apol_vector_t *domain_vector = NULL, *role_vector = NULL, *user_vector = NULL, *rbac_vector = NULL;
-	apol_vector_t *domain_trans_vector;
+	apol_vector_t *domain_trans_vector = NULL, *role_allow_vector = NULL;
 	apol_user_query_t *user_query = NULL;
+	apol_role_query_t *start_role_query = NULL, *end_role_query = NULL;
 	apol_role_trans_query_t *role_trans_query = NULL;
+	apol_role_allow_query_t *role_allow_query = NULL;
 	char *buff = NULL;
 	int buff_sz, error = 0;
-	qpol_type_t *domain = NULL;
+	const qpol_type_t *domain = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *domain_name = NULL;
+	const char *domain_name = NULL;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -228,7 +230,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 		goto inc_dom_trans_run_fail;
 	}
 
-	if (apol_policy_domain_trans_table_build(policy) < 0) {
+	if (apol_policy_build_domain_trans_table(policy) < 0) {
 		error = errno;
 		ERR(policy, "%s", "Unable to build domain transition table");
 		goto inc_dom_trans_run_fail;
@@ -247,6 +249,24 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 	}
 
 	if (!(role_trans_query = apol_role_trans_query_create())) {
+		error = errno;
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto inc_dom_trans_run_fail;
+	}
+
+	if (!(role_allow_query = apol_role_allow_query_create())) {
+		error = errno;
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto inc_dom_trans_run_fail;
+	}
+
+	if (!(start_role_query = apol_role_query_create())) {
+		error = errno;
+		ERR(policy, "%s", strerror(ENOMEM));
+		goto inc_dom_trans_run_fail;
+	}
+
+	if (!(end_role_query = apol_role_query_create())) {
 		error = errno;
 		ERR(policy, "%s", strerror(ENOMEM));
 		goto inc_dom_trans_run_fail;
@@ -284,16 +304,16 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
 		for (j = 0; j < apol_vector_get_size(domain_trans_vector); j++) {
 			apol_domain_trans_result_t *dtr = NULL;
-			qpol_type_t *start;
-			qpol_type_t *ep;
-			qpol_type_t *end;
-			char *start_name;
-			char *end_name;
-			char *ep_name;
+			const qpol_type_t *start;
+			const qpol_type_t *ep;
+			const qpol_type_t *end;
+			const char *start_name;
+			const char *end_name;
+			const char *ep_name;
 			int result;
-			bool_t ok;
+			bool ok;
 
-			ok = FALSE;
+			ok = false;
 			dtr = apol_vector_get_element(domain_trans_vector, j);
 			start = apol_domain_trans_result_get_start_type(dtr);
 			ep = apol_domain_trans_result_get_entrypoint_type(dtr);
@@ -313,57 +333,12 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
 			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
 			if (!result) {
-				apol_role_get_by_query(policy, NULL, &role_vector);
-				for (k = 0; (k < apol_vector_get_size(role_vector)) && !ok; k++) {
-					qpol_role_t *role;
-					char *role_name;
-
-					role = apol_vector_get_element(role_vector, k);
-					qpol_role_get_name(q, role, &role_name);
-					if (apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end)) {
-						apol_user_query_set_role(policy, user_query, role_name);
-						apol_user_get_by_query(policy, user_query, &user_vector);
-						if (apol_vector_get_size(user_vector) > 0) {
-							ok = TRUE;
-						}
-						apol_vector_destroy(&user_vector);
-					}
-				}
-				apol_vector_destroy(&role_vector);
-				if (!ok) {
-					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
-					apol_role_trans_get_by_query(policy, role_trans_query, &rbac_vector);
-					for (k = 0; (k < apol_vector_get_size(rbac_vector)) && !ok; k++) {
-						qpol_role_trans_t *role_trans;
-						qpol_role_t *source_role;
-						qpol_role_t *default_role;
-						char *source_role_name;
-						char *default_role_name;
-
-						role_trans = apol_vector_get_element(rbac_vector, k);
-						qpol_role_trans_get_source_role(q, role_trans, &source_role);
-						qpol_role_trans_get_default_role(q, role_trans, &default_role);
-						qpol_role_get_name(q, source_role, &source_role_name);
-						qpol_role_get_name(q, default_role, &default_role_name);
-
-						if (apol_role_has_type(policy, source_role, start) &&
-						    apol_role_has_type(policy, default_role, end)) {
-							apol_user_query_set_role(policy, user_query, source_role_name);
-							apol_user_get_by_query(policy, user_query, &user_vector);
-							if (apol_vector_get_size(user_vector) > 0) {
-								apol_vector_destroy(&user_vector);
-								apol_user_query_set_role(policy, user_query, default_role_name);
-								apol_user_get_by_query(policy, user_query, &user_vector);
-								if (apol_vector_get_size(user_vector) > 0) {
-									ok = TRUE;
-								}
-							}
-							apol_vector_destroy(&user_vector);
-						}
-					}
-					apol_vector_destroy(&rbac_vector);
-				}
-				if (!ok) {
+				apol_vector_t *start_role_vector, *end_role_vector, *common_role_vector;
+				apol_role_query_set_type(policy, start_role_query, start_name);
+				apol_role_get_by_query(policy, start_role_query, &start_role_vector);
+				apol_role_query_set_type(policy, end_role_query, end_name);
+				apol_role_get_by_query(policy, end_role_query, &end_role_vector);
+				if (!apol_vector_get_size(start_role_vector) || !apol_vector_get_size(end_role_vector)) {
 					item = sechk_item_new(dtr_free_wrap);
 					if (!item) {
 						error = errno;
@@ -377,7 +352,267 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 						ERR(policy, "%s", strerror(ENOMEM));
 						goto inc_dom_trans_run_fail;
 					}
+					if (!(item->proof = apol_vector_create(sechk_proof_free))) {
+						error = errno;
+						ERR(policy, "%s", strerror(ENOMEM));
+						goto inc_dom_trans_run_fail;
+					}
+					if (!apol_vector_get_size(start_role_vector)) {
+						proof = sechk_proof_new(NULL);
+						proof->type = SECHK_ITEM_OTHER;
+						asprintf(&proof->text, "Need role for %s", start_name);
+						if (!proof->text) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+						if (apol_vector_append(item->proof, (void *)proof) < 0) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+					}
+					if (!apol_vector_get_size(end_role_vector)) {
+						proof = sechk_proof_new(NULL);
+						proof->type = SECHK_ITEM_OTHER;
+						asprintf(&proof->text, "Need role for %s", end_name);
+						if (!proof->text) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+						if (apol_vector_append(item->proof, (void *)proof) < 0) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+					}
+					item = NULL;
+					//if one of the domains has no roles continue; no more can be determined
+					apol_vector_destroy(&start_role_vector);
+					apol_vector_destroy(&end_role_vector);
+					continue;
 				}
+				common_role_vector =
+					apol_vector_create_from_intersection(start_role_vector, end_role_vector, NULL, NULL);
+				const char *role_name = NULL;
+				if (apol_vector_get_size(common_role_vector)) {
+					for (int k = 0; k < apol_vector_get_size(common_role_vector); k++) {
+						const qpol_role_t *common_role;
+
+						common_role = apol_vector_get_element(common_role_vector, k);
+						qpol_role_get_name(q, common_role, &role_name);
+						apol_user_query_set_role(policy, user_query, role_name);
+						apol_user_get_by_query(policy, user_query, &user_vector);
+						if (apol_vector_get_size(user_vector)) {
+							ok = true;
+							apol_vector_destroy(&user_vector);
+							break;
+						}
+						apol_vector_destroy(&user_vector);
+					}
+					if (!ok) {
+						item = sechk_item_new(dtr_free_wrap);
+						if (!item) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+						item->test_result = 1;
+						item->item = (void *)apol_domain_trans_result_create_from_domain_trans_result(dtr);
+						if (apol_vector_append(res->items, (void *)item) < 0) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+						if (!(item->proof = apol_vector_create(sechk_proof_free))) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+						proof = sechk_proof_new(NULL);
+						proof->type = SECHK_ITEM_OTHER;
+						asprintf(&proof->text, "Need user for role %s", role_name);
+						if (!proof->text) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+						if (apol_vector_append(item->proof, (void *)proof) < 0) {
+							error = errno;
+							ERR(policy, "%s", strerror(ENOMEM));
+							goto inc_dom_trans_run_fail;
+						}
+						item = NULL;
+					}
+				} else {
+					apol_vector_t *role_trans_vector;
+					bool need_ra = 0, need_user = 0;
+					char *rastring = NULL, *userstring = NULL;
+					apol_role_trans_query_set_target(policy, role_trans_query, ep_name, 1);
+					apol_role_trans_get_by_query(policy, role_trans_query, &role_trans_vector);
+					const char *source_role_name = NULL, *default_role_name = NULL;
+					for (k = 0; k < apol_vector_get_size(role_trans_vector); k++) {
+						qpol_role_trans_t *role_trans;
+						const qpol_role_t *source_role;
+						const qpol_role_t *default_role;
+						int index;
+
+						role_trans = apol_vector_get_element(role_trans_vector, k);
+						qpol_role_trans_get_source_role(q, role_trans, &source_role);
+						qpol_role_trans_get_default_role(q, role_trans, &default_role);
+						if ((apol_vector_get_index(start_role_vector, source_role, NULL, NULL, &index) == 0)
+						    && (apol_vector_get_index(end_role_vector, default_role, NULL, NULL, &index) ==
+							0)) {
+							apol_vector_t *source_role_user, *default_role_user, *common_role_user;
+
+							qpol_role_get_name(q, source_role, &source_role_name);
+							qpol_role_get_name(q, default_role, &default_role_name);
+							apol_role_allow_query_set_source(policy, role_allow_query,
+											 source_role_name);
+							apol_role_allow_query_set_target(policy, role_allow_query,
+											 default_role_name);
+							apol_role_allow_get_by_query(policy, role_allow_query, &role_allow_vector);
+
+							apol_user_query_set_role(policy, user_query, source_role_name);
+							apol_user_get_by_query(policy, user_query, &source_role_user);
+							apol_user_query_set_role(policy, user_query, default_role_name);
+							apol_user_get_by_query(policy, user_query, &default_role_user);
+
+							common_role_user =
+								apol_vector_create_from_intersection(source_role_user,
+												     default_role_user, NULL, NULL);
+							apol_vector_destroy(&source_role_user);
+							apol_vector_destroy(&default_role_user);
+							if (apol_vector_get_size(role_allow_vector) &&
+							    apol_vector_get_size(common_role_user)) {
+								ok = true;
+								apol_vector_destroy(&role_allow_vector);
+								apol_vector_destroy(&common_role_user);
+								break;
+							}
+							if (!apol_vector_get_size(role_allow_vector)) {
+								// need role allow;
+								asprintf(&rastring, "allow %s %s;", source_role_name,
+									 default_role_name);
+								if (!rastring) {
+									error = errno;
+									ERR(policy, "%s", strerror(ENOMEM));
+									goto inc_dom_trans_run_fail;
+								}
+							}
+							apol_vector_destroy(&role_allow_vector);
+							if (!apol_vector_get_size(common_role_user)) {
+								// need user;
+								asprintf(&userstring, "need user with roles %s and %s",
+									 source_role_name, default_role_name);
+								if (!userstring) {
+									error = errno;
+									ERR(policy, "%s", strerror(ENOMEM));
+									goto inc_dom_trans_run_fail;
+								}
+							}
+							apol_vector_destroy(&common_role_user);
+						}
+					}
+					apol_vector_destroy(&role_trans_vector);
+					if (!ok) {
+						if (!need_ra && !need_user) {
+							const qpol_role_t *source_role =
+								apol_vector_get_element(start_role_vector, 0);
+							const qpol_role_t *default_role =
+								apol_vector_get_element(end_role_vector, 0);
+							qpol_role_get_name(q, source_role, &source_role_name);
+							qpol_role_get_name(q, default_role, &default_role_name);
+							// need role_transition
+							item = sechk_item_new(dtr_free_wrap);
+							if (!item) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							item->test_result = 1;
+							item->item =
+								(void *)
+								apol_domain_trans_result_create_from_domain_trans_result(dtr);
+							if (apol_vector_append(res->items, (void *)item) < 0) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							if (!(item->proof = apol_vector_create(sechk_proof_free))) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							proof = sechk_proof_new(NULL);
+							proof->type = SECHK_ITEM_OTHER;
+							asprintf(&proof->text, "role_transition %s %s %s;", source_role_name,
+								 ep_name, default_role_name);
+							if (!proof->text) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							if (apol_vector_append(item->proof, (void *)proof) < 0) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							item = NULL;
+						} else {
+							//create item
+							item = sechk_item_new(dtr_free_wrap);
+							if (!item) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							item->test_result = 1;
+							item->item =
+								(void *)
+								apol_domain_trans_result_create_from_domain_trans_result(dtr);
+							if (apol_vector_append(res->items, (void *)item) < 0) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							if (!(item->proof = apol_vector_create(sechk_proof_free))) {
+								error = errno;
+								ERR(policy, "%s", strerror(ENOMEM));
+								goto inc_dom_trans_run_fail;
+							}
+							if (need_ra) {
+								//create proof w/ text rastring
+								proof = sechk_proof_new(NULL);
+								proof->type = SECHK_ITEM_OTHER;
+								proof->text = rastring;
+								rastring = NULL;
+								if (apol_vector_append(item->proof, (void *)proof) < 0) {
+									error = errno;
+									ERR(policy, "%s", strerror(ENOMEM));
+									goto inc_dom_trans_run_fail;
+								}
+							}
+							if (need_user) {
+								//create proof w/ text userstring
+								proof = sechk_proof_new(NULL);
+								proof->type = SECHK_ITEM_OTHER;
+								proof->text = userstring;
+								userstring = NULL;
+								if (apol_vector_append(item->proof, (void *)proof) < 0) {
+									error = errno;
+									ERR(policy, "%s", strerror(ENOMEM));
+									goto inc_dom_trans_run_fail;
+								}
+							}
+							item = NULL;
+						}
+					}
+				}
+				apol_vector_destroy(&start_role_vector);
+				apol_vector_destroy(&end_role_vector);
+				apol_vector_destroy(&common_role_vector);
 			} else {
 				item = sechk_item_new(dtr_free_wrap);
 				if (!item) {
@@ -545,6 +780,9 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 	apol_domain_trans_analysis_destroy(&domain_trans);
 	apol_user_query_destroy(&user_query);
 	apol_role_trans_query_destroy(&role_trans_query);
+	apol_role_query_destroy(&start_role_query);
+	apol_role_query_destroy(&end_role_query);
+	apol_role_allow_query_destroy(&role_allow_query);
 
 	if (apol_vector_get_size(res->items))
 		return 1;
@@ -566,7 +804,7 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	int i = 0, j = 0, num_items;
+	size_t i = 0, j = 0, num_items;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");
@@ -603,10 +841,10 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		 */
 		printf("\n");
 		for (i = 0; i < num_items; i++) {
-			qpol_type_t *start;
-			qpol_type_t *end;
-			qpol_type_t *ep;
-			char *start_name, *end_name, *ep_name;
+			const qpol_type_t *start;
+			const qpol_type_t *end;
+			const qpol_type_t *ep;
+			const char *start_name, *end_name, *ep_name;
 			apol_domain_trans_result_t *dtr;
 
 			item = apol_vector_get_element(mod->result->items, i);
@@ -637,10 +875,10 @@ int inc_dom_trans_print(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
 		for (i = 0; i < num_items; i++) {
-			qpol_type_t *start;
-			qpol_type_t *end;
-			qpol_type_t *ep;
-			char *start_name, *end_name, *ep_name;
+			const qpol_type_t *start;
+			const qpol_type_t *end;
+			const qpol_type_t *ep;
+			const char *start_name, *end_name, *ep_name;
 			apol_domain_trans_result_t *dtr;
 
 			item = apol_vector_get_element(mod->result->items, i);

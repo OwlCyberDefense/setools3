@@ -6,6 +6,10 @@ if DO_SWIGIFY_JAVA
   MAYBE_JSWIG = java
 endif
 
-SUBDIRS = $(MAYBE_PYSWIG) $(MAYBE_JSWIG)
+if DO_SWIGIFY_TCL
+  MAYBE_TCLSWIG = tcl
+endif
+
+SUBDIRS = $(MAYBE_PYSWIG) $(MAYBE_JSWIG) $(MAYBE_TCLSWIG)
 
 dist_noinst_DATA = apol.i

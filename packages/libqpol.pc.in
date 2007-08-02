@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libqpol
+Description: SETools policy internals library
+Version: @libqpol_version@
+Requires:
+Conflicts:
+Libs: -L${libdir} -lqpol
+Cflags: -I${includedir}/qpol

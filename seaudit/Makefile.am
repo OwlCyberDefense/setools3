@@ -3,13 +3,13 @@ bin_PROGRAMS = seaudit-report
 sbin_PROGRAMS = seaudit
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
-	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEAUDIT_CFLAGS@ @XML_CFLAGS@
+	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEAUDIT_CFLAGS@
 
 seaudit_CFLAGS = $(AM_CFLAGS) \
 	@GTK_CFLAGS@ @PIXBUF_CFLAGS@ @GLADE_CFLAGS@ @GTHREAD_CFLAGS@
 seaudit_report_CFLAGS = $(AM_CFLAGS) -DAPOL_INSTALL_DIR='"${setoolsdir}"'
 
-AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @XML_LIBS@
+AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 # need the -rdynamic flag below - glade uses dlopen() upon seaudit callbacks
 seaudit_LDFLAGS = $(AM_LDFLAGS) \
@@ -72,9 +72,6 @@ install-logwatch: $(dist_noinst_DATA) seaudit-report-service
 	install -m 644 seaudit-report-group.conf $(LOGWATCH_GROUP)
 	install -m 644 seaudit-report-service.conf $(LOGWATCH_SERVICE)
 	install -m 755 seaudit-report-service $(LOGWATCH_FILTER)
-
-$(top_builddir)/libapol/libapol-tcl.a:
-	$(MAKE) -C $(top_builddir)/libapol-tcl $(notdir $@)
 
 $(top_builddir)/libapol/src/libapol.so:
 	$(MAKE) -C $(top_builddir)/libapol/src $(notdir $@)

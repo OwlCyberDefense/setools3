@@ -182,7 +182,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i;
-	bool_t used = FALSE;
+	bool used = false;
 	apol_vector_t *type_vector;
 	apol_vector_t *avrule_vector;
 	apol_avrule_query_t *avrule_query = NULL;
@@ -235,11 +235,11 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	}
 
 	for (i = 0; i < apol_vector_get_size(type_vector); i++) {
-		qpol_type_t *type;
-		char *type_name;
+		const qpol_type_t *type;
+		const char *type_name;
 		size_t j;
 
-		used = FALSE;
+		used = false;
 		type = apol_vector_get_element(type_vector, i);
 		qpol_type_get_name(q, type, &type_name);
 
@@ -253,7 +253,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_rule_type(q, rule, &rule_type);
 			if (rule_type == QPOL_RULE_ALLOW)
-				used = TRUE;
+				used = true;
 		}
 		apol_vector_destroy(&avrule_vector);
 		if (used)
@@ -270,7 +270,7 @@ int types_wo_allow_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 			rule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_rule_type(q, rule, &rule_type);
 			if (rule_type == QPOL_RULE_ALLOW)
-				used = TRUE;
+				used = true;
 		}
 		apol_vector_destroy(&avrule_vector);
 		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
@@ -344,10 +344,10 @@ int types_wo_allow_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k = 0, l = 0, num_items;
-	qpol_type_t *type;
+	size_t i = 0, j = 0, k = 0, l = 0, num_items;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

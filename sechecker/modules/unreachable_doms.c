@@ -34,9 +34,9 @@
 #include <errno.h>
 #include <assert.h>
 
-static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy);
-static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy);
-static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t * datum);
+static bool parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy);
+static bool in_isid_ctx(const char *type_name, apol_policy_t * policy);
+static bool in_def_ctx(const char *type_name, unreachable_doms_data_t * datum);
 /* for some reason we have to define this here to remove compile warnings */
 extern ssize_t getline(char **lineptr, size_t * n, FILE * stream);
 
@@ -175,7 +175,6 @@ int unreachable_doms_register(sechk_lib_t * lib)
 int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
 	unreachable_doms_data_t *datum = NULL;
-	bool_t retv;
 	const char *ctx_file_path = NULL;
 
 	if (!mod || !policy) {
@@ -210,7 +209,7 @@ int unreachable_doms_init(sechk_module_t * mod, apol_policy_t * policy, void *ar
 		errno = ENOENT;
 		return -1;
 	} else {
-		retv = parse_default_contexts(ctx_file_path, datum->ctx_vector, policy);
+		bool retv = parse_default_contexts(ctx_file_path, datum->ctx_vector, policy);
 		if (!retv) {
 			ERR(policy, "%s", "Unable to parse default contexts file");
 			errno = EIO;
@@ -243,14 +242,14 @@ typedef enum dom_need
  *  @param tgt_roles The second set of roles.
  *  @return 1 if a common user can be found 0 other wise.
  */
-static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles, apol_vector_t * tgt_roles, qpol_role_t ** which_sr,
-			      qpol_role_t ** which_tr, qpol_user_t ** which_u)
+static int exists_common_user(apol_policy_t * policy, apol_vector_t * src_roles, apol_vector_t * tgt_roles,
+			      const qpol_role_t ** which_sr, const qpol_role_t ** which_tr, const qpol_user_t ** which_u)
 {
 	int retv = 0;
 	apol_user_query_t *uq;
-	char *name = NULL;
-	qpol_role_t *role = NULL;
-	qpol_user_t *user = NULL;
+	const char *name = NULL;
+	const qpol_role_t *role = NULL;
+	const qpol_user_t *user = NULL;
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *user_v = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
@@ -326,18 +325,19 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	apol_vector_t *role_trans_vector = NULL, *role_allow_vector = NULL;
 	apol_domain_trans_analysis_t *dta = NULL;
 	apol_domain_trans_result_t *dtr = NULL;
-	char *tmp_name = NULL, *cur_dom_name = NULL, *tmp2 = NULL, *tmp3 = NULL;
-	qpol_type_t *cur_dom = NULL, *ep_type = NULL, *start_type = NULL;
-	qpol_type_t *last_type = NULL;
-	qpol_role_t *last_role = NULL, *src_role = NULL, *dflt_role = NULL;
-	qpol_role_t *last_dflt = NULL;
-	qpol_user_t *last_user = NULL;
+	const char *tmp_name = NULL, *cur_dom_name = NULL;
+	const char *tmp2 = NULL, *tmp3 = NULL;
+	const qpol_type_t *cur_dom = NULL, *ep_type = NULL, *start_type = NULL;
+	const qpol_type_t *last_type = NULL;
+	const qpol_role_t *last_role = NULL, *src_role = NULL, *dflt_role = NULL;
+	const qpol_role_t *last_dflt = NULL;
+	const qpol_user_t *last_user = NULL;
 	dom_need_e need = KEEP_SEARCHING;
 	apol_role_query_t *role_q = NULL;
 	apol_user_query_t *user_q = NULL;
 	apol_role_trans_query_t *rtq = NULL;
 	apol_role_allow_query_t *raq = NULL;
-	qpol_role_trans_t *role_trans = NULL;
+	const qpol_role_trans_t *role_trans = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 
 	if (!mod || !policy) {
@@ -453,11 +453,11 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 		/* collect information about roles and transitions to this domain */
 		apol_role_query_set_type(policy, role_q, cur_dom_name);
 		apol_role_get_by_query(policy, role_q, &dom_roles);
-		apol_domain_trans_table_reset(policy);
+		apol_policy_reset_domain_trans_table(policy);
 		apol_domain_trans_analysis_set_start_type(policy, dta, cur_dom_name);
 		apol_domain_trans_analysis_set_valid(policy, dta, APOL_DOMAIN_TRANS_SEARCH_VALID);
 		apol_domain_trans_analysis_do(policy, dta, &valid_rev_trans);
-		apol_domain_trans_table_reset(policy);
+		apol_policy_reset_domain_trans_table(policy);
 		apol_domain_trans_analysis_set_valid(policy, dta, APOL_DOMAIN_TRANS_SEARCH_INVALID);
 		apol_domain_trans_analysis_do(policy, dta, &invalid_rev_trans);
 
@@ -600,119 +600,118 @@ int unreachable_doms_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 			proof->elem = NULL;
 			switch (need) {
 			case USER:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					if (asprintf(&proof->text, "No user associated with role %s for %s", tmp_name, cur_dom_name)
-					    < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				if (asprintf(&proof->text, "No user associated with role %s for %s", tmp_name, cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case COMMON_USER:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					qpol_role_get_name(q, last_dflt, &tmp2);
-					if (asprintf
-					    (&proof->text, "Role transition required but no user associated with role %s and %s",
-					     tmp_name, tmp2) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				qpol_role_get_name(q, last_dflt, &tmp2);
+				if (asprintf
+				    (&proof->text, "Role transition required but no user associated with role %s and %s",
+				     tmp_name, tmp2) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case ROLE_TRANS:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					qpol_role_get_name(q, last_dflt, &tmp2);
-					qpol_type_get_name(q, last_type, &tmp3);
-					if (asprintf(&proof->text, "Missing: role_transition %s %s %s;", tmp_name, tmp3, tmp2) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				qpol_role_get_name(q, last_dflt, &tmp2);
+				qpol_type_get_name(q, last_type, &tmp3);
+				if (asprintf(&proof->text, "Missing: role_transition %s %s %s;", tmp_name, tmp3, tmp2) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case ROLE_ALLOW:
-				{
-					qpol_role_get_name(q, last_role, &tmp_name);
-					qpol_role_get_name(q, last_dflt, &tmp2);
-					if (asprintf
-					    (&proof->text,
-					     "Role transition required but missing role allow rule.\n\tMissing: allow %s %s;",
-					     tmp_name, tmp2) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				qpol_role_get_name(q, last_role, &tmp_name);
+				qpol_role_get_name(q, last_dflt, &tmp2);
+				if (asprintf
+				    (&proof->text,
+				     "Role transition required but missing role allow rule.\n\tMissing: allow %s %s;",
+				     tmp_name, tmp2) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case RBAC:
-				{
-					if (asprintf
-					    (&proof->text,
-					     "Valid domain transition to %s exists but indufficient RBAC rules to permit it.",
-					     cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (asprintf
+				    (&proof->text,
+				     "Valid domain transition to %s exists but indufficient RBAC rules to permit it.",
+				     cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case VALID_TRANS:
-				{
-					if (start_type)
-						qpol_type_get_name(q, start_type, &tmp2);
-					else
-						tmp2 = "<start_type>";
-					if (ep_type)
-						qpol_type_get_name(q, ep_type, &tmp3);
-					else
-						tmp3 = "<entrypont>";
-					if (asprintf
-					    (&proof->text,
-					     "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;",
-					     cur_dom_name,
-					     ((trans_missing & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) ? "Missing" : "Has"), tmp2,
-					     cur_dom_name, ((trans_missing & APOL_DOMAIN_TRANS_RULE_EXEC) ? "Missing" : "Has"),
-					     tmp2, tmp3, ((trans_missing & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT) ? "Missing" : "Has"),
-					     cur_dom_name, tmp3,
-					     ((trans_missing & (APOL_DOMAIN_TRANS_RULE_TYPE_TRANS | APOL_DOMAIN_TRANS_RULE_SETEXEC))
-					      ? "May need" : "Has"), cur_dom_name, tmp2, tmp3, cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (start_type)
+					qpol_type_get_name(q, start_type, &tmp2);
+				else
+					tmp2 = "<start_type>";
+				if (ep_type)
+					qpol_type_get_name(q, ep_type, &tmp3);
+				else
+					tmp3 = "<entrypont>";
+				if (asprintf
+				    (&proof->text,
+				     "Partial transition to %s found:\n\t%s: allow %s %s : process transition;\n\t%s: allow %s %s : file execute;\n\t%s: allow %s %s : file entrypoint;\n\t%s one of:\n\tallow %s self : process setexec;\n\ttype_transition %s %s : process %s;",
+				     cur_dom_name,
+				     ((trans_missing & APOL_DOMAIN_TRANS_RULE_PROC_TRANS) ? "Missing" : "Has"), tmp2,
+				     cur_dom_name, ((trans_missing & APOL_DOMAIN_TRANS_RULE_EXEC) ? "Missing" : "Has"),
+				     tmp2, tmp3, ((trans_missing & APOL_DOMAIN_TRANS_RULE_ENTRYPOINT) ? "Missing" : "Has"),
+				     cur_dom_name, tmp3,
+				     ((trans_missing & (APOL_DOMAIN_TRANS_RULE_TYPE_TRANS | APOL_DOMAIN_TRANS_RULE_SETEXEC))
+				      ? "May need" : "Has"), cur_dom_name, tmp2, tmp3, cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case ROLE:
-				{
-					if (asprintf(&proof->text, "No role associated with domain %s", cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (asprintf(&proof->text, "No role associated with domain %s", cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case TRANSITION:
-				{
-					if (asprintf(&proof->text, "There are no transitions to domain %s", cur_dom_name) < 0) {
-						error = errno;
-						ERR(policy, "%s", strerror(error));
-						goto unreachable_doms_run_fail;
-					}
-					break;
+			{
+				if (asprintf(&proof->text, "There are no transitions to domain %s", cur_dom_name) < 0) {
+					error = errno;
+					ERR(policy, "%s", strerror(error));
+					goto unreachable_doms_run_fail;
 				}
+				break;
+			}
 			case DONE:
 			case KEEP_SEARCHING:
 			default:
-				{
-					assert(0);
-					error = EDOM;
-					goto unreachable_doms_run_fail;
-				}
+			{
+				assert(0);
+				error = EDOM;
+				goto unreachable_doms_run_fail;
+			}
 			}
 			if (apol_vector_append(item->proof, (void *)proof) < 0) {
 				error = errno;
@@ -784,9 +783,9 @@ int unreachable_doms_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k, l, num_items;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -872,13 +871,13 @@ unreachable_doms_data_t *unreachable_doms_data_new(void)
 
 /* Parses default_contexts and adds source domains to datum->ctx_list.
  * The vector will contain newly allocated strings. */
-static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy)
+static bool parse_default_contexts(const char *ctx_file_path, apol_vector_t * ctx_vector, apol_policy_t * policy)
 {
-	int str_sz, i, charno, error = 0;
+	int str_sz, i, charno, error = 0, retv;
 	FILE *ctx_file;
 	char *line = NULL, *src_role = NULL, *src_dom = NULL, *dst_role = NULL, *dst_dom = NULL;
-	size_t retv, line_len = 0;
-	bool_t uses_mls = FALSE;
+	size_t line_len = 0;
+	bool uses_mls = false;
 
 	printf("Using default contexts: %s\n", ctx_file_path);
 	ctx_file = fopen(ctx_file_path, "r");
@@ -900,7 +899,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 			}
 		}
 
-		uses_mls = FALSE;
+		uses_mls = false;
 		str_sz = APOL_STR_SZ + 128;
 		i = 0;
 
@@ -937,7 +936,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 				break;
 			/* Check for MLS */
 			if (line[i] == ':') {
-				uses_mls = TRUE;
+				uses_mls = true;
 				i++;   /* skip ':' */
 				while (!isspace(line[i]))
 					i++;
@@ -1004,7 +1003,7 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 	}
 	free(line);
 	fclose(ctx_file);
-	return TRUE;
+	return true;
       parse_default_contexts_fail:
 	if (ctx_file != NULL) {
 		fclose(ctx_file);
@@ -1015,30 +1014,30 @@ static bool_t parse_default_contexts(const char *ctx_file_path, apol_vector_t * 
 	free(dst_role);
 	free(dst_dom);
 	errno = error;
-	return FALSE;
+	return false;
 }
 
 /* Returns true if type_idx is in datum->ctx_list */
-static bool_t in_def_ctx(char *type_name, unreachable_doms_data_t * datum)
+static bool in_def_ctx(const char *type_name, unreachable_doms_data_t * datum)
 {
 	size_t i;
 	if (apol_vector_get_index(datum->ctx_vector, type_name, apol_str_strcmp, NULL, &i) < 0) {
-		return FALSE;
+		return false;
 	}
-	return TRUE;
+	return true;
 }
 
 /* Returns true if type is a type assigned to an isid */
-static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy)
+static bool in_isid_ctx(const char *type_name, apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	qpol_policy_get_isid_iter(q, &iter);
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		qpol_isid_t *isid;
-		qpol_context_t *ocon;
-		qpol_type_t *context_type;
-		char *context_type_name;
+		const qpol_isid_t *isid;
+		const qpol_context_t *ocon;
+		const qpol_type_t *context_type;
+		const char *context_type_name;
 
 		qpol_iterator_get_item(iter, (void **)&isid);
 		qpol_isid_get_context(q, isid, &ocon);
@@ -1046,9 +1045,9 @@ static bool_t in_isid_ctx(char *type_name, apol_policy_t * policy)
 		qpol_type_get_name(q, context_type, &context_type_name);
 		if (!strcmp(type_name, context_type_name)) {
 			qpol_iterator_destroy(&iter);
-			return TRUE;
+			return true;
 		}
 	}
 	qpol_iterator_destroy(&iter);
-	return FALSE;
+	return false;
 }

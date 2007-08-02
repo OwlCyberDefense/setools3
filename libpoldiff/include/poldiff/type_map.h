@@ -72,7 +72,7 @@ extern "C"
  *  @return Vector of poldiff_type_remap_entry_t objects.  The caller
  *  should not destroy this vector.
  */
-	extern apol_vector_t *poldiff_type_remap_get_entries(poldiff_t * diff);
+	extern apol_vector_t *poldiff_type_remap_get_entries(const poldiff_t * diff);
 
 /**
  *  Remove a poldiff_type_remap_entry object.  This function will
@@ -98,7 +98,8 @@ extern "C"
  *  calling apol_vector_destroy() afterwards.  Upon error return NULL
  *  and set errno.
  */
-	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
+	extern apol_vector_t *poldiff_type_remap_entry_get_original_types(const poldiff_t * diff,
+									  const poldiff_type_remap_entry_t * entry);
 
 /**
  *  Allocate and return a sorted vector of type names (char *)
@@ -114,7 +115,8 @@ extern "C"
  *  calling apol_vector_destroy() afterwards.  Upon error return NULL
  *  and set errno.
  */
-	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(poldiff_t * diff, poldiff_type_remap_entry_t * entry);
+	extern apol_vector_t *poldiff_type_remap_entry_get_modified_types(const poldiff_t * diff,
+									  const poldiff_type_remap_entry_t * entry);
 
 /**
  *  Given a poldiff_type_remap_entry_t object, determine if was
@@ -124,7 +126,7 @@ extern "C"
  *
  *  @return 1 if it was inferred, 0 if not, < 0 on error.
  */
-	extern int poldiff_type_remap_entry_get_is_inferred(poldiff_type_remap_entry_t * entry);
+	extern int poldiff_type_remap_entry_get_is_inferred(const poldiff_type_remap_entry_t * entry);
 
 /**
  *  Given a poldiff_type_remap_entry_t object, determine if it is
@@ -134,7 +136,7 @@ extern "C"
  *
  *  @return 1 if it is enabled, 0 if not, < 0 on error.
  */
-	extern int poldiff_type_remap_entry_get_is_enabled(poldiff_type_remap_entry_t * entry);
+	extern int poldiff_type_remap_entry_get_is_enabled(const poldiff_type_remap_entry_t * entry);
 
 /**
  *  Enable or disable a poldiff_type_remap_entry_t object.

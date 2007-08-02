@@ -53,7 +53,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_isid_get_by_query(apol_policy_t * p, apol_isid_query_t * i, apol_vector_t ** v);
+	extern int apol_isid_get_by_query(const apol_policy_t * p, const apol_isid_query_t * i, apol_vector_t ** v);
 
 /**
  * Allocate and return a new isid query structure. All fields are
@@ -84,7 +84,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_isid_query_set_name(apol_policy_t * p, apol_isid_query_t * i, const char *name);
+	extern int apol_isid_query_set_name(const apol_policy_t * p, apol_isid_query_t * i, const char *name);
 
 /**
  * Set an isid query to return only initial SIDs matching a context.
@@ -101,7 +101,7 @@ extern "C"
  *
  * @return Always returns 0.
  */
-	extern int apol_isid_query_set_context(apol_policy_t * p,
+	extern int apol_isid_query_set_context(const apol_policy_t * p,
 					       apol_isid_query_t * i, apol_context_t * context, unsigned int range_match);
 
 #ifdef	__cplusplus

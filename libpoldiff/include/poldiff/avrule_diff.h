@@ -38,7 +38,7 @@ extern "C"
 
 /**
  *  Get an array of statistics for the number of differences of each
- *  form for av rules.
+ *  form for all AV rules.
  *
  *  @param diff The policy difference structure from which to get the
  *  stats.
@@ -48,11 +48,53 @@ extern "C"
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_avrule_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_avrule_get_stats_allow(const poldiff_t * diff, size_t stats[5]);
+
+/**
+ *  Get an array of statistics for the number of differences of each
+ *  form for AV auditallow rules.
+ *
+ *  @param diff The policy difference structure from which to get the
+ *  stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated).  The order of the values written to the array is
+ *  as follows:  number of items of form POLDIFF_FORM_ADDED, number of
+ *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
+ *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
+ */
+	extern void poldiff_avrule_get_stats_auditallow(const poldiff_t * diff, size_t stats[5]);
+
+/**
+ *  Get an array of statistics for the number of differences of each
+ *  form for AV dontaudit rules.
+ *
+ *  @param diff The policy difference structure from which to get the
+ *  stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated).  The order of the values written to the array is
+ *  as follows:  number of items of form POLDIFF_FORM_ADDED, number of
+ *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
+ *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
+ */
+	extern void poldiff_avrule_get_stats_dontaudit(const poldiff_t * diff, size_t stats[5]);
+
+/**
+ *  Get an array of statistics for the number of differences of each
+ *  form for AV neverallow rules.
+ *
+ *  @param diff The policy difference structure from which to get the
+ *  stats.
+ *  @param stats Array into which to write the numbers (array must be
+ *  pre-allocated).  The order of the values written to the array is
+ *  as follows:  number of items of form POLDIFF_FORM_ADDED, number of
+ *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
+ *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
+ */
+	extern void poldiff_avrule_get_stats_neverallow(const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of av rule differences from the av rule difference
- *  summary.
+ *  summary for just allow rules.
  *
  *  @param diff The policy difference structure associated with the av
  *  rule difference summary.
@@ -61,11 +103,50 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector returned.
  *  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_avrule_vector(poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_avrule_vector_allow(const poldiff_t * diff);
+
+/**
+ *  Get the vector of av rule differences from the av rule difference
+ *  summary for just auditallow rules.
+ *
+ *  @param diff The policy difference structure associated with the av
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_avrule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
+	extern const apol_vector_t *poldiff_get_avrule_vector_auditallow(const poldiff_t * diff);
+
+/**
+ *  Get the vector of av rule differences from the av rule difference
+ *  summary for just dontaudit rules.
+ *
+ *  @param diff The policy difference structure associated with the av
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_avrule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
+	extern const apol_vector_t *poldiff_get_avrule_vector_dontaudit(const poldiff_t * diff);
+
+/**
+ *  Get the vector of av rule differences from the av rule difference
+ *  summary for just neverallow rules.
+ *
+ *  @param diff The policy difference structure associated with the av
+ *  rule difference summary.
+ *
+ *  @return A vector of elements of type poldiff_avrule_t, or NULL on
+ *  error.  The caller should <b>not</b> destroy the vector returned.
+ *  If the call fails, errno will be set.
+ */
+	extern const apol_vector_t *poldiff_get_avrule_vector_neverallow(const poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
- *  an av rule.
+ *  any av rule.
  *
  *  @param diff The policy difference structure associated with the av
  *  rule.
@@ -75,10 +156,10 @@ extern "C"
  *  is responsible for free()ing this string.  On error, return NULL
  *  and set errno.
  */
-	extern char *poldiff_avrule_to_string(poldiff_t * diff, const void *avrule);
+	extern char *poldiff_avrule_to_string(const poldiff_t * diff, const void *avrule);
 
 /**
- *  Get the form of difference from an av rule diff.
+ *  Get the form of difference from any av rule diff.
  *
  *  @param avrule The av rule from which to get the difference form.
  *
@@ -142,7 +223,7 @@ extern "C"
  *  must not destroy this pointer.
  */
 	extern void poldiff_avrule_get_cond(const poldiff_t * diff, const poldiff_avrule_t * avrule,
-					    qpol_cond_t ** cond, uint32_t * which_list, apol_policy_t ** p);
+					    const qpol_cond_t ** cond, uint32_t * which_list, const apol_policy_t ** p);
 
 /**
  *  Get a vector of permissions unmodified by the av rule.  This
@@ -154,10 +235,10 @@ extern "C"
  *
  *  @return A vector of permissions strings (type char *) that both
  *  policies have.  If no permissions are common to both policies then
- *  the sizof of the returned vector will be 0.  The caller must not
+ *  the size of of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
-	extern apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule);
+	extern const apol_vector_t *poldiff_avrule_get_unmodified_perms(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of permissions added to the av rule.  If the rule was
@@ -172,7 +253,7 @@ extern "C"
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
-	extern apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule);
+	extern const apol_vector_t *poldiff_avrule_get_added_perms(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of permissions removed from the av rule.  If the rule
@@ -187,7 +268,7 @@ extern "C"
  *  the size of the returned vector will be 0.  The caller must not
  *  destroy this vector.
  */
-	extern apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * avrule);
+	extern const apol_vector_t *poldiff_avrule_get_removed_perms(const poldiff_avrule_t * avrule);
 
 /**
  *  Get a vector of line numbers (of type unsigned long) for this av rule
@@ -244,7 +325,7 @@ extern "C"
  *  was not found.  It is the caller's responsibility to call
  *  apol_vector_destroy() upon the returned value.
  */
-	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
+	extern apol_vector_t *poldiff_avrule_get_orig_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule,
 									    const char *perm);
 
 /**
@@ -270,7 +351,7 @@ extern "C"
  *  was not found.  It is the caller's responsibility to call
  *  apol_vector_destroy() upon the returned value.
  */
-	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(poldiff_t * diff, const poldiff_avrule_t * avrule,
+	extern apol_vector_t *poldiff_avrule_get_mod_line_numbers_for_perm(const poldiff_t * diff, const poldiff_avrule_t * avrule,
 									   const char *perm);
 
 #ifdef	__cplusplus
