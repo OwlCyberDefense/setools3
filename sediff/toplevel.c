@@ -255,7 +255,10 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 		}
 		progress_update(run->top->progress, "Opening %s", title);
 		free(title);
-		run->policies[i] = apol_policy_create_from_policy_path(path, 0, progress_apol_handle_func, run->top->progress);
+		run->policies[i] =
+			apol_policy_create_from_policy_path(path, QPOL_POLICY_OPTION_NO_RULES, progress_apol_handle_func,
+							    run->top->progress);
+		// poldiff_run() will rebuild the policies as needed
 		if (run->policies[i] == NULL) {
 			run->result = -1;
 			progress_abort(run->top->progress, NULL);
@@ -322,6 +325,9 @@ static gpointer toplevel_run_diff_runner(gpointer data)
 	}
 	run->result = poldiff_run(diff, run->run_flags);
 	sediffx_set_poldiff_run_flags(run->top->s, run->run_flags);
+	if (run->run_flags & (POLDIFF_DIFF_AVRULES | POLDIFF_DIFF_TERULES)) {
+		poldiff_enable_line_numbers(diff);
+	}
 	if (run->result < 0) {
 		progress_abort(run->top->progress, NULL);
 	} else {
@@ -671,10 +677,24 @@ void toplevel_on_help_activate(gpointer user_data, GtkMenuItem * widget __attrib
 void toplevel_on_about_sediffx_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+#ifdef GTK_2_8
 	gtk_show_about_dialog(top->w,
 			      "comments", "Policy Semantic Difference Tool for Security Enhanced Linux",
 			      "copyright", COPYRIGHT_INFO,
 			      "name", "sediffx", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
+#else
+	GtkWidget *w = gtk_message_dialog_new(top->w,
+					      GTK_DIALOG_DESTROY_WITH_PARENT,
+					      GTK_MESSAGE_INFO,
+					      GTK_BUTTONS_CLOSE,
+					      "%s %s\n%s\n%s\n%s",
+					      "sediffx", VERSION,
+					      "Policy Semantic Difference Tool for Security Enhanced Linux",
+					      COPYRIGHT_INFO,
+					      "http://oss.tresys.com/projects/setools");
+	gtk_dialog_run(GTK_DIALOG(w));
+	gtk_widget_destroy(w);
+#endif
 }
 
 void toplevel_on_open_policies_button_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event

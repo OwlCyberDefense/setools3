@@ -62,15 +62,38 @@ extern "C"
 		struct sepol_handle *sh;
 		qpol_callback_fn_t fn;
 		void *varg;
-		int rules_loaded;
+		int options;
 		int type;
 		int modified;
 		struct qpol_extended_image *ext;
 		struct qpol_module **modules;
 		size_t num_modules;
+		char *file_data;
+		size_t file_data_sz;
+		int file_data_type;
 	};
+/* qpol_policy_t.file_data_type will be one of the following to denote
+ * the proper method of destroying the data:
+ * _BIN if policy is from a binary source (modular or kernel) destroy is a no-op
+ * _MMAP if policy is from a file and destroy should call munmap
+ * _MEM if policy is from open_from_memory and destroy should call free */
+#define QPOL_POLICY_FILE_DATA_TYPE_BIN  0
+#define QPOL_POLICY_FILE_DATA_TYPE_MMAP 1
+#define QPOL_POLICY_FILE_DATA_TYPE_MEM  2
 
-	extern void qpol_handle_msg(qpol_policy_t * policy, int level, const char *fmt, ...);
+/**
+ *  Create an extended image for a policy. This function modifies the policydb
+ *  by adding additional records and information about attributes, initial sids
+ *  and other components not normally written to a binary policy file. Subsequent
+ *  calls to this function have no effect.
+ *  @param policy The policy for which the extended image should be created.
+ *  @return Returns 0 on success and < 0 on failure. If the call fails,
+ *  errno will be set; the state of the policy is not guaranteed to be stable
+ *  if this call fails.
+ */
+	int policy_extend(qpol_policy_t * policy);
+
+	extern void qpol_handle_msg(const qpol_policy_t * policy, int level, const char *fmt, ...);
 	int qpol_is_file_binpol(FILE * fp);
 	int qpol_is_file_mod_pkg(FILE * fp);
 /**

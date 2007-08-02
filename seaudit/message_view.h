@@ -130,6 +130,13 @@ void message_view_saveas(message_view_t * view);
 void message_view_modify(message_view_t * view);
 
 /**
+ * Clear all messages from this view.
+ *
+ * @param view View to clear.
+ */
+void message_view_clear(message_view_t * view);
+
+/**
  * Export to file all messages in a particular view.
  *
  * @param view View whose messages to export.

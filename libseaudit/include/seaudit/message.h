@@ -66,7 +66,7 @@ extern "C"
  *
  * @return Pointer to message's specific type, or NULL upon error.
  */
-	extern void *seaudit_message_get_data(seaudit_message_t * msg, seaudit_message_type_e * type);
+	extern void *seaudit_message_get_data(const seaudit_message_t * msg, seaudit_message_type_e * type);
 
 /**
  * Return the time that this audit message was generated.
@@ -78,7 +78,7 @@ extern "C"
  *
  * @see localtime(3)
  */
-	extern struct tm *seaudit_message_get_time(seaudit_message_t * msg);
+	extern const struct tm *seaudit_message_get_time(const seaudit_message_t * msg);
 
 /**
  * Return the name of the host that generated this audit message.
@@ -87,7 +87,7 @@ extern "C"
  *
  * @return Host of the message.  Do not modify this string.
  */
-	extern char *seaudit_message_get_host(seaudit_message_t * msg);
+	extern const char *seaudit_message_get_host(const seaudit_message_t * msg);
 
 /**
  * Given a message, allocate and return a string that approximates the
@@ -98,7 +98,7 @@ extern "C"
  * @return String representation for message, or NULL upon error.  The
  * caller is responsible for free()ing the string afterwards.
  */
-	extern char *seaudit_message_to_string(seaudit_message_t * msg);
+	extern char *seaudit_message_to_string(const seaudit_message_t * msg);
 
 /**
  * Given a message, allocate and return a string, formatted in HTML,
@@ -110,7 +110,7 @@ extern "C"
  * @return HTML String representation for message, or NULL upon error.
  * The caller is responsible for free()ing the string afterwards.
  */
-	extern char *seaudit_message_to_string_html(seaudit_message_t * msg);
+	extern char *seaudit_message_to_string_html(const seaudit_message_t * msg);
 
 /**
  * Given a message, allocate and return a string that gives
@@ -124,7 +124,7 @@ extern "C"
  * error.  The caller is responsible for free()ing the string
  * afterwards.
  */
-	extern char *seaudit_message_to_misc_string(seaudit_message_t * msg);
+	extern char *seaudit_message_to_misc_string(const seaudit_message_t * msg);
 
 #ifdef  __cplusplus
 }

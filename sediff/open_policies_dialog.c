@@ -244,7 +244,7 @@ static void open_policy_on_base_browse_click(GtkButton * button __attribute__ ((
  */
 static int open_policy_load_module(struct open_policy *op, struct open_policy_pane *pane, const char *path)
 {
-	char *module_name, *version_string;
+	const char *module_name, *version_string;
 	int module_type;
 	qpol_module_t *module = NULL;
 	GtkTreeIter iter;
@@ -422,8 +422,7 @@ static apol_policy_path_t *open_policy_build_path(struct open_policy_pane *pane)
 					apol_vector_destroy(&modules);
 					return NULL;
 				}
-			}
-			while (gtk_tree_model_iter_next(GTK_TREE_MODEL(pane->module_store), &iter));
+			} while (gtk_tree_model_iter_next(GTK_TREE_MODEL(pane->module_store), &iter));
 		}
 	}
 	path = apol_policy_path_create(path_type, primary_path, modules);

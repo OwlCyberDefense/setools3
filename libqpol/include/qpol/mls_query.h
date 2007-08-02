@@ -52,7 +52,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-	extern int qpol_policy_get_level_by_name(qpol_policy_t * policy, const char *name, qpol_level_t ** datum);
+	extern int qpol_policy_get_level_by_name(const qpol_policy_t * policy, const char *name, const qpol_level_t ** datum);
 
 /**
  *  Get an iterator for the levels in a policy.
@@ -64,7 +64,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_level_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_level_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Determine if a level is an alias for another level.
@@ -75,7 +75,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *isalias will be 0 (false).
  */
-	extern int qpol_level_get_isalias(qpol_policy_t * policy, qpol_level_t * datum, unsigned char *isalias);
+	extern int qpol_level_get_isalias(const qpol_policy_t * policy, const qpol_level_t * datum, unsigned char *isalias);
 
 /**
  *  Get the integer value associated with the sensitivity of a level.
@@ -86,7 +86,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-	extern int qpol_level_get_value(qpol_policy_t * policy, qpol_level_t * datum, uint32_t * value);
+	extern int qpol_level_get_value(const qpol_policy_t * policy, const qpol_level_t * datum, uint32_t * value);
 
 /**
  *  Get an iterator for the categories associated with a level.
@@ -100,7 +100,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *cats will be NULL.
  */
-	extern int qpol_level_get_cat_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol_iterator_t ** cats);
+	extern int qpol_level_get_cat_iter(const qpol_policy_t * policy, const qpol_level_t * datum, qpol_iterator_t ** cats);
 
 /**
  *  Get the name which identifies a level from its datum.
@@ -112,7 +112,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_level_get_name(qpol_policy_t * policy, qpol_level_t * datum, char **name);
+	extern int qpol_level_get_name(const qpol_policy_t * policy, const qpol_level_t * datum, const char **name);
 
 /**
  *  Get an iterator for the list of aliases for a level.
@@ -126,7 +126,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *aliases will be NULL.
  */
-	extern int qpol_level_get_alias_iter(qpol_policy_t * policy, qpol_level_t * datum, qpol_iterator_t ** aliases);
+	extern int qpol_level_get_alias_iter(const qpol_policy_t * policy, const qpol_level_t * datum, qpol_iterator_t ** aliases);
 
 /* cat */
 /**
@@ -138,7 +138,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-	extern int qpol_policy_get_cat_by_name(qpol_policy_t * policy, const char *name, qpol_cat_t ** datum);
+	extern int qpol_policy_get_cat_by_name(const qpol_policy_t * policy, const char *name, const qpol_cat_t ** datum);
 
 /**
  *  Get an iterator for the categories declared in a policy.
@@ -151,7 +151,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_cat_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_cat_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the integer value associated with a category. Values range
@@ -162,7 +162,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-	extern int qpol_cat_get_value(qpol_policy_t * policy, qpol_cat_t * datum, uint32_t * value);
+	extern int qpol_cat_get_value(const qpol_policy_t * policy, const qpol_cat_t * datum, uint32_t * value);
 
 /**
  *  Determine if a category is an alias for another category.
@@ -173,7 +173,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *isalias will be 0 (false).
  */
-	extern int qpol_cat_get_isalias(qpol_policy_t * policy, qpol_cat_t * datum, unsigned char *isalias);
+	extern int qpol_cat_get_isalias(const qpol_policy_t * policy, const qpol_cat_t * datum, unsigned char *isalias);
 
 /**
  *  Get the name which identifies a category from its datum.
@@ -185,7 +185,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_cat_get_name(qpol_policy_t * policy, qpol_cat_t * datum, char **name);
+	extern int qpol_cat_get_name(const qpol_policy_t * policy, const qpol_cat_t * datum, const char **name);
 
 /**
  *  Get an iterator for the list of aliases for a category.
@@ -199,7 +199,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *aliases will be NULL.
  */
-	extern int qpol_cat_get_alias_iter(qpol_policy_t * policy, qpol_cat_t * datum, qpol_iterator_t ** aliases);
+	extern int qpol_cat_get_alias_iter(const qpol_policy_t * policy, const qpol_cat_t * datum, qpol_iterator_t ** aliases);
 
 /* mls range */
 /**
@@ -211,7 +211,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.
  */
-	extern int qpol_mls_range_get_low_level(qpol_policy_t * policy, qpol_mls_range_t * range, qpol_mls_level_t ** level);
+	extern int qpol_mls_range_get_low_level(const qpol_policy_t * policy, const qpol_mls_range_t * range,
+						const qpol_mls_level_t ** level);
 
 /**
  *  Get the high level from a MLS range.
@@ -222,7 +223,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *level will be NULL.
  */
-	extern int qpol_mls_range_get_high_level(qpol_policy_t * policy, qpol_mls_range_t * range, qpol_mls_level_t ** level);
+	extern int qpol_mls_range_get_high_level(const qpol_policy_t * policy, const qpol_mls_range_t * range,
+						 const qpol_mls_level_t ** level);
 
 /* mls_level */
 /**
@@ -234,7 +236,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_mls_level_get_sens_name(qpol_policy_t * policy, qpol_mls_level_t * level, char **name);
+	extern int qpol_mls_level_get_sens_name(const qpol_policy_t * policy, const qpol_mls_level_t * level, const char **name);
 
 /**
  *  Get an iterator for the categories in a MLS level. The list will be
@@ -248,7 +250,8 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *cats will be NULL.
  */
-	extern int qpol_mls_level_get_cat_iter(qpol_policy_t * policy, qpol_mls_level_t * level, qpol_iterator_t ** cats);
+	extern int qpol_mls_level_get_cat_iter(const qpol_policy_t * policy, const qpol_mls_level_t * level,
+					       qpol_iterator_t ** cats);
 
 #ifdef	__cplusplus
 }

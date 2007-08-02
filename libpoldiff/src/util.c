@@ -24,6 +24,7 @@
  */
 
 #include <config.h>
+#include <poldiff/util.h>
 
 const char *libpoldiff_get_version(void)
 {

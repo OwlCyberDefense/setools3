@@ -47,7 +47,7 @@ extern "C"
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_attrib_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_attrib_get_stats(const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of attribute differences from the attribute
@@ -60,7 +60,7 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_attrib_vector(poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_attrib_vector(const poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -74,7 +74,7 @@ extern "C"
  *  caller is responsible for free()ing this string.  On error, return
  *  NULL and set errno.
  */
-	extern char *poldiff_attrib_to_string(poldiff_t * diff, const void *attrib);
+	extern char *poldiff_attrib_to_string(const poldiff_t * diff, const void *attrib);
 
 /**
  *  Get the name of the attribute from an attribute diff.
@@ -108,7 +108,7 @@ extern "C"
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_attrib_get_added_types(const poldiff_attrib_t * attrib);
+	extern const apol_vector_t *poldiff_attrib_get_added_types(const poldiff_attrib_t * attrib);
 
 /**
  *  Get a vector of types removed from the attribute.
@@ -121,7 +121,7 @@ extern "C"
  *  the size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_attrib_get_removed_types(const poldiff_attrib_t * attrib);
+	extern const apol_vector_t *poldiff_attrib_get_removed_types(const poldiff_attrib_t * attrib);
 
 #ifdef	__cplusplus
 }

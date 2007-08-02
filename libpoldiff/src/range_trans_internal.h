@@ -72,7 +72,7 @@ extern "C"
  * apol_vector_destroy() afterwards.  On error, return NULL and set
  * errno.
  */
-	apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *range_trans_get_items(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two pseudo_range_trans_t objects, determining if they have
@@ -86,7 +86,7 @@ extern "C"
  * @return < 0, 0, or > 0 if x is respectively less than, equal to, or
  * greater than source role of y.
  */
-	int range_trans_comp(const void *x, const void *y, poldiff_t * diff);
+	int range_trans_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for

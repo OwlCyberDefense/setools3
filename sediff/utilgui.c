@@ -103,7 +103,9 @@ char *util_save_file(GtkWindow * parent, const char *title, const char *init_pat
 							GTK_RESPONSE_CANCEL,
 							GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
 	char *path = NULL;
+#ifdef GTK_2_8
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
+#endif
 	if (init_path != NULL) {
 		gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), init_path);
 	} else {
@@ -154,4 +156,13 @@ char *util_policy_path_to_full_string(const apol_policy_path_t * path)
 		}
 		return s;
 	}
+}
+
+const gchar *util_combo_box_get_active_text(GtkComboBox * w)
+{
+#ifdef GTK_2_8
+	return gtk_combo_box_get_active_text(w);
+#else
+	return gtk_entry_get_text(GTK_ENTRY(GTK_BIN(w)->child));
+#endif
 }

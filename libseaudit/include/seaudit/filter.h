@@ -35,6 +35,7 @@ extern "C"
 #include <seaudit/avc_message.h>
 
 #include <apol/vector.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -130,7 +131,7 @@ extern "C"
  *
  * @see seaudit_filter_create_from_file()
  */
-	extern int seaudit_filter_save_to_file(seaudit_filter_t * filter, const char *filename);
+	extern int seaudit_filter_save_to_file(const seaudit_filter_t * filter, const char *filename);
 
 /**
  * Set a filter to accept a message if all criteria are met (default
@@ -150,7 +151,7 @@ extern "C"
  *
  * @return One of SEAUDIT_FILTER_MATCH_ALL or SEAUDIT_FILTER_MATCH_ANY.
  */
-	extern seaudit_filter_match_e seaudit_filter_get_match(seaudit_filter_t * filter);
+	extern seaudit_filter_match_e seaudit_filter_get_match(const seaudit_filter_t * filter);
 
 /**
  * Set the name of this filter, overwriting any previous name.
@@ -171,7 +172,7 @@ extern "C"
  * @return Name of the filter, or NULL if no name has been set.  Do
  * not free() or otherwise modify this string.
  */
-	extern char *seaudit_filter_get_name(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_name(const seaudit_filter_t * filter);
 
 /**
  * Set the description of this filter, overwriting any previous
@@ -194,7 +195,38 @@ extern "C"
  * @return Description of the filter, or NULL if no description has
  * been set.  Do not free() or otherwise modify this string.
  */
-	extern char *seaudit_filter_get_description(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_description(const seaudit_filter_t * filter);
+
+/**
+ * Set the strictness of this filter.  By default, the filter's
+ * criteria are not "strict", meaning if a message does not have a
+ * field then the criterion will match it.  For example, an AVC denied
+ * message might not have an 'laddr' field in it.  If a filter was
+ * created with seaudit_filter_set_laddr(), the filter would still
+ * accept the message.
+ *
+ * If instead a filter is set as strict, then messages that do not
+ * have the field in question will be rejected.  For the example
+ * above, a strict filter would eliminate that AVC message.  In
+ * addition, an empty filter (i.e., one without any criterion set)
+ * does not match any messages if it is set to strict.
+ *
+ * @param filter Filter to modify.
+ * @param strict If true, enable strict matching.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_strict(seaudit_filter_t * filter, bool is_strict);
+
+/**
+ * Get the strictness of this filter.
+ *
+ * @param filter Filter from which to get strictness.
+ *
+ * @return True if the filter will reject messages that do not contain
+ * fields being filtered, false if they are accepted.
+ */
+	extern bool seaudit_filter_get_strict(const seaudit_filter_t * filter);
 
 /**
  * Set the list of source users.  A message is accepted if its source
@@ -206,7 +238,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_source_user(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_source_user(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of source users for a filter.  This will be
@@ -216,7 +248,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_source_user(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_source_user(const seaudit_filter_t * filter);
 
 /**
  * Set the list of source roles.  A message is accepted if its source
@@ -228,7 +260,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_source_role(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_source_role(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of source roles for a filter.  This will be
@@ -238,7 +270,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_source_role(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_source_role(const seaudit_filter_t * filter);
 
 /**
  * Set the list of source types.  A message is accepted if its source
@@ -250,7 +282,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_source_type(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_source_type(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of source types for a filter.  This will be
@@ -260,7 +292,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_source_type(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_source_type(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target users.  A message is accepted if its target
@@ -272,7 +304,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_user(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_user(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target users for a filter.  This will be
@@ -282,7 +314,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_user(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_user(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target roles.  A message is accepted if its target
@@ -294,7 +326,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_role(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_role(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target roles for a filter.  This will be
@@ -304,7 +336,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_role(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_role(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target types.  A message is accepted if its target
@@ -316,7 +348,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_type(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_type(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target types for a filter.  This will be
@@ -326,7 +358,7 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_type(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_type(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target object classes.  A message is accepted if
@@ -338,7 +370,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_target_class(seaudit_filter_t * filter, apol_vector_t * v);
+	extern int seaudit_filter_set_target_class(seaudit_filter_t * filter, const apol_vector_t * v);
 
 /**
  * Return the current list of target object classes for a filter.
@@ -349,7 +381,31 @@ extern "C"
  *
  * @return Vector of strings, or NULL if no value has been set.
  */
-	extern apol_vector_t *seaudit_filter_get_target_class(seaudit_filter_t * filter);
+	extern const apol_vector_t *seaudit_filter_get_target_class(const seaudit_filter_t * filter);
+
+/**
+ * Set the permission criterion, as a glob expression.  A message is
+ * accepted if at least one of its AVC permissions match the
+ * criterion.
+ *
+ * @param filter Filter to modify.
+ * @param perm Glob expression for permission.  This function will
+ * duplicate the string.  If this is NULL then clear the existing
+ * permission.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_permission(seaudit_filter_t * filter, const char *perm);
+
+/**
+ * Return the current permission for a filter.  Treat this string as
+ * const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for permission, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_permission(const seaudit_filter_t * filter);
 
 /**
  * Set the executable criterion, as a glob expression.  A message is
@@ -372,7 +428,7 @@ extern "C"
  *
  * @return Glob expression for executable, or NULL if none set.
  */
-	extern char *seaudit_filter_get_executable(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_executable(const seaudit_filter_t * filter);
 
 /**
  * Set the host criterion, as a glob expression.  A message is
@@ -393,7 +449,7 @@ extern "C"
  *
  * @return Glob expression for host, or NULL if none set.
  */
-	extern char *seaudit_filter_get_host(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_host(const seaudit_filter_t * filter);
 
 /**
  * Set the path criterion, as a glob expression.  A message is
@@ -414,7 +470,48 @@ extern "C"
  *
  * @return Glob expression for path, or NULL if none set.
  */
-	extern char *seaudit_filter_get_path(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_path(const seaudit_filter_t * filter);
+
+/**
+ * Set the inode criterion.  A message is accepted if its inode
+ * exactly matches this inode value.
+ *
+ * @param filter Filter to modify.
+ * @param inode inode value to match.  If this is 0 then clear the
+ * existing inode.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_inode(seaudit_filter_t * filter, unsigned long inode);
+
+/**
+ * Return the current inode for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current inode value, or 0 if none set.
+ */
+	extern unsigned long seaudit_filter_get_inode(const seaudit_filter_t * filter);
+
+/**
+ * Set the pid criterion.  A message is accepted if its pid value
+ * exactly matches this pid value.
+ *
+ * @param filter Filter to modify.
+ * @param pid value to match.  If this is 0 then clear the existing pid.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_pid(seaudit_filter_t * filter, unsigned int pid);
+
+/**
+ * Return the current pid for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current pid value, or 0 if none set.
+ */
+	extern unsigned int seaudit_filter_get_pid(const seaudit_filter_t * filter);
 
 /**
  * Set the command criterion, as a glob expression.  A message is
@@ -436,12 +533,12 @@ extern "C"
  *
  * @return Glob expression for command, or NULL if none set.
  */
-	extern char *seaudit_filter_get_command(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_command(const seaudit_filter_t * filter);
 
 /**
  * Set the IP address criterion, as a glob expression.  A message is
- * accepted if any of its IP addresses (saddr, daddr, faddr, or laddr)
- * matches this expression.
+ * accepted if any of its IP addresses (ipaddr, saddr, daddr, faddr,
+ * or laddr) matches this expression.
  *
  * @param filter Filter to modify.
  * @param ipaddr Glob expression for IP address.  This function will
@@ -450,7 +547,7 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
-	extern int seaudit_filter_set_ipaddress(seaudit_filter_t * filter, const char *ipaddr);
+	extern int seaudit_filter_set_anyaddr(seaudit_filter_t * filter, const char *ipaddr);
 
 /**
  * Return the current IP address for a filter.  Treat this string as
@@ -460,7 +557,7 @@ extern "C"
  *
  * @return Glob expression for address, or NULL if none set.
  */
-	extern char *seaudit_filter_get_ipaddress(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_anyaddr(const seaudit_filter_t * filter);
 
 /**
  * Set the port criterion.  A message is accepted if any of its ports
@@ -472,6 +569,231 @@ extern "C"
  *
  * @return 0 on success, < 0 on error.
  */
+	extern int seaudit_filter_set_anyport(seaudit_filter_t * filter, const int port);
+
+/**
+ * Return the current port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_anyport(const seaudit_filter_t * filter);
+
+/**
+ * Set the local address criterion, as a glob expression.  A message
+ * is accepted if its local address (laddr) matches this expression.
+ * Note that if seaudit_filter_set_anyaddr() is also set, then the
+ * message must match both ipaddr and laddr for it to be accepted
+ * (assuming that the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param laddr Glob expression for local address.  This function will
+ * duplicate the string.  If this is NULL then clear the existing
+ * address.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_laddr(seaudit_filter_t * filter, const char *laddr);
+
+/**
+ * Return the current local address for a filter.  Treat this string
+ * as const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for address, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_laddr(const seaudit_filter_t * filter);
+
+/**
+ * Set the local port criterion.  A message is accepted if its local
+ * port (lport) matches this port.  Note that if
+ * seaudit_filter_set_anyport() is also set, then the message must
+ * match both anyport and lport for it to be accepted (assuming that
+ * the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param lport Local port criterion.  If this is zero or negative
+ * then clear the existing port.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_lport(seaudit_filter_t * filter, const int lport);
+
+/**
+ * Return the current local port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_lport(const seaudit_filter_t * filter);
+
+/**
+ * Set the foreign address criterion, as a glob expression.  A message
+ * is accepted if its foreign address (faddr) matches this expression.
+ * Note that if seaudit_filter_set_anyaddr() is also set, then the
+ * message must match both ipaddr and faddr for it to be accepted
+ * (assuming that the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param faddr Glob expression for foreign address.  This function
+ * will duplicate the string.  If this is NULL then clear the existing
+ * address.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_faddr(seaudit_filter_t * filter, const char *faddr);
+
+/**
+ * Return the current foreign address for a filter.  Treat this string
+ * as const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for address, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_faddr(const seaudit_filter_t * filter);
+
+/**
+ * Set the foreign port criterion.  A message is accepted if its
+ * foreign port (fport) matches this port.  Note that if
+ * seaudit_filter_set_anyport() is also set, then the message must
+ * match both anyport and fport for it to be accepted (assuming that
+ * the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param fport Foreign port criterion.  If this is zero or negative
+ * then clear the existing port.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_fport(seaudit_filter_t * filter, const int fport);
+
+/**
+ * Return the current foreign port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_fport(const seaudit_filter_t * filter);
+
+/**
+ * Set the source address criterion, as a glob expression.  A message
+ * is accepted if its source address (saddr) matches this expression.
+ * Note that if seaudit_filter_set_anyaddr() is also set, then the
+ * message must match both ipaddr and saddr for it to be accepted
+ * (assuming that the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param saddr Glob expression for source address.  This function
+ * will duplicate the string.  If this is NULL then clear the existing
+ * address.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_saddr(seaudit_filter_t * filter, const char *saddr);
+
+/**
+ * Return the current source address for a filter.  Treat this string
+ * as const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for address, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_saddr(const seaudit_filter_t * filter);
+
+/**
+ * Set the source port criterion.  A message is accepted if its source
+ * port (sport) matches this port.  Note that if
+ * seaudit_filter_set_anyport() is also set, then the message must
+ * match both anyport and sport for it to be accepted (assuming that
+ * the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param sport Source port criterion.  If this is zero or negative
+ * then clear the existing port.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_sport(seaudit_filter_t * filter, const int sport);
+
+/**
+ * Return the current source port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_sport(const seaudit_filter_t * filter);
+
+/**
+ * Set the destination address criterion, as a glob expression.  A
+ * message is accepted if its destination address (daddr) matches this
+ * expression.  Note that if seaudit_filter_set_anyaddr() is also set,
+ * then the message must match both ipaddr and daddr for it to be
+ * accepted (assuming that the match is set to
+ * SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param daddr Glob expression for destination address.  This
+ * function will duplicate the string.  If this is NULL then clear the
+ * existing address.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_daddr(seaudit_filter_t * filter, const char *daddr);
+
+/**
+ * Return the current destination address for a filter.  Treat this
+ * string as const.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Glob expression for address, or NULL if none set.
+ */
+	extern const char *seaudit_filter_get_daddr(const seaudit_filter_t * filter);
+
+/**
+ * Set the destination port criterion.  A message is accepted if its
+ * destination port (dport) matches this port.  Note that if
+ * seaudit_filter_set_anyport() is also set, then the message must
+ * match both anyport and dport for it to be accepted (assuming that
+ * the match is set to SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param dport Destination port criterion.  If this is zero or
+ * negative then clear the existing port.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_dport(seaudit_filter_t * filter, const int dport);
+
+/**
+ * Return the current destination port for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current port criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_dport(const seaudit_filter_t * filter);
+
+/**
+ * Set the port criterion.  A message is accepted if its port matches
+ * this port value exactly.  Note that if seaudit_filter_set_anyport()
+ * is also set, then the message must match both anyport and port for
+ * it to be accepted (assuming that the match is set to
+ * SEAUDIT_FILTER_MATCH_ALL).
+ *
+ * @param filter Filter to modify.
+ * @param port Port criterion.  If this is zero or negative then clear
+ * the existing port.
+ *
+ * @return Always 0.
+ */
 	extern int seaudit_filter_set_port(seaudit_filter_t * filter, const int port);
 
 /**
@@ -481,7 +803,7 @@ extern "C"
  *
  * @return Current port criterion, or 0 if none set.
  */
-	extern int seaudit_filter_get_port(seaudit_filter_t * filter);
+	extern int seaudit_filter_get_port(const seaudit_filter_t * filter);
 
 /**
  * Set the network interface criterion.  A message is accepted if its
@@ -504,7 +826,49 @@ extern "C"
  *
  * @return String for netif, or NULL if none set.
  */
-	extern char *seaudit_filter_get_netif(seaudit_filter_t * filter);
+	extern const char *seaudit_filter_get_netif(const seaudit_filter_t * filter);
+
+/**
+ * Set the key criterion.  A message is accepted if its IPC key
+ * matches exactly with this value.
+ *
+ * @param filter Filter to modify.
+ * @param key Key criterion.  If this is zero or negative then clear
+ * the existing key.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_key(seaudit_filter_t * filter, const int key);
+
+/**
+ * Return the current key for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current key criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_key(const seaudit_filter_t * filter);
+
+/**
+ * Set the capability criterion.  A message is accepted if its
+ * capability matches exactly with this value.
+ *
+ * @param filter Filter to modify.
+ * @param cap Capability criterion.  If this is zero or negative then
+ * clear the existing capability.
+ *
+ * @return Always 0.
+ */
+	extern int seaudit_filter_set_cap(seaudit_filter_t * filter, const int cap);
+
+/**
+ * Return the current capability for a filter.
+ *
+ * @param filter Filter to get value.
+ *
+ * @return Current capability criterion, or 0 if none set.
+ */
+	extern int seaudit_filter_get_cap(const seaudit_filter_t * filter);
 
 /**
  * Set the type of AVC criterion.  A message is accepted if it matches
@@ -528,7 +892,7 @@ extern "C"
  * @return Type of AVC message to filter, or SEAUDIT_AVC_UNKNOWN if
  * none set.
  */
-	extern seaudit_avc_message_type_e seaudit_filter_get_message_type(seaudit_filter_t * filter);
+	extern seaudit_avc_message_type_e seaudit_filter_get_message_type(const seaudit_filter_t * filter);
 
 /**
  * Set the date/time criterion.  A message is accepted if its
@@ -562,7 +926,7 @@ extern "C"
  * structure are invalid.
  * @param date_match Pointer to location to set date matching option.
  */
-	extern void seaudit_filter_get_date(seaudit_filter_t * filter, struct tm **start, struct tm **end,
+	extern void seaudit_filter_get_date(const seaudit_filter_t * filter, const struct tm **start, const struct tm **end,
 					    seaudit_filter_date_match_e * match);
 
 #ifdef  __cplusplus

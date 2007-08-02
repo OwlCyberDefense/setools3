@@ -31,21 +31,11 @@ extern "C"
 {
 #endif
 
-#include <config.h>
-
 #include "vector.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
-
-#undef FALSE
-#define FALSE   0
-#undef TRUE
-#define TRUE	1
-	typedef unsigned char bool_t;
 
 /**
  * Return an immutable string describing this library's version.
@@ -65,6 +55,16 @@ extern "C"
  * protocol is invalid.  <b>Do not free() this string.</b>
  */
 	extern const char *apol_protocol_to_str(uint8_t protocol);
+
+/**
+ * Given the name of a portcon protocol, return its numeric value.
+ *
+ * @param protocol_str Portcon protocol, one of "tcp", "TCP", "udp", or "UDP".
+ *
+ * @return Numeric value for the protocol, one of IPPROTO_TCP or IPPROTO_UDP
+ * from netinet/in.h.  Upon error return 0.
+ */
+	extern uint8_t apol_str_to_protocol(const char *protocol_str);
 
 /**
  * Given a string representing and IP value (mask or address, IPv4 or
@@ -90,8 +90,23 @@ extern "C"
  *
  * @return A string that describes the object class, or NULL if the
  * object class is invalid.  <b>Do not free() this string.</b>
+ *
+ * @see <qpol/genfscon_query.h> for a list of valid object classes.
  */
 	extern const char *apol_objclass_to_str(uint32_t objclass);
+
+/**
+ * Given a string representing a genfscon object class, return its
+ * numeric identifier.  Valid strings may be obtained by calling
+ * apol_objclass_to_str().
+ *
+ * @param objclass Object class, one of "any", "file", etc.
+ *
+ * @return Numeric identifier for object class, or 0 if unknown.
+ *
+ * @see <qpol/genfscon_query.h> for a list of valid object classes.
+ */
+	extern uint32_t apol_str_to_objclass(const char *objclass);
 
 /**
  * Given a fs_use behavior type, return a read-only string that
@@ -281,8 +296,7 @@ extern "C"
 	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...);
 
 /* declaration duplicated below to satisfy doxygen */
-	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...)
-		__attribute__ ((format(printf, 3, 4)));
+	extern int apol_str_appendf(char **tgt, size_t * tgt_sz, const char *fmt, ...) __attribute__ ((format(printf, 3, 4)));
 
 /**
  * Test whether a given string is only white space.

@@ -50,16 +50,14 @@ static struct option const longopts[] = {
 	{"short", no_argument, NULL, 's'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"profile", required_argument, NULL, 'p'},
-#ifdef LIBSEFS
 	{"fcfile", required_argument, NULL, OPT_FCFILE},
-#endif
 	{"module", required_argument, NULL, 'm'},
 	{"min-sev", required_argument, NULL, OPT_MIN_SEV},
 	{NULL, 0, NULL, 0}
 };
 
 /* display usage help */
-void usage(const char *arg0, bool_t brief)
+void usage(const char *arg0, bool brief)
 {
 	printf("Usage: sechecker [OPTIONS] -p profile [POLICY ...]\n");
 	printf("       sechecker [OPTIONS] -m module [POLICY ...]\n");
@@ -73,9 +71,7 @@ void usage(const char *arg0, bool_t brief)
 		printf("   -p PROF, --profile=PROF      name or path of profile to load\n");
 		printf("                                if used without -m, run all modules in profile\n");
 		printf("   -m MODULE, --module=MODULE   MODULE to run\n");
-#ifdef LIBSEFS
 		printf("   --fcfile=FILE                file_contexts file to load\n");
-#endif
 		printf("\n");
 		printf("   -q, --quiet                  suppress output\n");
 		printf("   -s, --short                  print short output\n");
@@ -119,10 +115,9 @@ int sechk_print_list(sechk_lib_t * lib)
 /* main application */
 int main(int argc, char **argv)
 {
-	int optc = 0, retv = 0, i;
-#ifdef LIBSEFS
+	int optc = 0, retv = 0;
+	size_t i;
 	char *fcpath = NULL;
-#endif
 	char *modname = NULL;
 	char *prof_name = NULL;
 	char *base_path = NULL;
@@ -132,8 +127,8 @@ int main(int argc, char **argv)
 	unsigned char output_override = 0;
 	sechk_lib_t *lib;
 	sechk_module_t *mod = NULL;
-	bool_t list_stop = FALSE;
-	bool_t module_help = FALSE;
+	bool list_stop = false;
+	bool module_help = false;
 	apol_vector_t *policy_mods = NULL;
 
 	while ((optc = getopt_long(argc, argv, "p:m:qsvlh::V", longopts, NULL)) != -1) {
@@ -148,11 +143,9 @@ int main(int argc, char **argv)
 			}
 			modname = strdup(optarg);
 			break;
-#ifdef LIBSEFS
 		case OPT_FCFILE:
 			fcpath = strdup(optarg);
 			break;
-#endif
 		case 'q':
 			if (output_override) {
 				fprintf(stderr, "Error: multiple output formats specified.\n");
@@ -188,12 +181,12 @@ int main(int argc, char **argv)
 			minsev = strdup(optarg);
 			break;
 		case 'l':
-			list_stop = TRUE;
+			list_stop = true;
 			break;
 		case 'h':
 			if (optarg != NULL) {
 				modname = strdup(optarg);
-				module_help = TRUE;
+				module_help = true;
 				break;
 			}
 			usage(argv[0], 0);
@@ -219,13 +212,13 @@ int main(int argc, char **argv)
 		goto exit_err;
 
 	/* print the list */
-	if (list_stop == TRUE) {
+	if (list_stop == true) {
 		sechk_print_list(lib);
 		goto exit;
 	}
 
 	/* print help for a module */
-	if (module_help == TRUE) {
+	if (module_help == true) {
 		retv = sechk_lib_get_module_idx(modname, lib);
 		if (retv < 0) {
 			fprintf(stderr, "Error: Module %s does not exist.\n", modname);
@@ -288,11 +281,9 @@ int main(int argc, char **argv)
 	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
 		goto exit_err;
 
-#ifdef LIBSEFS
 	/* initialize the file contexts */
 	if (sechk_lib_load_fc(fcpath, lib) < 0)
 		goto exit_err;
-#endif
 	/* initialize the output format */
 	if (output_override) {
 		if (sechk_lib_set_outputformat(output_override, lib) < 0)
@@ -302,16 +293,16 @@ int main(int argc, char **argv)
 	/* if running only one module, deselect all others */
 	if (modname) {
 		retv = sechk_lib_get_module_idx(modname, lib);
-		if (retv == -1 || retv >= apol_vector_get_size(lib->modules)) {
+		if (retv == -1 || (size_t) retv >= apol_vector_get_size(lib->modules)) {
 			fprintf(stderr, "Error: module %s not found\n", modname);
 			goto exit_err;
 		}
 		for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 			mod = apol_vector_get_element(lib->modules, i);
-			mod->selected = FALSE;
+			mod->selected = false;
 		}
 		mod = apol_vector_get_element(lib->modules, retv);
-		mod->selected = TRUE;
+		mod->selected = true;
 	}
 
 	/* process dependencies for selected modules */
@@ -333,16 +324,16 @@ int main(int argc, char **argv)
 	/* if running only one module, deselect all others again before printing */
 	if (modname) {
 		retv = sechk_lib_get_module_idx(modname, lib);
-		if (retv == -1 || retv >= apol_vector_get_size(lib->modules)) {
+		if (retv == -1 || (size_t) retv >= apol_vector_get_size(lib->modules)) {
 			fprintf(stderr, "Error: module %s not found\n", modname);
 			goto exit_err;
 		}
 		for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 			mod = apol_vector_get_element(lib->modules, i);
-			mod->selected = FALSE;
+			mod->selected = false;
 		}
 		mod = apol_vector_get_element(lib->modules, retv);
-		mod->selected = TRUE;
+		mod->selected = true;
 	}
 
 	/* print the report */
@@ -350,9 +341,7 @@ int main(int argc, char **argv)
 		goto exit_err;
 
       exit:
-#ifdef LIBSEFS
 	free(fcpath);
-#endif
 	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);
@@ -361,9 +350,7 @@ int main(int argc, char **argv)
 	return 0;
 
       exit_err:
-#ifdef LIBSEFS
 	free(fcpath);
-#endif
 	apol_vector_destroy(&policy_mods);
 	free(minsev);
 	free(prof_name);

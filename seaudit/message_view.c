@@ -327,76 +327,87 @@ static void message_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter 
 	preference_field_e field = column;
 
 	switch (field) {
-	case HOST_FIELD:{
-			message_view_to_utf8(value, seaudit_message_get_host(m));
-			return;
+	case HOST_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_message_get_host(m));
+		return;
+	}
+	case MESSAGE_FIELD:
+	{
+		char *message = "Invalid";
+		switch (type) {
+		case SEAUDIT_MESSAGE_TYPE_BOOL:
+		{
+			message = "Boolean";
+			break;
 		}
-	case MESSAGE_FIELD:{
-			char *message = "Invalid";
-			switch (type) {
-			case SEAUDIT_MESSAGE_TYPE_BOOL:{
-					message = "Boolean";
-					break;
-				}
-			case SEAUDIT_MESSAGE_TYPE_LOAD:{
-					message = "Load";
-					break;
-				}
-			case SEAUDIT_MESSAGE_TYPE_AVC:{
-					avc = (seaudit_avc_message_t *) data;
-					seaudit_avc_message_type_e avc_type;
-					avc_type = seaudit_avc_message_get_message_type(avc);
-					switch (avc_type) {
-					case SEAUDIT_AVC_DENIED:{
-							message = "Denied";
-							break;
-						}
-					case SEAUDIT_AVC_GRANTED:{
-							message = "Granted";
-							break;
-						}
-					default:{
-							/* should never get here */
-							toplevel_ERR(view->top, "Got an invalid AVC message type %d!", avc_type);
-							assert(0);
-							return;
-						}
-					}
-					break;
-				}
-			default:{
-					/* should never get here */
-					toplevel_ERR(view->top, "Got an invalid message type %d!", type);
-					assert(0);
-					return;
-				}
+		case SEAUDIT_MESSAGE_TYPE_LOAD:
+		{
+			message = "Load";
+			break;
+		}
+		case SEAUDIT_MESSAGE_TYPE_AVC:
+		{
+			avc = (seaudit_avc_message_t *) data;
+			seaudit_avc_message_type_e avc_type;
+			avc_type = seaudit_avc_message_get_message_type(avc);
+			switch (avc_type) {
+			case SEAUDIT_AVC_DENIED:
+			{
+				message = "Denied";
+				break;
 			}
-			message_view_to_utf8(value, message);
-			return;
-		}
-	case DATE_FIELD:{
-			struct tm *tm = seaudit_message_get_time(m);
-			char date[256];
-			/* check to see if we have been given a valid year, if
-			 * so display, otherwise no year displayed */
-			if (tm->tm_year == 0) {
-				strftime(date, 256, "%b %d %H:%M:%S", tm);
-			} else {
-				strftime(date, 256, "%b %d %H:%M:%S %Y", tm);
+			case SEAUDIT_AVC_GRANTED:
+			{
+				message = "Granted";
+				break;
 			}
-			message_view_to_utf8(value, date);
-			return;
-		}
-	case OTHER_FIELD:{
-			char *other = seaudit_message_to_misc_string(m);;
-			if (other == NULL) {
-				toplevel_ERR(view->top, "%s", strerror(errno));
+			default:
+			{
+				/* should never get here */
+				toplevel_ERR(view->top, "Got an invalid AVC message type %d!", avc_type);
+				assert(0);
 				return;
 			}
-			message_view_to_utf8(value, other);
-			free(other);
+			}
+			break;
+		}
+		default:
+		{
+			/* should never get here */
+			toplevel_ERR(view->top, "Got an invalid message type %d!", type);
+			assert(0);
 			return;
 		}
+		}
+		message_view_to_utf8(value, message);
+		return;
+	}
+	case DATE_FIELD:
+	{
+		const struct tm *tm = seaudit_message_get_time(m);
+		char date[256];
+		/* check to see if we have been given a valid year, if
+		 * so display, otherwise no year displayed */
+		if (tm->tm_year == 0) {
+			strftime(date, 256, "%b %d %H:%M:%S", tm);
+		} else {
+			strftime(date, 256, "%b %d %H:%M:%S %Y", tm);
+		}
+		message_view_to_utf8(value, date);
+		return;
+	}
+	case OTHER_FIELD:
+	{
+		char *other = seaudit_message_to_misc_string(m);;
+		if (other == NULL) {
+			toplevel_ERR(view->top, "%s", strerror(errno));
+			return;
+		}
+		message_view_to_utf8(value, other);
+		free(other);
+		return;
+	}
 	default:		       /* FALLTHROUGH */
 		break;
 	}
@@ -410,85 +421,99 @@ static void message_view_store_get_value(GtkTreeModel * tree_model, GtkTreeIter 
 	avc = (seaudit_avc_message_t *) data;
 
 	switch (field) {
-	case SUSER_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_source_user(avc));
-			return;
-		}
-	case SROLE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_source_role(avc));
-			return;
-		}
-	case STYPE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_source_type(avc));
-			return;
-		}
-	case TUSER_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_target_user(avc));
-			return;
-		}
-	case TROLE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_target_role(avc));
-			return;
-		}
-	case TTYPE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_target_type(avc));
-			return;
-		}
-	case OBJCLASS_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_object_class(avc));
-			return;
-		}
-	case PERM_FIELD:{
-			apol_vector_t *perms = seaudit_avc_message_get_perm(avc);
-			char *perm = NULL;
-			size_t i, len = 0;
-			for (i = 0; perms != NULL && i < apol_vector_get_size(perms); i++) {
-				char *p = apol_vector_get_element(perms, i);
-				if (apol_str_appendf(&perm, &len, "%s%s", (i > 0 ? "," : ""), p) < 0) {
-					toplevel_ERR(view->top, "%s", strerror(errno));
-					return;
-				}
-			}
-			message_view_to_utf8(value, perm);
-			free(perm);
-			return;
-		}
-	case EXECUTABLE_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_exe(avc));
-			return;
-		}
-	case COMMAND_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_comm(avc));
-			return;
-		}
-	case NAME_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_name(avc));
-			return;
-		}
-	case PID_FIELD:{
-			char *s;
-			if (asprintf(&s, "%u", seaudit_avc_message_get_pid(avc)) < 0) {
+	case SUSER_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_source_user(avc));
+		return;
+	}
+	case SROLE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_source_role(avc));
+		return;
+	}
+	case STYPE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_source_type(avc));
+		return;
+	}
+	case TUSER_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_target_user(avc));
+		return;
+	}
+	case TROLE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_target_role(avc));
+		return;
+	}
+	case TTYPE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_target_type(avc));
+		return;
+	}
+	case OBJCLASS_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_object_class(avc));
+		return;
+	}
+	case PERM_FIELD:
+	{
+		const apol_vector_t *perms = seaudit_avc_message_get_perm(avc);
+		char *perm = NULL;
+		size_t i, len = 0;
+		for (i = 0; perms != NULL && i < apol_vector_get_size(perms); i++) {
+			char *p = apol_vector_get_element(perms, i);
+			if (apol_str_appendf(&perm, &len, "%s%s", (i > 0 ? "," : ""), p) < 0) {
 				toplevel_ERR(view->top, "%s", strerror(errno));
 				return;
 			}
-			message_view_to_utf8(value, s);
-			free(s);
+		}
+		message_view_to_utf8(value, perm);
+		free(perm);
+		return;
+	}
+	case EXECUTABLE_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_exe(avc));
+		return;
+	}
+	case COMMAND_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_comm(avc));
+		return;
+	}
+	case NAME_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_name(avc));
+		return;
+	}
+	case PID_FIELD:
+	{
+		char *s;
+		if (asprintf(&s, "%u", seaudit_avc_message_get_pid(avc)) < 0) {
+			toplevel_ERR(view->top, "%s", strerror(errno));
 			return;
 		}
-	case INODE_FIELD:{
-			char *s;
-			if (asprintf(&s, "%lu", seaudit_avc_message_get_inode(avc)) < 0) {
-				toplevel_ERR(view->top, "%s", strerror(errno));
-				return;
-			}
-			message_view_to_utf8(value, s);
-			free(s);
+		message_view_to_utf8(value, s);
+		free(s);
+		return;
+	}
+	case INODE_FIELD:
+	{
+		char *s;
+		if (asprintf(&s, "%lu", seaudit_avc_message_get_inode(avc)) < 0) {
+			toplevel_ERR(view->top, "%s", strerror(errno));
 			return;
 		}
-	case PATH_FIELD:{
-			message_view_to_utf8(value, seaudit_avc_message_get_path(avc));
-			return;
-		}
+		message_view_to_utf8(value, s);
+		free(s);
+		return;
+	}
+	case PATH_FIELD:
+	{
+		message_view_to_utf8(value, seaudit_avc_message_get_path(avc));
+		return;
+	}
 	default:		       /* FALLTHROUGH */
 		break;
 	}
@@ -535,7 +560,8 @@ static gboolean message_view_store_iter_children(GtkTreeModel * tree_model, GtkT
 	return TRUE;
 }
 
-static gboolean message_view_store_iter_has_child(GtkTreeModel * tree_model, GtkTreeIter * iter)
+static gboolean message_view_store_iter_has_child(GtkTreeModel * tree_model __attribute__ ((unused)), GtkTreeIter * iter
+						  __attribute__ ((unused)))
 {
 	return FALSE;
 }
@@ -572,30 +598,144 @@ static gboolean message_view_store_iter_nth_child(GtkTreeModel * tree_model, Gtk
 	return TRUE;
 }
 
-static gboolean message_view_store_iter_parent(GtkTreeModel * tree_model, GtkTreeIter * iter, GtkTreeIter * child)
+static gboolean message_view_store_iter_parent(GtkTreeModel * tree_model __attribute__ ((unused)), GtkTreeIter * iter
+					       __attribute__ ((unused)), GtkTreeIter * child __attribute__ ((unused)))
 {
 	return FALSE;
 }
 
 /*************** end of custom GtkTreeModel implementation ***************/
 
+/*************** message_view_messages_vector() callbacks ******************/
+#define LBACK    1
+#define LFORWARD 2
+#define LNOOP    255
+
+typedef struct _msg_user_data
+{
+	message_view_t *view;
+	apol_vector_t *messages;
+	GtkDialog *dialog;
+	GtkTextBuffer *buffer;
+	gint handle_id;
+} _msg_user_data_t;
+
+static void message_view_dialog_change(GtkTreeModel * tree_model,
+				       GtkTreePath * path __attribute__ ((unused)),
+				       GtkTreeIter * iter __attribute__ ((unused)), gpointer user_data)
+{
+	_msg_user_data_t *d = (_msg_user_data_t *) user_data;
+	/* Disconnect this signal handler after it fires.  It's one
+	 * shot, nothing should be able to bring the next and previous
+	 * buttons back from the dead if the view ever changes.
+	 */
+	g_signal_handler_disconnect(tree_model, d->handle_id);
+	d->view = NULL;
+	gtk_dialog_set_response_sensitive(d->dialog, LBACK, FALSE);
+	gtk_dialog_set_response_sensitive(d->dialog, LFORWARD, FALSE);
+}
+
+static void message_view_dialog_response(GtkDialog * dialog, gint response, gpointer user_data)
+{
+	_msg_user_data_t *d = (_msg_user_data_t *) user_data;
+	GtkTreePath *p;
+	GtkTreeIter tree_iter;
+	GtkTextIter text_iter;
+	size_t i;
+	gboolean go_back = FALSE;
+	gboolean go_forward = FALSE;
+
+	gtk_text_buffer_set_text(d->buffer, "", -1);
+	p = apol_vector_get_element(d->messages, 0);
+	assert(p != NULL);
+	switch (response) {
+	case LNOOP:
+		break;		       /* no-op response, display and test only */
+	case LBACK:
+		gtk_tree_path_prev(p);
+		break;
+	case LFORWARD:
+		gtk_tree_path_next(p);
+		break;
+	case GTK_RESPONSE_DELETE_EVENT:
+	case GTK_RESPONSE_CLOSE:
+		apol_vector_destroy(&d->messages);
+		if (d->view != NULL) {
+			g_signal_handler_disconnect(d->view->store, d->handle_id);
+		}
+		free(d);
+		gtk_widget_destroy(GTK_WIDGET(dialog));
+		return;
+	default:
+		/* should never get here */
+		toplevel_ERR(d->view->top, "Unhandled response type (%d).\n", response);
+		assert(0);
+		return;
+	}
+	assert(d->view != NULL);
+
+	/* determine if the forward and backward buttons should be
+	   enabled or not */
+	if (apol_vector_get_size(d->messages) == 1) {
+		GtkTreePath *dupe_p = gtk_tree_path_copy(p);
+		if (dupe_p == NULL) {
+			toplevel_ERR(d->view->top, "%s", strerror(errno));
+			return;
+		}
+		go_back = gtk_tree_path_prev(dupe_p);
+		gtk_tree_path_free(dupe_p);
+
+		message_view_store_get_iter(GTK_TREE_MODEL(d->view->store), &tree_iter, p);
+		go_forward = gtk_tree_model_iter_next(GTK_TREE_MODEL(d->view->store), &tree_iter);
+	}
+	gtk_dialog_set_response_sensitive(dialog, LBACK, go_back);
+	gtk_dialog_set_response_sensitive(dialog, LFORWARD, go_forward);
+
+	gtk_text_buffer_get_start_iter(d->buffer, &text_iter);
+	for (i = 0; i < apol_vector_get_size(d->messages); i++) {
+		char *s;
+		p = apol_vector_get_element(d->messages, i);
+		message_view_store_get_iter(GTK_TREE_MODEL(d->view->store), &tree_iter, p);
+		if ((s = seaudit_message_to_string(tree_iter.user_data)) == NULL) {
+			toplevel_ERR(d->view->top, "%s", strerror(errno));
+			continue;
+		}
+
+		gtk_text_buffer_insert(d->buffer, &text_iter, s, -1);
+		gtk_text_buffer_insert(d->buffer, &text_iter, "\n", -1);
+		free(s);
+	}
+}
+
 /**
- * Show all messages within the messages vector (type seaudit_message_t *)
+ * Show all messages within the messages vector (vector of
+ * GtkTreePaths into the view's store).
+ *
+ * Callback function cb_view_message takes ownership of messages
+ * vector and state.
  */
 static void message_view_messages_vector(message_view_t * view, apol_vector_t * messages)
 {
-	GtkWidget *window;
+	GtkWidget *window = NULL;
 	GtkWidget *scroll;
 	GtkWidget *text_view;
 	GtkTextBuffer *buffer;
-	GtkTextIter iter;
-	size_t i;
+	_msg_user_data_t *state;
+
+	state = malloc(sizeof(_msg_user_data_t));
+	if (state == NULL) {
+		toplevel_ERR(view->top, "%s", strerror(errno));
+		apol_vector_destroy(&messages);
+		return;
+	}
+
 	window = gtk_dialog_new_with_buttons("View Messages",
 					     toplevel_get_window(view->top),
-					     GTK_DIALOG_DESTROY_WITH_PARENT, GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
+					     GTK_DIALOG_DESTROY_WITH_PARENT,
+					     GTK_STOCK_GO_BACK, LBACK,
+					     GTK_STOCK_GO_FORWARD, LFORWARD, GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, NULL);
 	gtk_dialog_set_default_response(GTK_DIALOG(window), GTK_RESPONSE_CLOSE);
 	gtk_window_set_modal(GTK_WINDOW(window), FALSE);
-	g_signal_connect_swapped(window, "response", G_CALLBACK(gtk_widget_destroy), window);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	text_view = gtk_text_view_new();
 	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
@@ -604,28 +744,25 @@ static void message_view_messages_vector(message_view_t * view, apol_vector_t * 
 	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_WORD);
 	gtk_widget_show(text_view);
 	gtk_widget_show(scroll);
-	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-	gtk_text_buffer_get_start_iter(buffer, &iter);
-	for (i = 0; i < apol_vector_get_size(messages); i++) {
-		seaudit_message_t *m = apol_vector_get_element(messages, i);
-		char *s;
-		if ((s = seaudit_message_to_string(m)) == NULL) {
-			toplevel_ERR(view->top, "%s", strerror(errno));
-			continue;
-		}
-		gtk_text_buffer_insert(buffer, &iter, s, -1);
-		gtk_text_buffer_insert(buffer, &iter, "\n", -1);
-		free(s);
-	}
+
 	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_widget_show(window);
 
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+	state->view = view;
+	state->messages = messages;
+	state->dialog = GTK_DIALOG(window);
+	state->buffer = buffer;
+	g_signal_connect(window, "response", G_CALLBACK(message_view_dialog_response), state);
+	state->handle_id = g_signal_connect(view->store, "row-changed", G_CALLBACK(message_view_dialog_change), state);
+	message_view_dialog_response(GTK_DIALOG(window), LNOOP, state);
+
+	gtk_widget_show_all(GTK_WIDGET(window));
 }
 
-/******************** handlers for  right click menu ********************/
+/******************** handlers for right click menu ********************/
 
-static void message_view_popup_on_view_message_activate(GtkMenuItem * menuitem, gpointer user_data)
+static void message_view_popup_on_view_message_activate(GtkMenuItem * menuitem, gpointer user_data __attribute__ ((unused)))
 {
 	message_view_t *v = g_object_get_data(G_OBJECT(menuitem), "view-object");
 	message_view_entire_message(v);
@@ -816,6 +953,15 @@ message_view_t *message_view_create(toplevel_t * top, seaudit_model_t * model, c
 void message_view_destroy(message_view_t ** view)
 {
 	if (view != NULL && *view != NULL) {
+		/* emit a signal to force all message view dialogs to
+		   disable their scroll buttons.  need to pass a
+		   non-NULL path in the signal handler to make GTK
+		   shut up */
+		GtkTreePath *path = gtk_tree_path_new_first();
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(GTK_TREE_MODEL((*view)->store), &iter, path);
+		g_signal_emit_by_name((*view)->store, "row-changed", path, &iter);
+		gtk_tree_path_free(path);
 		seaudit_model_destroy(&(*view)->model);
 		apol_vector_destroy(&((*view)->store->messages));
 		g_free((*view)->filename);
@@ -865,6 +1011,12 @@ gboolean message_view_is_message_selected(message_view_t * view)
 	return TRUE;
 }
 
+void message_view_vector_gtk_tree_path_free(void *elem)
+{
+	GtkTreePath *path = (GtkTreePath *) elem;
+	gtk_tree_path_free(path);
+}
+
 void message_view_entire_message(message_view_t * view)
 {
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(view->view);
@@ -874,28 +1026,27 @@ void message_view_entire_message(message_view_t * view)
 	if (glist == NULL) {
 		return;
 	}
-	if ((messages = apol_vector_create(NULL)) == NULL) {
+	if ((messages = apol_vector_create(message_view_vector_gtk_tree_path_free)) == NULL) {
 		toplevel_ERR(view->top, "%s", strerror(errno));
 		g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 		g_list_free(glist);
 		return;
 	}
 	for (l = glist; l != NULL; l = l->next) {
-		GtkTreePath *path = (GtkTreePath *) l->data;
-		GtkTreeIter iter;
-		message_view_store_get_iter(GTK_TREE_MODEL(view->store), &iter, path);
-		if (apol_vector_append(messages, iter.user_data) < 0) {
+		GtkTreePath *path = gtk_tree_path_copy((GtkTreePath *) l->data);
+		if (path == NULL || apol_vector_append(messages, path) < 0) {
 			toplevel_ERR(view->top, "%s", strerror(errno));
+			gtk_tree_path_free(path);
 			g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 			g_list_free(glist);
 			apol_vector_destroy(&messages);
 			return;
 		}
 	}
+	/* the following function takes ownership of messages vector */
 	message_view_messages_vector(view, messages);
 	g_list_foreach(glist, message_view_gtk_tree_path_free, NULL);
 	g_list_free(glist);
-	apol_vector_destroy(&messages);
 }
 
 void message_view_save(message_view_t * view)
@@ -932,6 +1083,16 @@ void message_view_modify(message_view_t * view)
 	if (modify_view_run(view->top, view)) {
 		toplevel_update_status_bar(view->top);
 	}
+}
+
+void message_view_clear(message_view_t * view)
+{
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(view->store->messages); i++) {
+		seaudit_message_t *m = apol_vector_get_element(view->store->messages, i);
+		seaudit_model_hide_message(view->model, m);
+	}
+	message_view_update_rows(view);
 }
 
 /**

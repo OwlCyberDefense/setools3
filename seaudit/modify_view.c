@@ -80,7 +80,7 @@ static void modify_view_update_filter_store(struct modify_view *mv)
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(mv->filter_view);
 	GtkTreeIter old_iter, iter;
 	gboolean selection_existed = gtk_tree_selection_get_selected(selection, NULL, &old_iter);
-	apol_vector_t *filters = seaudit_model_get_filters(mv->model);
+	const apol_vector_t *filters = seaudit_model_get_filters(mv->model);
 	size_t i;
 	gtk_list_store_clear(mv->filter_store);
 	for (i = 0; i < apol_vector_get_size(filters); i++) {

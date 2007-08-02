@@ -47,8 +47,8 @@ extern "C"
  * @return An initialized range, or NULL upon error.  Caller must call
  * range_destroy() upon the returned value.
  */
-	poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, qpol_mls_range_t * mod_range,
-				      poldiff_form_e form);
+	poldiff_range_t *range_create(const poldiff_t * diff, const qpol_mls_range_t * orig_range,
+				      const qpol_mls_range_t * mod_range, poldiff_form_e form);
 
 /**
  * Deallocate all space for a range, including the pointer itself.

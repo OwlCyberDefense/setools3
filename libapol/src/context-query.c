@@ -24,7 +24,9 @@
 
 #include "policy-query-internal.h"
 
+#include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -36,35 +38,19 @@ struct apol_context
 	apol_mls_range_t *range;
 };
 
-/**
- * Equivalent to the non-ANSI strdup() function.
- * @param p Policy handler.
- * @param s String to duplicate.
- * @return Pointer to newly allocated string, or NULL on error.
- */
-static char *apol_strdup(apol_policy_t * p, const char *s)
-{
-	char *t;
-	if ((t = strdup(s)) == NULL) {
-		ERR(p, "%s", strerror(errno));
-		return NULL;
-	}
-	return t;
-}
-
 apol_context_t *apol_context_create(void)
 {
 	return calloc(1, sizeof(apol_context_t));
 }
 
-apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_context_t * context)
+apol_context_t *apol_context_create_from_qpol_context(const apol_policy_t * p, const qpol_context_t * context)
 {
 	apol_context_t *c = NULL;
-	qpol_user_t *user;
-	qpol_role_t *role;
-	qpol_type_t *type;
-	qpol_mls_range_t *range;
-	char *user_name, *role_name, *type_name;
+	const qpol_user_t *user;
+	const qpol_role_t *role;
+	const qpol_type_t *type;
+	const qpol_mls_range_t *range;
+	const char *user_name, *role_name, *type_name;
 	apol_mls_range_t *apol_range = NULL;
 	if ((c = apol_context_create()) == NULL) {
 		ERR(p, "%s", strerror(ENOMEM));
@@ -98,6 +84,71 @@ apol_context_t *apol_context_create_from_qpol_context(apol_policy_t * p, qpol_co
 	return NULL;
 }
 
+apol_context_t *apol_context_create_from_literal(const char *context_string)
+{
+	apol_context_t *c = NULL;
+	bool is_context_compiled = false;
+	regex_t context_regex;
+	const size_t nmatch = 5;
+	regmatch_t pmatch[nmatch];
+
+	if ((c = apol_context_create()) == NULL) {
+		goto err;
+	}
+
+	if (regcomp(&context_regex, "^([^:]*):([^:]*):([^:]*):?(.*)$", REG_EXTENDED) != 0) {
+		goto err;
+	}
+	is_context_compiled = true;
+
+	if (regexec(&context_regex, context_string, nmatch, pmatch, 0) != 0) {
+		errno = EIO;
+		goto err;
+	}
+
+	const char *s;
+	size_t len;
+
+	assert(pmatch[1].rm_so == 0);
+	s = context_string + pmatch[1].rm_so;
+	len = pmatch[1].rm_eo - pmatch[1].rm_so;	// no +1 to avoid copying colon
+	if (len != 0 && *s != '*' && (c->user = strndup(s, len)) == NULL) {
+		goto err;
+	}
+
+	assert(pmatch[2].rm_so != -1);
+	s = context_string + pmatch[2].rm_so;
+	len = pmatch[2].rm_eo - pmatch[2].rm_so;	// no +1 to avoid copying colon
+	if (len != 0 && *s != '*' && (c->role = strndup(s, len)) == NULL) {
+		goto err;
+	}
+
+	assert(pmatch[3].rm_so != -1);
+	s = context_string + pmatch[3].rm_so;
+	len = pmatch[3].rm_eo - pmatch[3].rm_so;	// no +1 to avoid copying colon
+	if (len != 0 && *s != '*' && (c->type = strndup(s, len)) == NULL) {
+		goto err;
+	}
+
+	if (pmatch[4].rm_so != -1) {
+		s = context_string + pmatch[4].rm_so;
+		len = pmatch[4].rm_eo - pmatch[4].rm_so;
+		if (len != 0 && *s != '*' && (c->range = apol_mls_range_create_from_literal(s)) == NULL) {
+			goto err;
+		}
+	}
+
+	regfree(&context_regex);
+	return c;
+
+      err:
+	apol_context_destroy(&c);
+	if (is_context_compiled) {
+		regfree(&context_regex);
+	}
+	return NULL;
+}
+
 void apol_context_destroy(apol_context_t ** context)
 {
 	if (*context != NULL) {
@@ -110,40 +161,71 @@ void apol_context_destroy(apol_context_t ** context)
 	}
 }
 
-int apol_context_set_user(apol_policy_t * p, apol_context_t * context, const char *user)
+int apol_context_set_user(const apol_policy_t * p, apol_context_t * context, const char *user)
 {
-	free(context->user);
-	context->user = NULL;
-	if (user != NULL && (context->user = apol_strdup(p, user)) == NULL) {
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
+	}
+	if (user != context->user) {
+		free(context->user);
+		context->user = NULL;
+		if (user != NULL && (context->user = strdup(user)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
 
-int apol_context_set_role(apol_policy_t * p, apol_context_t * context, const char *role)
+int apol_context_set_role(const apol_policy_t * p, apol_context_t * context, const char *role)
 {
-	free(context->role);
-	context->role = NULL;
-	if (role != NULL && (context->role = apol_strdup(p, role)) == NULL) {
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
+	}
+	if (role != context->role) {
+		free(context->role);
+		context->role = NULL;
+		if (role != NULL && (context->role = strdup(role)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
 
-int apol_context_set_type(apol_policy_t * p, apol_context_t * context, const char *type)
+int apol_context_set_type(const apol_policy_t * p, apol_context_t * context, const char *type)
 {
-	free(context->type);
-	context->type = NULL;
-	if (type != NULL && (context->type = apol_strdup(p, type)) == NULL) {
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return -1;
+	}
+	if (type != context->type) {
+		free(context->type);
+		context->type = NULL;
+		if (type != NULL && (context->type = strdup(type)) == NULL) {
+			ERR(p, "%s", strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
 
-int apol_context_set_range(apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range)
+int apol_context_set_range(const apol_policy_t * p, apol_context_t * context, apol_mls_range_t * range)
 {
-	apol_mls_range_destroy(&(context->range));
-	context->range = range;
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if (range != context->range) {
+		apol_mls_range_destroy(&(context->range));
+		context->range = range;
+	}
 	return 0;
 }
 
@@ -183,7 +265,7 @@ const apol_mls_range_t *apol_context_get_range(const apol_context_t * context)
 	return context->range;
 }
 
-int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const apol_context_t * search,
+int apol_context_compare(const apol_policy_t * p, const apol_context_t * target, const apol_context_t * search,
 			 unsigned int range_compare_type)
 {
 	uint32_t value0, value1;
@@ -193,7 +275,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 		return -1;
 	}
 	if (target->user != NULL && search->user != NULL) {
-		qpol_user_t *user0, *user1;
+		const qpol_user_t *user0, *user1;
 		if (qpol_policy_get_user_by_name(p->p,
 						 target->user, &user0) < 0 ||
 		    qpol_policy_get_user_by_name(p->p,
@@ -206,7 +288,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 		}
 	}
 	if (target->role != NULL && search->role != NULL) {
-		qpol_role_t *role0, *role1;
+		const qpol_role_t *role0, *role1;
 		if (qpol_policy_get_role_by_name(p->p,
 						 target->role, &role0) < 0 ||
 		    qpol_policy_get_role_by_name(p->p,
@@ -219,7 +301,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 		}
 	}
 	if (target->type != NULL && search->type != NULL) {
-		qpol_type_t *type0, *type1;
+		const qpol_type_t *type0, *type1;
 		if (qpol_policy_get_type_by_name(p->p,
 						 target->type, &type0) < 0 ||
 		    qpol_policy_get_type_by_name(p->p,
@@ -237,7 +319,7 @@ int apol_context_compare(apol_policy_t * p, const apol_context_t * target, const
 	return 1;
 }
 
-int apol_context_validate(apol_policy_t * p, apol_context_t * context)
+int apol_context_validate(const apol_policy_t * p, const apol_context_t * context)
 {
 	if (context == NULL ||
 	    context->user == NULL ||
@@ -249,14 +331,14 @@ int apol_context_validate(apol_policy_t * p, apol_context_t * context)
 	return apol_context_validate_partial(p, context);
 }
 
-int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
+int apol_context_validate_partial(const apol_policy_t * p, const apol_context_t * context)
 {
 	apol_user_query_t *user_query = NULL;
 	apol_role_query_t *role_query = NULL;
 	apol_vector_t *user_v = NULL, *role_v = NULL;
-	qpol_user_t *user;
-	qpol_type_t *type;
-	qpol_mls_range_t *user_range;
+	const qpol_user_t *user;
+	const qpol_type_t *type;
+	const qpol_mls_range_t *user_range;
 	apol_mls_range_t *user_apol_range = NULL;
 	int retval = -1, retval2;
 
@@ -331,30 +413,36 @@ int apol_context_validate_partial(apol_policy_t * p, apol_context_t * context)
 	return retval;
 }
 
-char *apol_context_render(apol_policy_t * p, apol_context_t * context)
+char *apol_context_render(const apol_policy_t * p, const apol_context_t * context)
 {
 	char *buf = NULL, *range_str = NULL;
 	size_t buf_sz = 0;
 
-	if (p == NULL || context == NULL) {
+	if (context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->user != NULL ? context->user : "")) != 0) {
+	if (p == NULL && !apol_mls_range_is_literal(context->range)) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->user != NULL ? context->user : "*")) != 0) {
 		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->role != NULL ? context->role : "")) != 0) {
+	if (apol_str_appendf(&buf, &buf_sz, "%s:", (context->role != NULL ? context->role : "*")) != 0) {
 		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_str_append(&buf, &buf_sz, (context->type != NULL ? context->type : "")) != 0) {
+	if (apol_str_append(&buf, &buf_sz, (context->type != NULL ? context->type : "*")) != 0) {
 		ERR(p, "%s", strerror(errno));
 		goto err_return;
 	}
-	if (apol_policy_is_mls(p)) {
+	if ((p != NULL && apol_policy_is_mls(p)) || (p == NULL)) {
 		if (context->range == NULL) {
-			range_str = strdup("");
+			range_str = strdup("*");
 		} else {
 			range_str = apol_mls_range_render(p, context->range);
 		}
@@ -373,4 +461,17 @@ char *apol_context_render(apol_policy_t * p, apol_context_t * context)
 	free(buf);
 	free(range_str);
 	return NULL;
+}
+
+int apol_context_convert(const apol_policy_t * p, apol_context_t * context)
+{
+	if (p == NULL || context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+	if (context->range != NULL) {
+		return apol_mls_range_convert(p, context->range);
+	}
+	return 0;
 }

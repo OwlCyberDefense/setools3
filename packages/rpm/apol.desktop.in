@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=SELinux Policy Analysis
+GenericName=SELinux Policy Analysis Tool 
+Comment=Examine, search, and relate policy components and policy rules.
+Icon=apol.png
+Exec=@bindir@/apol
+Type=Application
+Terminal=false
+Encoding=UTF-8
+Categories=Application;System;Utility;X-Red-Hat-Base;
+X-Desktop-File-Install-Version=0.2
+StartupNotify=false

@@ -50,7 +50,7 @@ struct seaudit
 	FILE *file;
 	char *log_path;
 	size_t num_log_messages;
-	struct tm *first, *last;
+	const struct tm *first, *last;
 	toplevel_t *top;
 };
 
@@ -199,12 +199,12 @@ size_t seaudit_get_num_log_messages(seaudit_t * s)
 	return s->num_log_messages;
 }
 
-struct tm *seaudit_get_log_first(seaudit_t * s)
+const struct tm *seaudit_get_log_first(seaudit_t * s)
 {
 	return s->first;
 }
 
-struct tm *seaudit_get_log_last(seaudit_t * s)
+const struct tm *seaudit_get_log_last(seaudit_t * s)
 {
 	return s->last;
 }
@@ -263,26 +263,30 @@ static void seaudit_parse_command_line(seaudit_t * seaudit, int argc, char **arg
 	apol_vector_t *modules = NULL;
 	while ((optc = getopt_long(argc, argv, "l:hV", opts, NULL)) != -1) {
 		switch (optc) {
-		case 'l':{
-				*log = optarg;
-				break;
-			}
-		case 'h':{
-				print_usage_info(argv[0], 0);
-				seaudit_destroy(&seaudit);
-				exit(EXIT_SUCCESS);
-			}
-		case 'V':{
-				print_version_info();
-				seaudit_destroy(&seaudit);
-				exit(EXIT_SUCCESS);
-			}
-		default:{
-				/* unrecognized argument give full usage */
-				print_usage_info(argv[0], 1);
-				seaudit_destroy(&seaudit);
-				exit(EXIT_FAILURE);
-			}
+		case 'l':
+		{
+			*log = optarg;
+			break;
+		}
+		case 'h':
+		{
+			print_usage_info(argv[0], 0);
+			seaudit_destroy(&seaudit);
+			exit(EXIT_SUCCESS);
+		}
+		case 'V':
+		{
+			print_version_info();
+			seaudit_destroy(&seaudit);
+			exit(EXIT_SUCCESS);
+		}
+		default:
+		{
+			/* unrecognized argument give full usage */
+			print_usage_info(argv[0], 1);
+			seaudit_destroy(&seaudit);
+			exit(EXIT_FAILURE);
+		}
 		}
 	}
 	if (optind < argc) {	       /* modules */

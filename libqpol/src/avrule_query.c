@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include "qpol_internal.h"
 
-int qpol_policy_get_avrule_iter(qpol_policy_t * policy, uint32_t rule_type_mask, qpol_iterator_t ** iter)
+int qpol_policy_get_avrule_iter(const qpol_policy_t * policy, uint32_t rule_type_mask, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	avtab_state_t *state;
@@ -47,8 +47,14 @@ int qpol_policy_get_avrule_iter(qpol_policy_t * policy, uint32_t rule_type_mask,
 		return STATUS_ERR;
 	}
 
-	if (!(policy->rules_loaded)) {
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_RULES_LOADED)) {
 		ERR(policy, "%s", "Cannot get avrules: Rules not loaded");
+		errno = ENOTSUP;
+		return STATUS_ERR;
+	}
+
+	if ((rule_type_mask & QPOL_RULE_NEVERALLOW) && !qpol_policy_has_capability(policy, QPOL_CAP_NEVERALLOW)) {
+		ERR(policy, "%s", "Cannot get avrules: Neverallow rules requested but not available");
 		errno = ENOTSUP;
 		return STATUS_ERR;
 	}
@@ -77,7 +83,7 @@ int qpol_policy_get_avrule_iter(qpol_policy_t * policy, uint32_t rule_type_mask,
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_source_type(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_type_t ** source)
+int qpol_avrule_get_source_type(const qpol_policy_t * policy, const qpol_avrule_t * rule, const qpol_type_t ** source)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -100,7 +106,7 @@ int qpol_avrule_get_source_type(qpol_policy_t * policy, qpol_avrule_t * rule, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_target_type(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_type_t ** target)
+int qpol_avrule_get_target_type(const qpol_policy_t * policy, const qpol_avrule_t * rule, const qpol_type_t ** target)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -123,7 +129,7 @@ int qpol_avrule_get_target_type(qpol_policy_t * policy, qpol_avrule_t * rule, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_object_class(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_class_t ** obj_class)
+int qpol_avrule_get_object_class(const qpol_policy_t * policy, const qpol_avrule_t * rule, const qpol_class_t ** obj_class)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -146,7 +152,7 @@ int qpol_avrule_get_object_class(qpol_policy_t * policy, qpol_avrule_t * rule, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_perm_iter(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_iterator_t ** perms)
+int qpol_avrule_get_perm_iter(const qpol_policy_t * policy, const qpol_avrule_t * rule, qpol_iterator_t ** perms)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -186,7 +192,7 @@ int qpol_avrule_get_perm_iter(qpol_policy_t * policy, qpol_avrule_t * rule, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_rule_type(qpol_policy_t * policy, qpol_avrule_t * rule, uint32_t * rule_type)
+int qpol_avrule_get_rule_type(const qpol_policy_t * policy, const qpol_avrule_t * rule, uint32_t * rule_type)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -210,7 +216,7 @@ int qpol_avrule_get_rule_type(qpol_policy_t * policy, qpol_avrule_t * rule, uint
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_cond(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_cond_t ** cond)
+int qpol_avrule_get_cond(const qpol_policy_t * policy, const qpol_avrule_t * rule, const qpol_cond_t ** cond)
 {
 	avtab_ptr_t avrule = NULL;
 
@@ -231,7 +237,7 @@ int qpol_avrule_get_cond(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_cond
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_is_enabled(qpol_policy_t * policy, qpol_avrule_t * rule, uint32_t * is_enabled)
+int qpol_avrule_get_is_enabled(const qpol_policy_t * policy, const qpol_avrule_t * rule, uint32_t * is_enabled)
 {
 	avtab_ptr_t avrule = NULL;
 
@@ -252,7 +258,7 @@ int qpol_avrule_get_is_enabled(qpol_policy_t * policy, qpol_avrule_t * rule, uin
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_which_list(qpol_policy_t * policy, qpol_avrule_t * rule, uint32_t * which_list)
+int qpol_avrule_get_which_list(const qpol_policy_t * policy, const qpol_avrule_t * rule, uint32_t * which_list)
 {
 	avtab_ptr_t avrule = NULL;
 

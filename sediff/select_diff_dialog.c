@@ -35,9 +35,12 @@ struct component
 	const uint32_t bit;
 };
 
-const static struct component comps[] = {
+static const struct component comps[] = {
 	{"attribs checkbutton", POLDIFF_DIFF_ATTRIBS},
-	{"avrules checkbutton", POLDIFF_DIFF_AVRULES},
+	{"allow checkbutton", POLDIFF_DIFF_AVALLOW},
+	{"auditallow checkbutton", POLDIFF_DIFF_AVAUDITALLOW},
+	{"dontaudit checkbutton", POLDIFF_DIFF_AVDONTAUDIT},
+	{"neverallow checkbutton", POLDIFF_DIFF_AVNEVERALLOW},
 	{"bools checkbutton", POLDIFF_DIFF_BOOLS},
 	{"cats checkbutton", POLDIFF_DIFF_CATS},
 	{"classes checkbutton", POLDIFF_DIFF_CLASSES},
@@ -48,12 +51,14 @@ const static struct component comps[] = {
 	{"roleallows checkbutton", POLDIFF_DIFF_ROLE_ALLOWS},
 	{"roletrans checkbutton", POLDIFF_DIFF_ROLE_TRANS},
 	{"users checkbutton", POLDIFF_DIFF_USERS},
-	{"terules checkbutton", POLDIFF_DIFF_TERULES},
+	{"type_change checkbutton", POLDIFF_DIFF_TECHANGE},
+	{"type_member checkbutton", POLDIFF_DIFF_TEMEMBER},
+	{"type_transition checkbutton", POLDIFF_DIFF_TETRANS},
 	{"types checkbutton", POLDIFF_DIFF_TYPES},
 	{NULL, 0}
 };
 
-static uint32_t prev_selection = POLDIFF_DIFF_ALL;
+static uint32_t prev_selection = POLDIFF_DIFF_ALL & ~POLDIFF_DIFF_AVNEVERALLOW;
 
 static void select_diff_on_select_all_click(GtkButton * button __attribute__ ((unused)), gpointer user_data)
 {

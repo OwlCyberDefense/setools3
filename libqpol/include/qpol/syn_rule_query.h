@@ -52,7 +52,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_type_set_get_included_types_iter(qpol_policy_t * policy, qpol_type_set_t * ts, qpol_iterator_t ** iter);
+	extern int qpol_type_set_get_included_types_iter(const qpol_policy_t * policy, const qpol_type_set_t * ts,
+							 qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator of the subtracted types in a type set.
@@ -66,7 +67,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_type_set_get_subtracted_types_iter(qpol_policy_t * policy, qpol_type_set_t * ts, qpol_iterator_t ** iter);
+	extern int qpol_type_set_get_subtracted_types_iter(const qpol_policy_t * policy, const qpol_type_set_t * ts,
+							   qpol_iterator_t ** iter);
 
 /**
  *  Determine if a type set includes '*'.
@@ -77,7 +79,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_star will be 0.
  */
-	extern int qpol_type_set_get_is_star(qpol_policy_t * policy, qpol_type_set_t * ts, uint32_t * is_star);
+	extern int qpol_type_set_get_is_star(const qpol_policy_t * policy, const qpol_type_set_t * ts, uint32_t * is_star);
 
 /**
  *  Determine if a type set is complemented (contains '~').
@@ -88,7 +90,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_comp will be 0.
  */
-	extern int qpol_type_set_get_is_comp(qpol_policy_t * policy, qpol_type_set_t * ts, uint32_t * is_comp);
+	extern int qpol_type_set_get_is_comp(const qpol_policy_t * policy, const qpol_type_set_t * ts, uint32_t * is_comp);
 
 /**
  *  Get the rule type of a syntactic avrule.
@@ -99,7 +101,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *rule_type will be 0.
  */
-	extern int qpol_syn_avrule_get_rule_type(qpol_policy_t * policy, qpol_syn_avrule_t * rule, uint32_t * rule_type);
+	extern int qpol_syn_avrule_get_rule_type(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+						 uint32_t * rule_type);
 
 /**
  *  Get the set of types specified for a syntatic rule's source field.
@@ -110,8 +113,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source_set will be NULL.
  */
-	extern int qpol_syn_avrule_get_source_type_set(qpol_policy_t * policy, qpol_syn_avrule_t * rule,
-						       qpol_type_set_t ** source_set);
+	extern int qpol_syn_avrule_get_source_type_set(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+						       const qpol_type_set_t ** source_set);
 
 /**
  *  Get the set of types specified for a syntactic rule's target field.
@@ -122,8 +125,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target_set will be NULL.
  */
-	extern int qpol_syn_avrule_get_target_type_set(qpol_policy_t * policy, qpol_syn_avrule_t * rule,
-						       qpol_type_set_t ** target_set);
+	extern int qpol_syn_avrule_get_target_type_set(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+						       const qpol_type_set_t ** target_set);
 
 /**
  *  Determine if a syntactic rule includes the self flag in the target set.
@@ -134,7 +137,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_self will be 0.
  */
-	extern int qpol_syn_avrule_get_is_target_self(qpol_policy_t * policy, qpol_syn_avrule_t * rule, uint32_t * is_self);
+	extern int qpol_syn_avrule_get_is_target_self(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+						      uint32_t * is_self);
 
 /**
  *  Get an iterator over all classes specified in a syntactic rule.
@@ -148,7 +152,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *classes will be NULL.
  */
-	extern int qpol_syn_avrule_get_class_iter(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_iterator_t ** classes);
+	extern int qpol_syn_avrule_get_class_iter(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+						  qpol_iterator_t ** classes);
 
 /**
  *  Get an iterator over all permissions specified in a syntactic rule.
@@ -162,7 +167,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-	extern int qpol_syn_avrule_get_perm_iter(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_iterator_t ** perms);
+	extern int qpol_syn_avrule_get_perm_iter(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+						 qpol_iterator_t ** perms);
 
 /**
  *  Get the line number of a syntactic rule.
@@ -172,7 +178,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-	extern int qpol_syn_avrule_get_lineno(qpol_policy_t * policy, qpol_syn_avrule_t * rule, unsigned long *lineno);
+	extern int qpol_syn_avrule_get_lineno(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule, unsigned long *lineno);
 
 /**
  *  If the syntactic rule is within a conditional, then get that
@@ -184,7 +190,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-	extern int qpol_syn_avrule_get_cond(qpol_policy_t * policy, qpol_syn_avrule_t * rule, qpol_cond_t ** cond);
+	extern int qpol_syn_avrule_get_cond(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+					    const qpol_cond_t ** cond);
 
 /**
  *  Determine if the syntactic rule is enabled.  Unconditional rules
@@ -196,7 +203,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-	extern int qpol_syn_avrule_get_is_enabled(qpol_policy_t * policy, qpol_syn_avrule_t * rule, uint32_t * is_enabled);
+	extern int qpol_syn_avrule_get_is_enabled(const qpol_policy_t * policy, const qpol_syn_avrule_t * rule,
+						  uint32_t * is_enabled);
 
 /**
  *  Get the rule type of a syntactic terule.
@@ -207,7 +215,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *rule_type will be 0.
  */
-	extern int qpol_syn_terule_get_rule_type(qpol_policy_t * policy, qpol_syn_terule_t * rule, uint32_t * rule_type);
+	extern int qpol_syn_terule_get_rule_type(const qpol_policy_t * policy, const qpol_syn_terule_t * rule,
+						 uint32_t * rule_type);
 
 /**
  *  Bet the set of types specified for a syntactic rule's source field.
@@ -218,8 +227,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source_set will be NULL.
  */
-	extern int qpol_syn_terule_get_source_type_set(qpol_policy_t * policy, qpol_syn_terule_t * rule,
-						       qpol_type_set_t ** source_set);
+	extern int qpol_syn_terule_get_source_type_set(const qpol_policy_t * policy, const qpol_syn_terule_t * rule,
+						       const qpol_type_set_t ** source_set);
 
 /**
  *  Get the set of types specified for a syntactic rule's target field.
@@ -230,8 +239,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target_set will be NULL.
  */
-	extern int qpol_syn_terule_get_target_type_set(qpol_policy_t * policy, qpol_syn_terule_t * rule,
-						       qpol_type_set_t ** target_set);
+	extern int qpol_syn_terule_get_target_type_set(const qpol_policy_t * policy, const qpol_syn_terule_t * rule,
+						       const qpol_type_set_t ** target_set);
 
 /**
  *  Get an iterator over all classes specified in a syntactic rule.
@@ -245,7 +254,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *classes will be NULL.
  */
-	extern int qpol_syn_terule_get_class_iter(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_iterator_t ** classes);
+	extern int qpol_syn_terule_get_class_iter(const qpol_policy_t * policy, const qpol_syn_terule_t * rule,
+						  qpol_iterator_t ** classes);
 
 /* forward declaration */
 	struct qpol_type;
@@ -258,7 +268,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dflt will be NULL.
  */
-	extern int qpol_syn_terule_get_default_type(qpol_policy_t * policy, qpol_syn_terule_t * rule, struct qpol_type **dflt);
+	extern int qpol_syn_terule_get_default_type(const qpol_policy_t * policy, const qpol_syn_terule_t * rule,
+						    const struct qpol_type **dflt);
 
 /**
  *  Get the line number of a syntactic rule.
@@ -268,7 +279,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-	extern int qpol_syn_terule_get_lineno(qpol_policy_t * policy, qpol_syn_terule_t * rule, unsigned long *lineno);
+	extern int qpol_syn_terule_get_lineno(const qpol_policy_t * policy, const qpol_syn_terule_t * rule, unsigned long *lineno);
 
 /**
  *  If the syntactic rule is within a conditional, then get that
@@ -280,7 +291,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-	extern int qpol_syn_terule_get_cond(qpol_policy_t * policy, qpol_syn_terule_t * rule, qpol_cond_t ** cond);
+	extern int qpol_syn_terule_get_cond(const qpol_policy_t * policy, const qpol_syn_terule_t * rule,
+					    const qpol_cond_t ** cond);
 
 /**
  *  Determine if the syntactic rule is enabled.  Unconditional rules
@@ -292,7 +304,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *lineno will be 0.
  */
-	extern int qpol_syn_terule_get_is_enabled(qpol_policy_t * policy, qpol_syn_terule_t * rule, uint32_t * is_enabled);
+	extern int qpol_syn_terule_get_is_enabled(const qpol_policy_t * policy, const qpol_syn_terule_t * rule,
+						  uint32_t * is_enabled);
 
 #ifdef	__cplusplus
 }

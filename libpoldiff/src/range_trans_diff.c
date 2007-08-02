@@ -53,7 +53,7 @@ struct poldiff_range_trans
 	poldiff_range_t *range;
 };
 
-void poldiff_range_trans_get_stats(poldiff_t * diff, size_t stats[5])
+void poldiff_range_trans_get_stats(const poldiff_t * diff, size_t stats[5])
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -67,7 +67,7 @@ void poldiff_range_trans_get_stats(poldiff_t * diff, size_t stats[5])
 	stats[4] = diff->range_trans_diffs->num_removed_type;
 }
 
-char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
+char *poldiff_range_trans_to_string(const poldiff_t * diff, const void *range_trans)
 {
 	const poldiff_range_trans_t *rt = range_trans;
 	const poldiff_range_t *range = poldiff_range_trans_get_range(rt);
@@ -83,48 +83,48 @@ char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 	switch (rt->form) {
 	case POLDIFF_FORM_ADDED:
 	case POLDIFF_FORM_ADD_TYPE:
-		{
-			char *t = NULL;
-			if ((t = apol_mls_range_render(diff->mod_pol, mod_range)) == NULL ||
-			    apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source, rt->target,
-					     rt->target_class, t) < 0) {
-				free(t);
-				goto cleanup;
-			}
+	{
+		char *t = NULL;
+		if ((t = apol_mls_range_render(diff->mod_pol, mod_range)) == NULL ||
+		    apol_str_appendf(&s, &len, "+ range_transition %s %s : %s %s;", rt->source, rt->target,
+				     rt->target_class, t) < 0) {
 			free(t);
-			return s;
+			goto cleanup;
 		}
+		free(t);
+		return s;
+	}
 	case POLDIFF_FORM_REMOVED:
 	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			char *t = NULL;
-			if ((t = apol_mls_range_render(diff->orig_pol, orig_range)) == NULL ||
-			    apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source, rt->target,
-					     rt->target_class, t) < 0) {
-				free(t);
-				goto cleanup;
-			}
+	{
+		char *t = NULL;
+		if ((t = apol_mls_range_render(diff->orig_pol, orig_range)) == NULL ||
+		    apol_str_appendf(&s, &len, "- range_transition %s %s : %s %s;", rt->source, rt->target,
+				     rt->target_class, t) < 0) {
 			free(t);
-			return s;
+			goto cleanup;
 		}
+		free(t);
+		return s;
+	}
 	case POLDIFF_FORM_MODIFIED:
-		{
-			char *t;
-			if ((t = poldiff_range_to_string_brief(diff, range)) == NULL ||
-			    apol_str_appendf(&s, &len, "* range_transition %s %s : %s\n%s", rt->source, rt->target,
-					     rt->target_class, t) < 0) {
-				free(t);
-				goto cleanup;
-			}
+	{
+		char *t;
+		if ((t = poldiff_range_to_string_brief(diff, range)) == NULL ||
+		    apol_str_appendf(&s, &len, "* range_transition %s %s : %s\n%s", rt->source, rt->target,
+				     rt->target_class, t) < 0) {
 			free(t);
-			return s;
+			goto cleanup;
 		}
+		free(t);
+		return s;
+	}
 	default:
-		{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
       cleanup:
 	/* if this is reached then an error occurred */
@@ -134,7 +134,7 @@ char *poldiff_range_trans_to_string(poldiff_t * diff, const void *range_trans)
 	return NULL;
 }
 
-apol_vector_t *poldiff_get_range_trans_vector(poldiff_t * diff)
+const apol_vector_t *poldiff_get_range_trans_vector(const poldiff_t * diff)
 {
 	if (diff == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -231,8 +231,8 @@ typedef struct pseudo_range_trans
 {
 	uint32_t source_type, target_type;
 	/* pointer into a policy's class's symbol table */
-	char *target_class;
-	qpol_mls_range_t *range;
+	const char *target_class;
+	const qpol_mls_range_t *range;
 } pseudo_range_trans_t;
 
 static void range_trans_free_item(void *item)
@@ -243,7 +243,7 @@ static void range_trans_free_item(void *item)
 	}
 }
 
-int range_trans_comp(const void *x, const void *y, poldiff_t * diff __attribute__ ((unused)))
+int range_trans_comp(const void *x, const void *y, const poldiff_t * diff __attribute__ ((unused)))
 {
 	const pseudo_range_trans_t *p1 = x;
 	const pseudo_range_trans_t *p2 = y;
@@ -284,7 +284,7 @@ int range_trans_reset(poldiff_t * diff)
  * pseudo-range trans's source and/or target expands to multiple read
  * types, then just choose the first one for display.
  */
-static poldiff_range_trans_t *make_range_trans_diff(poldiff_t * diff, poldiff_form_e form, const pseudo_range_trans_t * prt)
+static poldiff_range_trans_t *make_range_trans_diff(const poldiff_t * diff, poldiff_form_e form, const pseudo_range_trans_t * prt)
 {
 	poldiff_range_trans_t *rt = NULL;
 	const char *n1, *n2;
@@ -318,8 +318,8 @@ static poldiff_range_trans_t *make_range_trans_diff(poldiff_t * diff, poldiff_fo
 int range_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	const pseudo_range_trans_t *prt = (const pseudo_range_trans_t *)item;
-	apol_vector_t *v1, *v2;
-	qpol_mls_range_t *orig_range = NULL, *mod_range = NULL;
+	const apol_vector_t *v1, *v2;
+	const qpol_mls_range_t *orig_range = NULL, *mod_range = NULL;
 	poldiff_range_trans_t *rt = NULL;
 	int error;
 
@@ -360,30 +360,30 @@ int range_trans_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item
 	/* increment appropriate counter */
 	switch (form) {
 	case POLDIFF_FORM_ADDED:
-		{
-			diff->range_trans_diffs->num_added++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_added++;
+		break;
+	}
 	case POLDIFF_FORM_ADD_TYPE:
-		{
-			diff->range_trans_diffs->num_added_type++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_added_type++;
+		break;
+	}
 	case POLDIFF_FORM_REMOVED:
-		{
-			diff->range_trans_diffs->num_removed++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_removed++;
+		break;
+	}
 	case POLDIFF_FORM_REMOVE_TYPE:
-		{
-			diff->range_trans_diffs->num_removed_type++;
-			break;
-		}
+	{
+		diff->range_trans_diffs->num_removed_type++;
+		break;
+	}
 	default:
-		{
-			/* not reachable */
-			assert(0);
-		}
+	{
+		/* not reachable */
+		assert(0);
+	}
 	}
 	return 0;
       cleanup:
@@ -414,15 +414,15 @@ static int pseudo_range_trans_comp(const void *x, const void *y, void *arg)
 	return retval;
 }
 
-apol_vector_t *range_trans_get_items(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *range_trans_get_items(poldiff_t * diff, const apol_policy_t * policy)
 {
 	apol_vector_t *v = NULL;
 	qpol_iterator_t *iter = NULL;
-	qpol_range_trans_t *qrt = NULL;
-	qpol_type_t *source_type, *target_type;
-	qpol_class_t *target_class;
-	char *class_name;
-	qpol_mls_range_t *range;
+	const qpol_range_trans_t *qrt = NULL;
+	const qpol_type_t *source_type, *target_type;
+	const qpol_class_t *target_class;
+	const char *class_name;
+	const qpol_mls_range_t *range;
 	pseudo_range_trans_t *prt = NULL;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0, which_pol;

@@ -38,16 +38,19 @@ extern "C"
 /**
  *  Create an extended image for a policy. This function modifies the policydb
  *  by adding additional records and information about attributes, initial sids
- *  and other components not normally written to a binary policy file.
+ *  and other components not normally written to a binary policy file. Subsequent
+ *  calls to this function have no effect.
  *  @param policy The policy for which the extended image should be created.
  *  @return Returns 0 on success and < 0 on failure. If the call fails,
  *  errno will be set; the state of the policy is not guaranteed to be stable
  *  if this call fails.
+ *  @deprecated It is nolonger necessary to call this function separately.
  */
-	extern int qpol_policy_extend(qpol_policy_t * policy);
+	extern int qpol_policy_extend(qpol_policy_t * policy) __attribute__ ((deprecated));
 
 /**
  *  Build the table of syntactic rules for a policy.
+ *  Subsequent calls to this function have no effect.
  *  @param policy The policy for which to build the table.
  *  This policy will be modified by this call.
  *  @return 0 on success and < 0 on error; if the call fails,
@@ -71,7 +74,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *rule, qpol_iterator_t ** iter);
+	extern int qpol_avrule_get_syn_avrule_iter(const qpol_policy_t * policy, const struct qpol_avrule *rule,
+						   qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over the syntactic rules contributing to a type rule.
@@ -85,7 +89,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_terule_get_syn_terule_iter(qpol_policy_t * policy, struct qpol_terule *rule, qpol_iterator_t ** iter);
+	extern int qpol_terule_get_syn_terule_iter(const qpol_policy_t * policy, const struct qpol_terule *rule,
+						   qpol_iterator_t ** iter);
 
 #ifdef	__cplusplus
 }

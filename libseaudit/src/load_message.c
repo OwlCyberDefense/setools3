@@ -43,7 +43,7 @@ void load_message_free(seaudit_load_message_t * msg)
 	}
 }
 
-char *load_message_to_string(seaudit_message_t * msg, const char *date)
+char *load_message_to_string(const seaudit_message_t * msg, const char *date)
 {
 	seaudit_load_message_t *load = msg->data.load;
 	const char *host = msg->host;
@@ -59,7 +59,7 @@ char *load_message_to_string(seaudit_message_t * msg, const char *date)
 	return s;
 }
 
-char *load_message_to_string_html(seaudit_message_t * msg, const char *date)
+char *load_message_to_string_html(const seaudit_message_t * msg, const char *date)
 {
 	seaudit_load_message_t *load = msg->data.load;
 	const char *host = msg->host;
@@ -79,7 +79,7 @@ char *load_message_to_string_html(seaudit_message_t * msg, const char *date)
 	return s;
 }
 
-char *load_message_to_misc_string(seaudit_load_message_t * load)
+char *load_message_to_misc_string(const seaudit_load_message_t * load)
 {
 	char *s = NULL;
 	if (asprintf(&s,

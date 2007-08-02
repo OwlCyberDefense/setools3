@@ -25,7 +25,22 @@
 
 #include <config.h>
 
+#include <string.h>
+
+#ifdef LIBSELINUX
+#include <selinux/selinux.h>
+#endif
+
 const char *libsefs_get_version(void)
 {
 	return LIBSEFS_VERSION_STRING;
+}
+
+char *sefs_default_file_contexts_get_path(void)
+{
+#ifdef LIBSELINUX
+	return strdup(selinux_file_context_path());
+#else
+	return strdup("");
+#endif
 }

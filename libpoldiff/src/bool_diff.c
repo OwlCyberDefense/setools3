@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 struct poldiff_bool_summary
 {
@@ -45,10 +46,10 @@ struct poldiff_bool
 {
 	char *name;
 	poldiff_form_e form;
-	bool_t state;
+	bool state;
 };
 
-void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5])
+void poldiff_bool_get_stats(const poldiff_t * diff, size_t stats[5])
 {
 	if (diff == NULL || stats == NULL) {
 		ERR(diff, "%s", strerror(EINVAL));
@@ -62,7 +63,7 @@ void poldiff_bool_get_stats(poldiff_t * diff, size_t stats[5])
 	stats[4] = 0;
 }
 
-char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean)
+char *poldiff_bool_to_string(const poldiff_t * diff, const void *boolean)
 {
 	poldiff_bool_t *b = (poldiff_bool_t *) boolean;
 	size_t len = 0;
@@ -73,36 +74,40 @@ char *poldiff_bool_to_string(poldiff_t * diff, const void *boolean)
 		return NULL;
 	}
 	switch (b->form) {
-	case POLDIFF_FORM_ADDED:{
-			if (apol_str_appendf(&s, &len, "+ %s", b->name) < 0) {
-				break;
-			}
-			return s;
+	case POLDIFF_FORM_ADDED:
+	{
+		if (apol_str_appendf(&s, &len, "+ %s", b->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_REMOVED:{
-			if (apol_str_appendf(&s, &len, "- %s", b->name) < 0) {
-				break;
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_REMOVED:
+	{
+		if (apol_str_appendf(&s, &len, "- %s", b->name) < 0) {
+			break;
 		}
-	case POLDIFF_FORM_MODIFIED:{
-			if (apol_str_appendf
-			    (&s, &len, "* %s (changed from %s)", b->name, (b->state ? "FALSE to TRUE" : "TRUE to FALSE")) < 0) {
-				break;
-			}
-			return s;
+		return s;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		if (apol_str_appendf
+		    (&s, &len, "* %s (changed from %s)", b->name, (b->state ? "false to true" : "true to false")) < 0) {
+			break;
 		}
-	default:{
-			ERR(diff, "%s", strerror(ENOTSUP));
-			errno = ENOTSUP;
-			return NULL;
-		}
+		return s;
+	}
+	default:
+	{
+		ERR(diff, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return NULL;
+	}
 	}
 	errno = ENOMEM;
 	return NULL;
 }
 
-apol_vector_t *poldiff_get_bool_vector(poldiff_t * diff)
+const apol_vector_t *poldiff_get_bool_vector(const poldiff_t * diff)
 {
 	if (diff == NULL) {
 		errno = EINVAL;
@@ -193,14 +198,14 @@ static int bool_name_comp(const void *x, const void *y, void *arg)
 	qpol_bool_t *c2 = (qpol_bool_t *) y;
 	apol_policy_t *p = (apol_policy_t *) arg;
 	qpol_policy_t *q = apol_policy_get_qpol(p);
-	char *name1, *name2;
+	const char *name1, *name2;
 	if (qpol_bool_get_name(q, c1, &name1) < 0 || qpol_bool_get_name(q, c2, &name2) < 0) {
 		return 0;
 	}
 	return strcmp(name1, name2);
 }
 
-apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy)
+apol_vector_t *bool_get_items(poldiff_t * diff, const apol_policy_t * policy)
 {
 	qpol_iterator_t *iter = NULL;
 	apol_vector_t *v = NULL;
@@ -218,15 +223,15 @@ apol_vector_t *bool_get_items(poldiff_t * diff, apol_policy_t * policy)
 		return NULL;
 	}
 	qpol_iterator_destroy(&iter);
-	apol_vector_sort(v, bool_name_comp, policy);
+	apol_vector_sort(v, bool_name_comp, (void *)policy);
 	return v;
 }
 
-int bool_comp(const void *x, const void *y, poldiff_t * diff)
+int bool_comp(const void *x, const void *y, const poldiff_t * diff)
 {
 	qpol_bool_t *c1 = (qpol_bool_t *) x;
 	qpol_bool_t *c2 = (qpol_bool_t *) y;
-	char *name1, *name2;
+	const char *name1, *name2;
 	if (qpol_bool_get_name(diff->orig_qpol, c1, &name1) < 0 || qpol_bool_get_name(diff->mod_qpol, c2, &name2) < 0) {
 		return 0;
 	}
@@ -244,7 +249,7 @@ int bool_comp(const void *x, const void *y, poldiff_t * diff)
  * The caller is responsible for calling bool_free() upon the
  * returned value.
  */
-static poldiff_bool_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *name)
+static poldiff_bool_t *make_diff(const poldiff_t * diff, poldiff_form_e form, const char *name)
 {
 	poldiff_bool_t *pb;
 	int error;
@@ -262,13 +267,13 @@ static poldiff_bool_t *make_diff(poldiff_t * diff, poldiff_form_e form, char *na
 int bool_new_diff(poldiff_t * diff, poldiff_form_e form, const void *item)
 {
 	qpol_bool_t *c = (qpol_bool_t *) item;
-	char *name = NULL;
+	const char *name = NULL;
 	poldiff_bool_t *pb;
 	int error;
 	if ((form == POLDIFF_FORM_ADDED &&
 	     qpol_bool_get_name(diff->mod_qpol, c, &name) < 0) ||
-	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) &&
-	     qpol_bool_get_name(diff->orig_qpol, c, &name) < 0)) {
+	    ((form == POLDIFF_FORM_REMOVED || form == POLDIFF_FORM_MODIFIED) && qpol_bool_get_name(diff->orig_qpol, c, &name) < 0))
+	{
 		return -1;
 	}
 	pb = make_diff(diff, form, name);
@@ -293,7 +298,7 @@ int bool_deep_diff(poldiff_t * diff, const void *x, const void *y)
 {
 	qpol_bool_t *b1 = (qpol_bool_t *) x;
 	qpol_bool_t *b2 = (qpol_bool_t *) y;
-	char *name;
+	const char *name;
 	int s1, s2;
 	poldiff_bool_t *b = NULL;
 	int retval = -1, error = 0;
@@ -309,9 +314,9 @@ int bool_deep_diff(poldiff_t * diff, const void *x, const void *y)
 			goto cleanup;
 		}
 		if (s2)
-			b->state = TRUE;
+			b->state = true;
 		else
-			b->state = FALSE;
+			b->state = false;
 	}
 	if (b != NULL) {
 		if (apol_vector_append(diff->bool_diffs->diffs, b) < 0) {

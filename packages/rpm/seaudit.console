@@ -1,3 +1,0 @@
-USER=root
-PROGRAM=/usr/sbin/seaudit
-SESSION=true

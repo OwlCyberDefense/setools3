@@ -10,7 +10,7 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 libseaudit_a_SOURCES = \
 	avc_message.c \
 	bool_message.c \
-	filter.c \
+	filter.c filter-internal.c filter-internal.h \
 	load_message.c \
 	log.c \
 	message.c \

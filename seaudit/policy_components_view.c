@@ -330,7 +330,7 @@ static void policy_components_view_init_signals(struct polcomp_view *pv)
 	g_signal_connect(pv->exc_unselect_button, "clicked", G_CALLBACK(policy_components_view_on_unselect_click), pv->exc_view);
 }
 
-apol_vector_t *policy_components_view_run(toplevel_t * top, GtkWindow * parent, const char *title,
+apol_vector_t *policy_components_view_run(toplevel_t * top, GtkWindow * parent __attribute__ ((unused)), const char *title,
 					  apol_vector_t * log_items, apol_vector_t * policy_items, apol_vector_t * included)
 {
 	struct polcomp_view pv;

@@ -140,9 +140,8 @@ this way, apol continues its tradition of supporting old and new
 versions of policies (see below for more on managing permission maps).
 
 Apol provides mechanisms to manage and customize permission mappings
-that best suit the analyst's needs.  These tools, including a
-permission map editor, are all available under the Advanced menu (see
-more on this topic below).
+that best suit the analyst's needs.  Use the Tools menu (see below) to
+modify permission mappings.
 
 
 Permission weighting
@@ -248,59 +247,54 @@ following reasons:
     be necessary (e.g., by unmapping certain object classes to remove
     them from the analysis).
 
-  + You might be trying to work with several different policies each
+  + The analyst may be working with several different policies each
     with different definitions of object classes and permissions.
 
     
 Because of these reasons, apol was designed to provide great latitude
-in managing permission mappings using the Advanced->Permission
-Mappings menus.  A user need not manage permission maps directly.
-Apol is equipped with default permission maps (in /usr/share/setools/)
+in managing permission mappings using Tools menu.  A user need not
+manage permission maps directly; apol is installed with default
+permission maps (typically in /usr/local/share/setools-<version>/)
 that will be loaded automatically when an information flow analysis is
 performed.
 
-Use the Advanced menus to manually load a permission map from any file
-location.  This capability allows you to keep several versions of
-permission map files, loading the correct one for the current
-analysis.  In addition, you can manually load the default permission
-map (see below).
+Use the Tools menu to manually load a permission map from an arbitrary
+file.  This capability allows the user to keep several versions of
+permission map files, loading the correct one for a given analysis.
 
-There are two ways to edit the mappings in a permission map: 1) edit a
-map file directly, or 2) use the permission map editor under the
-Advanced menu.  The editor displays all the object classes and
-permissions currently mapped (or unmapped) in the currently loaded
-policy.  Additionally, the editor displays weight values for each
-permission.  These values tell apol the importance of each permission
-to the analysis.  The user can configure these weight values according
-to the analysis goals.  For example, the user may consider any read or
+Although the user could view and modify mappings by editing a map file
+directly, an easier (and less error-prone) approach is apol's perm map
+viewer.  Select View Perm Map from the Tools menu to display all
+object classes and permissions currently mapped (or unmapped) in the
+currently loaded policy.  In addition, each permission's weight value
+is shown.  These values tell apol the importance of each permission to
+the analysis.  The user can configure these weight values according to
+the analysis goals.  For example, the user may consider any read or
 write permissions of highest importance to the analysis, whereas
 permission to use a file descriptor may be of least importance.  A
 permission will default to a weight of 10 if a weight value is not
 provided for the permission in the permission map.
 
-Since apol will adapt a permission map file to meet the needs of a
-loaded policy, the loaded map may be different than the file on disk.
-Saving the loaded map will change the on-disk file to match the loaded
-map.
+A user has access to the "default" permission file.  If there exists a
+file named .apol_perm_mapping in his home directory (i.e.,
+$HOME/.apol_perm_mapping), then it is used when opening the default
+file.  Otherwise the default file will be read from SETools's
+installed location, typically /usr/local/share/setools-<version>.  The
+file .apol_perm_mapping is always used as the destination when saving
+to the default permission file.
 
-Changes to the default permission map can be saved as your default
-permission map (i.e., $HOME/.apol_perm_mapping).  If
-.apol_perm_mapping exists, it will be used as your default.  Otherwise
-the system default from /usr/share/setools will be used as the
-default.
-
-   NOTE: Only one permission map may be loaded at a time, and only if
-   a policy.conf file is opened.  If apol has performed an information
-   flow analysis, the default permission map will be loaded
-   automatically unless a permission map was previously manually
-   loaded.  Loading a new permission map will unload the current map;
-   closing the policy will also unload the map.
+   NOTE: Only one permission map may be opened at a time, and only
+   when a policy is already opened.  If apol has performed an
+   information flow analysis, the default permission map will be
+   loaded automatically unless a permission map was previously loaded.
+   Closing the policy will also close any existing permission mapping.
+   Unsaved changes will be lost.
 
 
 Finding more flows
 ------------------
 For a transitive information flow, there might be many different
-information flows between two types. For example, given the
+information flows between two types.  For example, given the
 following policy:
 
         allow one_t two_t : file write;
@@ -317,11 +311,11 @@ three_t and four_t initially in the policy above.  Apol provides the
 means to find more information flows between two types after the
 inital analysis is completed.  In the results display for an end type,
 there is a link labeled "Find More Flows."  Clicking on the link will
-bring up a dialog box that allows you to set a maximum time duration
-and a maximum number of flows.  Finding all of the paths between two
-types could take a significant amount of time for a complicated
-policy, so this dialog provides the means to set limits on the
-search. The search will stop when either of the limits are met.  After
-the search completes, the additional paths will be displayed in the
-same results tab.  Note that if a large number of flows are found it
-may take the display several seconds to render the text.
+bring up a dialog box that allows the user to set a maximum time
+duration and a maximum number of flows.  Finding all of the paths
+between two types could take a significant amount of time for a
+complicated policy, so this dialog provides the means to set limits on
+the search. The search will stop when either of the limits are met.
+After the search completes, the additional paths will be displayed in
+the same results tab.  Note that if a large number of flows are found
+it may take the display several seconds to render the text.

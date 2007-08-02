@@ -48,7 +48,7 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_role_allow_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_role_allow_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the source role from a role allow rule.
@@ -59,7 +59,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-	extern int qpol_role_allow_get_source_role(qpol_policy_t * policy, qpol_role_allow_t * rule, qpol_role_t ** source);
+	extern int qpol_role_allow_get_source_role(const qpol_policy_t * policy, const qpol_role_allow_t * rule,
+						   const qpol_role_t ** source);
 
 /**
  *  Get the target role from a role allow rule.
@@ -70,7 +71,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-	extern int qpol_role_allow_get_target_role(qpol_policy_t * policy, qpol_role_allow_t * rule, qpol_role_t ** target);
+	extern int qpol_role_allow_get_target_role(const qpol_policy_t * policy, const qpol_role_allow_t * rule,
+						   const qpol_role_t ** target);
 
 /**
  *  Get an iterator over all role transition rules in the policy.
@@ -83,7 +85,7 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_role_trans_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_role_trans_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the source role from a role transition rule.
@@ -94,7 +96,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-	extern int qpol_role_trans_get_source_role(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_role_t ** source);
+	extern int qpol_role_trans_get_source_role(const qpol_policy_t * policy, const qpol_role_trans_t * rule,
+						   const qpol_role_t ** source);
 
 /**
  *  Get the target type from a role transition rule.
@@ -105,7 +108,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-	extern int qpol_role_trans_get_target_type(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_type_t ** target);
+	extern int qpol_role_trans_get_target_type(const qpol_policy_t * policy, const qpol_role_trans_t * rule,
+						   const qpol_type_t ** target);
 
 /**
  *  Get the default role from a role transition rule.
@@ -116,7 +120,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dflt will be NULL.
  */
-	extern int qpol_role_trans_get_default_role(qpol_policy_t * policy, qpol_role_trans_t * rule, qpol_role_t ** dflt);
+	extern int qpol_role_trans_get_default_role(const qpol_policy_t * policy, const qpol_role_trans_t * rule,
+						    const qpol_role_t ** dflt);
 
 #ifdef	__cplusplus
 }

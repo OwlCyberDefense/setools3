@@ -45,7 +45,7 @@ enum
 	RESULTS_SUMMARY_COLUMN_NUM
 };
 
-#define NUM_RESULT_ITEMS 14
+#define NUM_RESULT_ITEMS 19
 
 struct results
 {
@@ -85,7 +85,13 @@ result_item_create_commons, result_item_create_classes,
 		result_item_create_types, result_item_create_attributes,
 		result_item_create_roles, result_item_create_users,
 		result_item_create_booleans,
-		result_item_create_avrules, result_item_create_terules,
+		result_item_create_avrules_allow,
+		result_item_create_avrules_auditallow,
+		result_item_create_avrules_dontaudit,
+		result_item_create_avrules_neverallow,
+		result_item_create_terules_change,
+		result_item_create_terules_member,
+		result_item_create_terules_trans,
 		result_item_create_role_allows, result_item_create_role_trans, result_item_create_range_trans};
 
 static void results_summary_on_change(GtkTreeSelection * selection, gpointer user_data);

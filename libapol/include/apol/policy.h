@@ -40,14 +40,15 @@ extern "C"
 
 	typedef struct apol_policy apol_policy_t;
 
-	typedef void (*apol_callback_fn_t) (void *varg, apol_policy_t * p, int level, const char *fmt, va_list argp);
+	typedef void (*apol_callback_fn_t) (void *varg, const apol_policy_t * p, int level, const char *fmt, va_list argp);
 
 /**
  * When creating an apol_policy, load all components except rules
  * (both AV and TE rules).  For modular policies, this affects both
  * the base policy and subsequent modules.
+ * @deprecated use QPOL_POLICY_OPTION_NO_RULES instead
  */
-#define APOL_POLICY_OPTION_NO_RULES 1
+#define APOL_POLICY_OPTION_NO_RULES QPOL_POLICY_OPTION_NO_RULES
 
 /**
  * Create a new apol_policy initialized from one or more policy files.
@@ -55,8 +56,7 @@ extern "C"
  * @param path Policy path object specifying which policy file or
  * files to load.
  * @param options Bitfield specifying options for the returned policy.
- * Currently the only acceptable option is
- * APOL_POLICY_OPTION_NO_RULES.
+ * Valid options are QPOL_POLICY_OPTION_* from <qpol/policy.h>.
  * @param msg_callback Callback to invoke as errors/warnings are
  * generated.  If NULL, then write messages to standard error.
  * @param varg Value to be passed as the first parameter to the
@@ -88,7 +88,7 @@ extern "C"
  *
  * @return The policy type, or < 0 upon error.
  */
-	extern int apol_policy_get_policy_type(apol_policy_t * policy);
+	extern int apol_policy_get_policy_type(const apol_policy_t * policy);
 
 /**
  * Given a policy, return a pointer to the underlying qpol_policy.
@@ -100,7 +100,7 @@ extern "C"
  * @return Pointer to underlying qpol policy, or NULL on error.  Do
  * not free() or otherwise destroy this pointer.
  */
-	extern qpol_policy_t *apol_policy_get_qpol(apol_policy_t * policy);
+	extern qpol_policy_t *apol_policy_get_qpol(const apol_policy_t * policy);
 
 /**
  * Given a policy, return 1 if the policy within is MLS, 0 if not.  If
@@ -109,7 +109,7 @@ extern "C"
  * @param p Policy to which check.
  * @return 1 if policy is MLS, 0 if not, < 0 upon error.
  */
-	extern int apol_policy_is_mls(apol_policy_t * p);
+	extern int apol_policy_is_mls(const apol_policy_t * p);
 
 /**
  * Given a policy, allocate and return a string that describes the
@@ -119,7 +119,7 @@ extern "C"
  * @return String that describes policy, or NULL upon error.  The
  * caller must free() this afterwards.
  */
-	extern char *apol_policy_get_version_type_mls_str(apol_policy_t * p);
+	extern char *apol_policy_get_version_type_mls_str(const apol_policy_t * p);
 
 #define APOL_MSG_ERR 1
 #define APOL_MSG_WARN 2
@@ -127,8 +127,8 @@ extern "C"
 
 /**
  * Write a message to the callback stored within an apol error
- * handler.  If the msg_callback field is empty then suppress the
- * message.
+ * handler.  If the msg_callback field is empty, then the default
+ * message callback will be used.
  *
  * @param p Error reporting handler.  If NULL then write message to
  * stderr.
@@ -136,10 +136,10 @@ extern "C"
  * APOL_MSG_WARN, or APOL_MSG_INFO.
  * @param fmt Format string to print, using syntax of printf(3).
  */
-	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
+	extern void apol_handle_msg(const apol_policy_t * p, int level, const char *fmt, ...);
 
-	__attribute__ ((format(printf, 3, 4)))
-	extern void apol_handle_msg(apol_policy_t * p, int level, const char *fmt, ...);
+	__attribute__ ((format(printf, 3, 4))) extern void apol_handle_msg(const apol_policy_t * p, int level, const char *fmt,
+									   ...);
 
 /**
  * Invoke a apol_policy_t's callback for an error, passing it a format

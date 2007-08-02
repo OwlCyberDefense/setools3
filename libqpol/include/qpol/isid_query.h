@@ -47,7 +47,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-	extern int qpol_policy_get_isid_by_name(qpol_policy_t * policy, const char *name, qpol_isid_t ** ocon);
+	extern int qpol_policy_get_isid_by_name(const qpol_policy_t * policy, const char *name, const qpol_isid_t ** ocon);
 
 /**
  *  Get an iterator for the initial SID statements in a policy.
@@ -60,7 +60,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_isid_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_isid_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the name from an initial SID statement.
@@ -71,7 +71,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_isid_get_name(qpol_policy_t * policy, qpol_isid_t * ocon, char **name);
+	extern int qpol_isid_get_name(const qpol_policy_t * policy, const qpol_isid_t * ocon, const char **name);
 
 /**
  *  Get the context from an initial SID statement.
@@ -82,7 +82,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-	extern int qpol_isid_get_context(qpol_policy_t * policy, qpol_isid_t * ocon, qpol_context_t ** context);
+	extern int qpol_isid_get_context(const qpol_policy_t * policy, const qpol_isid_t * ocon, const qpol_context_t ** context);
 
 #ifdef	__cplusplus
 }

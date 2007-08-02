@@ -86,7 +86,7 @@ static int get_tokens(seaudit_log_t * log, char *line, apol_vector_t ** tokens)
 /**
  * Given a line, determine what type of audit message it is.
  */
-static seaudit_message_type_e is_selinux(char *line)
+static seaudit_message_type_e is_selinux(const char *line)
 {
 	if (strstr(line, BOOLMSG) && (strstr(line, "kernel") || strstr(line, AUDITD_MSG)))
 		return SEAUDIT_MESSAGE_TYPE_BOOL;
@@ -98,18 +98,19 @@ static seaudit_message_type_e is_selinux(char *line)
 		return SEAUDIT_MESSAGE_TYPE_INVALID;
 }
 
-/**
+extern int daylight;
+
+	/**
  * Fill in the date_stamp field of a message.  If the stamp was not
  * already allocated space then do it here.
  *
  * @return 0 on success, > 0 on warning, < 0 on error.
  */
-static int insert_time(seaudit_log_t * log, apol_vector_t * tokens, size_t * position, seaudit_message_t * msg)
+static int insert_time(const seaudit_log_t * log, const apol_vector_t * tokens, size_t * position, seaudit_message_t * msg)
 {
 	char *t = NULL;
 	size_t i, length = 0;
 	int error;
-	extern int daylight;
 
 	if (*position + NUM_TIME_COMPONENTS >= apol_vector_get_size(tokens)) {
 		WARN(log, "%s", "Not enough tokens for time.");
@@ -162,7 +163,7 @@ static int insert_time(seaudit_log_t * log, apol_vector_t * tokens, size_t * pos
  *
  * @return 0 on success, > 0 on warning, < 0 on error.
  */
-static int insert_hostname(seaudit_log_t * log, apol_vector_t * tokens, size_t * position, seaudit_message_t * msg)
+static int insert_hostname(const seaudit_log_t * log, const apol_vector_t * tokens, size_t * position, seaudit_message_t * msg)
 {
 	char *s, *host;
 	if (*position >= apol_vector_get_size(tokens)) {
@@ -187,7 +188,8 @@ static int insert_hostname(seaudit_log_t * log, apol_vector_t * tokens, size_t *
 	return 0;
 }
 
-static int insert_standard_msg_header(seaudit_log_t * log, apol_vector_t * tokens, size_t * position, seaudit_message_t * msg)
+static int insert_standard_msg_header(const seaudit_log_t * log, const apol_vector_t * tokens, size_t * position,
+				      seaudit_message_t * msg)
 {
 	int ret = 0;
 	if ((ret = insert_time(log, tokens, position, msg)) != 0) {
@@ -202,7 +204,7 @@ static int insert_standard_msg_header(seaudit_log_t * log, apol_vector_t * token
 /**
  * Parse the object manager that generated this audit message.
  */
-static int insert_manager(seaudit_log_t * log, seaudit_message_t * msg, const char *manager)
+static int insert_manager(const seaudit_log_t * log, seaudit_message_t * msg, const char *manager)
 {
 	char *m;
 	if ((m = strdup(manager)) == NULL || apol_bst_insert_and_get(log->managers, (void **)&m, NULL) < 0) {
@@ -266,7 +268,7 @@ static int parse_context(seaudit_log_t * log, char *token, char **user, char **r
 /**
  * Given a token, determine if it is the new AVC header or not.
  */
-static int avc_msg_is_token_new_audit_header(char *token)
+static int avc_msg_is_token_new_audit_header(const char *token)
 {
 	return (strstr(token, SYSCALL_STRING) ? 1 : 0);
 }
@@ -302,7 +304,7 @@ static int avc_msg_is_prefix(char *token, char *prefix, char **result)
  *
  * @return 0 on success, > 0 on warning, < 0 on error.
  */
-static int avc_msg_insert_perms(seaudit_log_t * log, apol_vector_t * tokens, size_t * position, seaudit_avc_message_t * avc)
+static int avc_msg_insert_perms(const seaudit_log_t * log, apol_vector_t * tokens, size_t * position, seaudit_avc_message_t * avc)
 {
 	char *s, *perm;
 	int error;
@@ -334,7 +336,7 @@ static int avc_msg_insert_perms(seaudit_log_t * log, apol_vector_t * tokens, siz
 	return 1;
 }
 
-static int avc_msg_insert_syscall_info(seaudit_log_t * log, char *token, seaudit_message_t * msg, seaudit_avc_message_t * avc)
+static int avc_msg_insert_syscall_info(const seaudit_log_t * log, char *token, seaudit_message_t * msg, seaudit_avc_message_t * avc)
 {
 	size_t length, header_len = 0, i = 0;
 	char *fields[PARSE_NUM_SYSCALL_FIELDS];
@@ -388,7 +390,7 @@ static int avc_msg_insert_syscall_info(seaudit_log_t * log, char *token, seaudit
 	return 0;
 }
 
-static int avc_msg_insert_access_type(seaudit_log_t * log, char *token, seaudit_avc_message_t * avc)
+static int avc_msg_insert_access_type(const seaudit_log_t * log, const char *token, seaudit_avc_message_t * avc)
 {
 	if (strcmp(token, "granted") == 0) {
 		avc->msg = SEAUDIT_AVC_GRANTED;
@@ -438,7 +440,7 @@ static int avc_msg_insert_tcon(seaudit_log_t * log, seaudit_avc_message_t * avc,
 	return 0;
 }
 
-static int avc_msg_insert_tclass(seaudit_log_t * log, seaudit_avc_message_t * avc, char *tmp)
+static int avc_msg_insert_tclass(seaudit_log_t * log, seaudit_avc_message_t * avc, const char *tmp)
 {
 	char *tclass;
 	if ((tclass = strdup(tmp)) == NULL || apol_bst_insert_and_get(log->classes, (void **)&tclass, NULL) < 0) {
@@ -451,7 +453,7 @@ static int avc_msg_insert_tclass(seaudit_log_t * log, seaudit_avc_message_t * av
 	return 0;
 }
 
-static int avc_msg_insert_string(seaudit_log_t * log, char *src, char **dest)
+static int avc_msg_insert_string(const seaudit_log_t * log, char *src, char **dest)
 {
 	if ((*dest = strdup(src)) == NULL) {
 		int error = errno;
@@ -466,7 +468,7 @@ static int avc_msg_insert_string(seaudit_log_t * log, char *src, char **dest)
  * Removes quotes from a string, this is currently to remove quotes
  * from the command argument.
  */
-static int avc_msg_remove_quotes_insert_string(seaudit_log_t * log, char *src, char **dest)
+static int avc_msg_remove_quotes_insert_string(const seaudit_log_t * log, char *src, char **dest)
 {
 	size_t i, j, l;
 
@@ -495,7 +497,7 @@ static int avc_msg_remove_quotes_insert_string(seaudit_log_t * log, char *src, c
  * If there is exactly one equal sign in orig_token then return 1.
  * Otherwise return 0.
  */
-static int avc_msg_is_valid_additional_field(char *orig_token)
+static int avc_msg_is_valid_additional_field(const char *orig_token)
 {
 	char *first_eq = strchr(orig_token, '=');
 
@@ -508,7 +510,7 @@ static int avc_msg_is_valid_additional_field(char *orig_token)
 	return 1;
 }
 
-static int avc_msg_reformat_path(seaudit_log_t * log, seaudit_avc_message_t * avc, char *token)
+static int avc_msg_reformat_path(const seaudit_log_t * log, seaudit_avc_message_t * avc, const char *token)
 {
 	int error;
 	if (avc->path == NULL) {
@@ -818,7 +820,7 @@ static int avc_parse(seaudit_log_t * log, apol_vector_t * tokens)
 		/* for now, only let avc messages set their object
 		 * manager */
 		if ((t = strrchr(token, ':')) == NULL) {
-			WARN(log, "%s", "Expeceted to find an object manager here.");
+			WARN(log, "%s", "Expected to find an object manager here.");
 			has_warnings = 1;
 			/* Hold the position */
 		} else {
@@ -925,7 +927,7 @@ static int avc_parse(seaudit_log_t * log, apol_vector_t * tokens)
 
 /******************** boolean parsing ********************/
 
-static int boolean_msg_insert_bool(seaudit_log_t * log, seaudit_bool_message_t * bool, char *token)
+static int boolean_msg_insert_bool(seaudit_log_t * log, seaudit_bool_message_t * boolm, char *token)
 {
 	size_t len = strlen(token);
 	int value;
@@ -952,13 +954,13 @@ static int boolean_msg_insert_bool(seaudit_log_t * log, seaudit_bool_message_t *
 
 	token[len - 2] = '\0';
 
-	return bool_change_append(log, bool, token, value);
+	return bool_change_append(log, boolm, token, value);
 }
 
 static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
 {
 	seaudit_message_t *msg;
-	seaudit_bool_message_t *bool;
+	seaudit_bool_message_t *boolm;
 	seaudit_message_type_e type;
 	int ret, has_warnings = 0, next_line = log->next_line;
 	size_t position = 0, num_tokens = apol_vector_get_size(tokens);
@@ -976,7 +978,7 @@ static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
 			return -1;
 		}
 	}
-	bool = seaudit_message_get_data(msg, &type);
+	boolm = seaudit_message_get_data(msg, &type);
 
 	ret = insert_standard_msg_header(log, tokens, &position, msg);
 	if (ret < 0) {
@@ -1075,7 +1077,7 @@ static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
 			return has_warnings;
 		}
 
-		ret = boolean_msg_insert_bool(log, bool, token);
+		ret = boolean_msg_insert_bool(log, boolm, token);
 		if (ret < 0) {
 			return ret;
 		} else if (ret > 0) {
@@ -1098,7 +1100,7 @@ static int bool_parse(seaudit_log_t * log, apol_vector_t * tokens)
  * error.  If it is the older style, then increment reference pointer
  * position to point to the next unprocessed token.
  */
-static int load_policy_msg_is_old_load_policy_string(seaudit_log_t * log, apol_vector_t * tokens, size_t * position)
+static int load_policy_msg_is_old_load_policy_string(const seaudit_log_t * log, const apol_vector_t * tokens, size_t * position)
 {
 	size_t i, length = 0;
 	int rt;
@@ -1132,7 +1134,7 @@ static int load_policy_msg_is_old_load_policy_string(seaudit_log_t * log, apol_v
 		return 0;
 }
 
-static void load_policy_msg_get_policy_components(seaudit_load_message_t * load, apol_vector_t * tokens, size_t * position)
+static void load_policy_msg_get_policy_components(seaudit_load_message_t * load, const apol_vector_t * tokens, size_t * position)
 {
 	char *arg = apol_vector_get_element(tokens, *position);
 	char *endptr;
@@ -1161,7 +1163,7 @@ static void load_policy_msg_get_policy_components(seaudit_load_message_t * load,
 	*position += 2;
 }
 
-static int load_parse(seaudit_log_t * log, apol_vector_t * tokens)
+static int load_parse(seaudit_log_t * log, const apol_vector_t * tokens)
 {
 	seaudit_message_t *msg;
 	seaudit_load_message_t *load;
@@ -1280,7 +1282,6 @@ static int seaudit_log_parse_line(seaudit_log_t * log, char *line)
 	seaudit_message_type_e is_sel, prev_message_type;
 	apol_vector_t *tokens = NULL;
 	int retval = -1, retval2, has_warnings = 0, error = 0;
-	size_t offset = 0, i;
 
 	is_sel = is_selinux(line);
 	if (log->next_line) {

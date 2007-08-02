@@ -17,9 +17,6 @@ globally - apol
 Report generation - similar to saved queries export query results -
 apol
 
-Object class regex - allow searching for object classes by regular
-expression - sesearch (& apol)?
-
 Role dominance queries - query for role dominance relationships - apol
 & seinfo(display only)
 
@@ -30,6 +27,3 @@ Result filtering/sorting - allow rule diffs to be sorted or filtered
 by various fields - sediffx
 
 Duplicate TE warning - can we remove it - parser
-
-Profiling - can we optimize the source loading process - parser
-

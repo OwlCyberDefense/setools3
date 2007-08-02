@@ -30,6 +30,7 @@ typedef struct result_item result_item_t;
 
 #include <gtk/gtk.h>
 #include <poldiff/poldiff.h>
+#include <poldiff/component_record.h>
 
 /* constructors for various result items */
 
@@ -42,8 +43,16 @@ result_item_t *result_item_create_attributes(GtkTextTagTable * table);
 result_item_t *result_item_create_roles(GtkTextTagTable * table);
 result_item_t *result_item_create_users(GtkTextTagTable * table);
 result_item_t *result_item_create_booleans(GtkTextTagTable * table);
-result_item_t *result_item_create_avrules(GtkTextTagTable * table);
-result_item_t *result_item_create_terules(GtkTextTagTable * table);
+
+result_item_t *result_item_create_avrules_allow(GtkTextTagTable * table);
+result_item_t *result_item_create_avrules_auditallow(GtkTextTagTable * table);
+result_item_t *result_item_create_avrules_dontaudit(GtkTextTagTable * table);
+result_item_t *result_item_create_avrules_neverallow(GtkTextTagTable * table);
+
+result_item_t *result_item_create_terules_change(GtkTextTagTable * table);
+result_item_t *result_item_create_terules_member(GtkTextTagTable * table);
+result_item_t *result_item_create_terules_trans(GtkTextTagTable * table);
+
 result_item_t *result_item_create_role_allows(GtkTextTagTable * table);
 result_item_t *result_item_create_role_trans(GtkTextTagTable * table);
 result_item_t *result_item_create_range_trans(GtkTextTagTable * table);
@@ -235,7 +244,7 @@ void result_item_inline_link_event(result_item_t * item, toplevel_t * top, GtkWi
  * 'friend' like in C++; result_item_render needs access to three
  * fields within the result_item. */
 poldiff_t *result_item_get_diff(result_item_t * item);
-apol_vector_t *result_item_get_vector(result_item_t * item);
+const apol_vector_t *result_item_get_vector(result_item_t * item);
 poldiff_form_e result_item_get_form(result_item_t * item, void *elem);
 char *result_item_get_string(result_item_t * item, void *elem);
 

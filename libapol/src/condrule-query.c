@@ -38,7 +38,7 @@ struct apol_cond_query
 	regex_t *regex;
 };
 
-int apol_cond_get_by_query(apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v)
+int apol_cond_get_by_query(const apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
@@ -94,21 +94,22 @@ void apol_cond_query_destroy(apol_cond_query_t ** c)
 	}
 }
 
-int apol_cond_query_set_bool(apol_policy_t * p, apol_cond_query_t * c, const char *name)
+int apol_cond_query_set_bool(const apol_policy_t * p, apol_cond_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->bool_name, &c->regex, name);
 }
 
-int apol_cond_query_set_regex(apol_policy_t * p, apol_cond_query_t * c, int is_regex)
+int apol_cond_query_set_regex(const apol_policy_t * p, apol_cond_query_t * c, int is_regex)
 {
 	return apol_query_set_regex(p, &c->flags, is_regex);
 }
 
-char *apol_cond_expr_render(apol_policy_t * p, qpol_cond_t * cond)
+char *apol_cond_expr_render(const apol_policy_t * p, const qpol_cond_t * cond)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_cond_expr_node_t *expr = NULL;
-	char *tmp = NULL, *bool_name = NULL;
+	char *tmp = NULL;
+	const char *bool_name = NULL;
 	int error = 0;
 	size_t tmp_sz = 0, i;
 	uint32_t expr_type = 0;

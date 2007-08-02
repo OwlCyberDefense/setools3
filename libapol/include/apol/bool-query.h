@@ -51,7 +51,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_bool_get_by_query(apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v);
+	extern int apol_bool_get_by_query(const apol_policy_t * p, apol_bool_query_t * b, apol_vector_t ** v);
 
 /**
  * Allocate and return a new boolean query structure.  All fields are
@@ -83,7 +83,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_bool_query_set_bool(apol_policy_t * p, apol_bool_query_t * b, const char *name);
+	extern int apol_bool_query_set_bool(const apol_policy_t * p, apol_bool_query_t * b, const char *name);
 
 /**
  * Set a boolean query to use regular expression searching for all of
@@ -96,7 +96,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_bool_query_set_regex(apol_policy_t * p, apol_bool_query_t * b, int is_regex);
+	extern int apol_bool_query_set_regex(const apol_policy_t * p, apol_bool_query_t * b, int is_regex);
 
 #ifdef	__cplusplus
 }

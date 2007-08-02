@@ -55,7 +55,7 @@ struct apol_perm_query
 
 /******************** class queries ********************/
 
-int apol_class_get_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v)
+int apol_class_get_by_query(const apol_policy_t * p, apol_class_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	int retval = -1, append_class;
@@ -74,8 +74,8 @@ int apol_class_get_by_query(apol_policy_t * p, apol_class_query_t * c, apol_vect
 		}
 		append_class = 1;
 		if (c != NULL) {
-			char *class_name, *common_name = NULL;
-			qpol_common_t *common_datum;
+			const char *class_name, *common_name = NULL;
+			const qpol_common_t *common_datum;
 			int compval;
 			if (qpol_class_get_name(p->p, class_datum, &class_name) < 0) {
 				goto cleanup;
@@ -138,24 +138,24 @@ void apol_class_query_destroy(apol_class_query_t ** c)
 	}
 }
 
-int apol_class_query_set_class(apol_policy_t * p, apol_class_query_t * c, const char *name)
+int apol_class_query_set_class(const apol_policy_t * p, apol_class_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->class_name, &c->class_regex, name);
 }
 
-int apol_class_query_set_common(apol_policy_t * p, apol_class_query_t * c, const char *name)
+int apol_class_query_set_common(const apol_policy_t * p, apol_class_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->common_name, &c->common_regex, name);
 }
 
-int apol_class_query_set_regex(apol_policy_t * p, apol_class_query_t * c, int is_regex)
+int apol_class_query_set_regex(const apol_policy_t * p, apol_class_query_t * c, int is_regex)
 {
 	return apol_query_set_regex(p, &c->flags, is_regex);
 }
 
 /******************** common queries ********************/
 
-int apol_common_get_by_query(apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v)
+int apol_common_get_by_query(const apol_policy_t * p, apol_common_query_t * c, apol_vector_t ** v)
 {
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
@@ -173,7 +173,7 @@ int apol_common_get_by_query(apol_policy_t * p, apol_common_query_t * c, apol_ve
 			goto cleanup;
 		}
 		if (c != NULL) {
-			char *common_name = NULL;
+			const char *common_name = NULL;
 			int compval;
 			if (qpol_common_get_name(p->p, common_datum, &common_name) < 0) {
 				goto cleanup;
@@ -215,19 +215,19 @@ void apol_common_query_destroy(apol_common_query_t ** c)
 	}
 }
 
-int apol_common_query_set_common(apol_policy_t * p, apol_common_query_t * c, const char *name)
+int apol_common_query_set_common(const apol_policy_t * p, apol_common_query_t * c, const char *name)
 {
 	return apol_query_set(p, &c->common_name, &c->regex, name);
 }
 
-int apol_common_query_set_regex(apol_policy_t * p, apol_common_query_t * c, int is_regex)
+int apol_common_query_set_regex(const apol_policy_t * p, apol_common_query_t * c, int is_regex)
 {
 	return apol_query_set_regex(p, &c->flags, is_regex);
 }
 
 /******************** permission queries ********************/
 
-int apol_perm_get_by_query(apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v)
+int apol_perm_get_by_query(const apol_policy_t * p, apol_perm_query_t * pq, apol_vector_t ** v)
 {
 	qpol_iterator_t *class_iter = NULL, *common_iter = NULL, *perm_iter = NULL;
 	int retval = -1, compval;
@@ -316,12 +316,12 @@ void apol_perm_query_destroy(apol_perm_query_t ** pq)
 	}
 }
 
-int apol_perm_query_set_perm(apol_policy_t * p, apol_perm_query_t * pq, const char *name)
+int apol_perm_query_set_perm(const apol_policy_t * p, apol_perm_query_t * pq, const char *name)
 {
 	return apol_query_set(p, &pq->perm_name, &pq->regex, name);
 }
 
-int apol_perm_query_set_regex(apol_policy_t * p, apol_perm_query_t * pq, int is_regex)
+int apol_perm_query_set_regex(const apol_policy_t * p, apol_perm_query_t * pq, int is_regex)
 {
 	return apol_query_set_regex(p, &pq->flags, is_regex);
 }

@@ -69,7 +69,7 @@ extern "C"
  * responsible for calling apol_vector_destroy() afterwards.  On
  * error, return NULL and set errno.
  */
-	apol_vector_t *role_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *role_get_items(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two qpol_role_t objects, determining if they have the same
@@ -83,7 +83,7 @@ extern "C"
  * @return < 0, 0, or > 0 if role x is respectively less than, equal
  * to, or greater than role y.
  */
-	int role_comp(const void *x, const void *y, poldiff_t * diff);
+	int role_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for

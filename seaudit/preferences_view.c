@@ -89,7 +89,7 @@ static const struct pref_toggle pref_toggle_map[] = {
 };
 static const size_t num_toggles = sizeof(pref_toggle_map) / sizeof(pref_toggle_map[0]);
 
-static void preferences_view_on_browse_click(GtkWidget * widget, gpointer user_data)
+static void preferences_view_on_browse_click(GtkWidget * widget __attribute__ ((unused)), gpointer user_data)
 {
 	const struct pref_entry *pe = (const struct pref_entry *)user_data;
 	struct pref_view *pv = pe->pv;
@@ -104,7 +104,7 @@ static void preferences_view_on_browse_click(GtkWidget * widget, gpointer user_d
 	}
 }
 
-static void preferences_view_on_log_current_click(GtkWidget * widget, gpointer user_data)
+static void preferences_view_on_log_current_click(GtkWidget * widget __attribute__ ((unused)), gpointer user_data)
 {
 	struct pref_view *pv = (struct pref_view *)user_data;
 	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pv->xml, "PrefsViewLogEntry"));
@@ -116,7 +116,7 @@ static void preferences_view_on_log_current_click(GtkWidget * widget, gpointer u
 	}
 }
 
-static void preferences_view_on_policy_browse_click(GtkWidget * widget, gpointer user_data)
+static void preferences_view_on_policy_browse_click(GtkWidget * widget __attribute__ ((unused)), gpointer user_data)
 {
 	struct pref_view *pv = (struct pref_view *)user_data;
 	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pv->xml, "PrefsViewPolicyEntry"));
@@ -133,7 +133,7 @@ static void preferences_view_on_policy_browse_click(GtkWidget * widget, gpointer
 	}
 }
 
-static void preferences_view_on_policy_current_click(GtkWidget * widget, gpointer user_data)
+static void preferences_view_on_policy_current_click(GtkWidget * widget __attribute__ ((unused)), gpointer user_data)
 {
 	struct pref_view *pv = (struct pref_view *)user_data;
 	GtkEntry *entry = GTK_ENTRY(glade_xml_get_widget(pv->xml, "PrefsViewPolicyEntry"));

@@ -220,31 +220,37 @@ role_datum_t *declare_role(void)
 		free(dest_id);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return NULL;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of role");
+		return NULL;
+	}
+	case -1:
+	{
+		yyerror("could not declare role here");
+		return NULL;
+	}
+	case 0:
+	{
+		if (ebitmap_set_bit(&dest_role->dominates, role->s.value - 1, 1)) {
+			yyerror("out of memory");
 			return NULL;
 		}
-	case -2:{
-			yyerror("duplicate declaration of role");
-			return NULL;
-		}
-	case -1:{
-			yyerror("could not declare role here");
-			return NULL;
-		}
-	case 0:{
-			if (ebitmap_set_bit(&dest_role->dominates, role->s.value - 1, 1)) {
-				yyerror("out of memory");
-				return NULL;
-			}
-			return dest_role;
-		}
-	case 1:{
-			return dest_role;	/* role already declared for this block */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+		return dest_role;
+	}
+	case 1:
+	{
+		return dest_role;      /* role already declared for this block */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -288,25 +294,30 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr)
 		free(typdatum);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
-			return NULL;
-		}
-	case -2:{
-			yyerror2("duplicate declaration of type/attribute");
-			return NULL;
-		}
-	case -1:{
-			yyerror("could not declare type/attribute here");
-			return NULL;
-		}
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return NULL;
+	}
+	case -2:
+	{
+		yyerror2("duplicate declaration of type/attribute");
+		return NULL;
+	}
+	case -1:
+	{
+		yyerror("could not declare type/attribute here");
+		return NULL;
+	}
 	case 0:
-	case 1:{
-			return typdatum;
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+	case 1:
+	{
+		return typdatum;
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -375,27 +386,33 @@ user_datum_t *declare_user(void)
 		free(dest_id);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
-			return NULL;
-		}
-	case -2:{
-			yyerror("duplicate declaration of user");
-			return NULL;
-		}
-	case -1:{
-			yyerror("could not declare user here");
-			return NULL;
-		}
-	case 0:{
-			return dest_user;
-		}
-	case 1:{
-			return dest_user;	/* user already declared for this block */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return NULL;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of user");
+		return NULL;
+	}
+	case -1:
+	{
+		yyerror("could not declare user here");
+		return NULL;
+	}
+	case 0:
+	{
+		return dest_user;
+	}
+	case 1:
+	{
+		return dest_user;      /* user already declared for this block */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -592,42 +609,48 @@ int require_class(int pass)
 	}
 	ret = require_symbol(SYM_CLASSES, class_id, datum, &datum->s.value, &datum->s.value);
 	switch (ret) {
-	case -3:{
+	case -3:
+	{
+		yyerror("Out of memory!");
+		free(class_id);
+		class_datum_destroy(datum);
+		goto cleanup;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of class");
+		free(class_id);
+		class_datum_destroy(datum);
+		goto cleanup;
+	}
+	case -1:
+	{
+		yyerror("could not require class here");
+		free(class_id);
+		class_datum_destroy(datum);
+		goto cleanup;
+	}
+	case 0:
+	{
+		/* a new class was added; reindex everything */
+		if (policydb_index_classes(policydbp)) {
 			yyerror("Out of memory!");
-			free(class_id);
-			class_datum_destroy(datum);
 			goto cleanup;
 		}
-	case -2:{
-			yyerror("duplicate declaration of class");
-			free(class_id);
-			class_datum_destroy(datum);
-			goto cleanup;
-		}
-	case -1:{
-			yyerror("could not require class here");
-			free(class_id);
-			class_datum_destroy(datum);
-			goto cleanup;
-		}
-	case 0:{
-			/* a new class was added; reindex everything */
-			if (policydb_index_classes(policydbp)) {
-				yyerror("Out of memory!");
-				goto cleanup;
-			}
-			break;
-		}
-	case 1:{
-			class_datum_destroy(datum);
-			datum = hashtab_search(policydbp->p_classes.table, class_id);
-			assert(datum); /* the class datum should have existed */
-			free(class_id);
-			break;
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+		break;
+	}
+	case 1:
+	{
+		class_datum_destroy(datum);
+		datum = hashtab_search(policydbp->p_classes.table, class_id);
+		assert(datum);	       /* the class datum should have existed */
+		free(class_id);
+		break;
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 
 	/* now add each of the permissions to this class's requirements */
@@ -705,32 +728,38 @@ int require_role(int pass)
 		free(role);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return -1;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of role");
+		return -1;
+	}
+	case -1:
+	{
+		yyerror("could not require role here");
+		return -1;
+	}
+	case 0:
+	{
+		/* all roles dominate themselves */
+		if (ebitmap_set_bit(&role->dominates, role->s.value - 1, 1)) {
+			yyerror("Out of memory");
 			return -1;
 		}
-	case -2:{
-			yyerror("duplicate declaration of role");
-			return -1;
-		}
-	case -1:{
-			yyerror("could not require role here");
-			return -1;
-		}
-	case 0:{
-			/* all roles dominate themselves */
-			if (ebitmap_set_bit(&role->dominates, role->s.value - 1, 1)) {
-				yyerror("Out of memory");
-				return -1;
-			}
-			return 0;
-		}
-	case 1:{
-			return 0;      /* role already required */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+		return 0;
+	}
+	case 1:
+	{
+		return 0;	       /* role already required */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -761,27 +790,33 @@ static int require_type_or_attribute(int pass, unsigned char isattr)
 		free(type);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
-			return -1;
-		}
-	case -2:{
-			yyerror("duplicate declaration of type/attribute");
-			return -1;
-		}
-	case -1:{
-			yyerror("could not require type/attribute here");
-			return -1;
-		}
-	case 0:{
-			return 0;
-		}
-	case 1:{
-			return 0;      /* type already required */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return -1;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of type/attribute");
+		return -1;
+	}
+	case -1:
+	{
+		yyerror("could not require type/attribute here");
+		return -1;
+	}
+	case 0:
+	{
+		return 0;
+	}
+	case 1:
+	{
+		return 0;	       /* type already required */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -820,27 +855,33 @@ int require_user(int pass)
 		user_datum_destroy(user);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
-			return -1;
-		}
-	case -2:{
-			yyerror("duplicate declaration of user");
-			return -1;
-		}
-	case -1:{
-			yyerror("could not require user here");
-			return -1;
-		}
-	case 0:{
-			return 0;
-		}
-	case 1:{
-			return 0;      /* user already required */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return -1;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of user");
+		return -1;
+	}
+	case -1:
+	{
+		yyerror("could not require user here");
+		return -1;
+	}
+	case 0:
+	{
+		return 0;
+	}
+	case 1:
+	{
+		return 0;	       /* user already required */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -867,27 +908,33 @@ int require_bool(int pass)
 		cond_destroy_bool(id, booldatum, NULL);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
-			return -1;
-		}
-	case -2:{
-			yyerror("duplicate declaration of boolean");
-			return -1;
-		}
-	case -1:{
-			yyerror("could not require boolean here");
-			return -1;
-		}
-	case 0:{
-			return 0;
-		}
-	case 1:{
-			return 0;      /* boolean already required */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return -1;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of boolean");
+		return -1;
+	}
+	case -1:
+	{
+		yyerror("could not require boolean here");
+		return -1;
+	}
+	case 0:
+	{
+		return 0;
+	}
+	case 1:
+	{
+		return 0;	       /* boolean already required */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -929,27 +976,33 @@ int require_sens(int pass)
 		free(level);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
-			return -1;
-		}
-	case -2:{
-			yyerror("duplicate declaration of sensitivity");
-			return -1;
-		}
-	case -1:{
-			yyerror("could not require sensitivity here");
-			return -1;
-		}
-	case 0:{
-			return 0;
-		}
-	case 1:{
-			return 0;      /* sensitivity already required */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return -1;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of sensitivity");
+		return -1;
+	}
+	case -1:
+	{
+		yyerror("could not require sensitivity here");
+		return -1;
+	}
+	case 0:
+	{
+		return 0;
+	}
+	case 1:
+	{
+		return 0;	       /* sensitivity already required */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -981,27 +1034,33 @@ int require_cat(int pass)
 		free(cat);
 	}
 	switch (retval) {
-	case -3:{
-			yyerror("Out of memory!");
-			return -1;
-		}
-	case -2:{
-			yyerror("duplicate declaration of category");
-			return -1;
-		}
-	case -1:{
-			yyerror("could not require category here");
-			return -1;
-		}
-	case 0:{
-			return 0;
-		}
-	case 1:{
-			return 0;      /* category already required */
-		}
-	default:{
-			assert(0);     /* should never get here */
-		}
+	case -3:
+	{
+		yyerror("Out of memory!");
+		return -1;
+	}
+	case -2:
+	{
+		yyerror("duplicate declaration of category");
+		return -1;
+	}
+	case -1:
+	{
+		yyerror("could not require category here");
+		return -1;
+	}
+	case 0:
+	{
+		return 0;
+	}
+	case 1:
+	{
+		return 0;	       /* category already required */
+	}
+	default:
+	{
+		assert(0);	       /* should never get here */
+	}
 	}
 }
 
@@ -1315,15 +1374,17 @@ static int push_stack(int stack_type, ...)
 	}
 	va_start(ap, stack_type);
 	switch (s->type = stack_type) {
-	case 1:{
-			s->u.avrule = va_arg(ap, avrule_block_t *);
-			s->decl = va_arg(ap, avrule_decl_t *);
-			break;
-		}
-	case 2:{
-			s->u.cond_list = va_arg(ap, cond_list_t *);
-			break;
-		}
+	case 1:
+	{
+		s->u.avrule = va_arg(ap, avrule_block_t *);
+		s->decl = va_arg(ap, avrule_decl_t *);
+		break;
+	}
+	case 2:
+	{
+		s->u.cond_list = va_arg(ap, cond_list_t *);
+		break;
+	}
 	default:
 		/* invalid stack type given */
 		assert(0);
