@@ -96,7 +96,7 @@ int apol_role_get_by_query(const apol_policy_t * p, apol_role_query_t * r, apol_
 			compval = apol_compare(p, "object_r", r->role_name, r->flags, &(r->type_regex));
 			if (compval < 0) {
 				goto cleanup;
-			} else if (compval == 1) {
+			} else if (compval == 1 && r->role_name != NULL) {
 				append_role = 1;
 			}
 		}

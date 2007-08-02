@@ -1,3 +1,9 @@
+2007-08-02  J. Mowery  <jmowery@tresys.com>
+
+	* Corrected sechecker module incomplete domain transitions
+	  to once again return results for missing RBAC and user policy
+	  for transitions that have sufficient type enforcement rules.
+
 2007-07-27  J. Tang  <jtang@tresys.com>
 
 	* Library jar files are now installed in
