@@ -1,6 +1,6 @@
 Name: setools
 Version: 3.3
-Release: pre8
+Release: 0
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
@@ -10,7 +10,7 @@ Source: setools-3.3.tar.gz
 AutoReqProv: no
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
-Requires: setools-libs = %{version} setools-gui = %{version} setools-console = %{version}
+Requires: setools-libs = %{version} setools-libs-tcl = %{version} setools-gui = %{version} setools-console = %{version}
 
 # disable auto dependency generation because they are explicitly listed
 %define __find_requires %{nil}
@@ -123,7 +123,7 @@ This package includes Tcl bindings for the following libraries:
 License: LGPL
 Summary: Policy analysis development files for SELinux
 Group: Development/Libraries
-Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27   setools-libs = %{version}
+Requires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27 setools-libs = %{version}
 BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
 
 %description devel
@@ -143,7 +143,7 @@ libraries:
 AutoReqProv: no
 Summary: Policy analysis command-line tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.1 libapol >= 4.0 libpoldiff >= 1.3 libsefs >= 3.1 libseaudit >= 4.0 libsefs >= 4.0
+Requires: libqpol >= 1.3 libapol >= 4.1 libpoldiff >= 1.3 libseaudit >= 4.1 libsefs >= 4.0
 Requires: libselinux >= 1.30
 
 %description console
@@ -155,14 +155,14 @@ This package includes the following console tools:
   seaudit-report  audit log analysis tool
   sechecker       SELinux policy checking tool
   secmds          command line tools: seinfo, sesearch, findcon,
-                  replcon, indexcon, and searchcon
+                  replcon, and indexcon
   sediff          semantic policy difference tool
 
 %package gui
 AutoReqProv: no
 Summary: Policy analysis graphical tools for SELinux
 Group: System Environment/Base
-Requires: libqpol >= 1.2 libapol >= 4.1 libpoldiff >= 1.3 libseaudit >= 4.1
+Requires: libqpol >= 1.3 libapol >= 4.1 libpoldiff >= 1.3 libseaudit >= 4.1 libsefs >= 4.0
 Requires: tcl >= 8.4.9 tk >= 8.4.9 bwidget >= 1.8
 Requires: setools-libs-tcl >= 3.3
 Requires: glib2 gtk2 >= 2.8 libxml2 libglade2
@@ -493,6 +493,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %changelog
+* Thu Aug 02 2007 Jason Tang <selinux@tresys.com> 3.3-0
+- update to SETools 3.3 release
+
 * Wed Apr 25 2007 Jason Tang <jtang@tresys.com> 3.2-0
 - update to SETools 3.2 release
 

@@ -1,6 +1,6 @@
 /**
 *  @file
-*  Defines the public interface for searching and iterating over nodecon statements. 
+*  Defines the public interface for searching and iterating over nodecon statements.
 *
 *  @author Kevin Carr kcarr@tresys.com
 *  @author Jeremy A. Mowery jmowery@tresys.com

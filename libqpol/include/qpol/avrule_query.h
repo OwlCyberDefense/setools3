@@ -47,8 +47,9 @@ extern "C"
 
 /**
  *  Get an iterator over all av rules in a policy of a rule type in
- *  rule_type_mask. It is an error to call this function if rules are not
- *  loaded.
+ *  rule_type_mask.  It is an error to call this function if rules are
+ *  not loaded.  Likewise, it is an error if neverallows are requested
+ *  but they were not loaded.
  *  @param policy Policy from which to get the av rules.
  *  @param rule_type_mask Bitwise or'ed set of QPOL_RULE_* values.
  *  It is an error to specify any of QPOL_RULE_TYPE_* in the mask.

@@ -692,7 +692,6 @@ int apol_role_has_type(apol_policy_t * p, qpol_role_t * r, qpol_type_t * t);
 
 /* apol class query */
 typedef struct apol_class_query {} apol_class_query_t;
-%newobject apol_class_query_t::run(apol_policy_t*);
 %extend apol_class_query_t {
 	apol_class_query_t() {
 		apol_class_query_t *cq;
@@ -706,6 +705,7 @@ typedef struct apol_class_query {} apol_class_query_t;
 	~apol_class_query_t() {
 		apol_class_query_destroy(&self);
 	};
+	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
 		if (apol_class_get_by_query(p, self, &v)) {
