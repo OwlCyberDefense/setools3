@@ -51,7 +51,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_constraint_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_constraint_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the object class from a constraint.
@@ -62,7 +62,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-	extern int qpol_constraint_get_class(qpol_policy_t * policy, qpol_constraint_t * constr, qpol_class_t ** obj_class);
+	extern int qpol_constraint_get_class(const qpol_policy_t * policy, const qpol_constraint_t * constr,
+					     const qpol_class_t ** obj_class);
 
 /**
  *  Get an iterator over the permissions in a constraint.
@@ -77,7 +78,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_constraint_get_perm_iter(qpol_policy_t * policy, qpol_constraint_t * constr, qpol_iterator_t ** iter);
+	extern int qpol_constraint_get_perm_iter(const qpol_policy_t * policy, const qpol_constraint_t * constr,
+						 qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator over the nodes in a constraint expression.
@@ -92,7 +94,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_constraint_get_expr_iter(qpol_policy_t * policy, qpol_constraint_t * constr, qpol_iterator_t ** iter);
+	extern int qpol_constraint_get_expr_iter(const qpol_policy_t * policy, const qpol_constraint_t * constr,
+						 qpol_iterator_t ** iter);
 
 /**
  *  Get an iterator for the validatetrans statements in a policy.
@@ -106,7 +109,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_validatetrans_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_validatetrans_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the object class from a validatetrans statement.
@@ -117,7 +120,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-	extern int qpol_validatetrans_get_class(qpol_policy_t * policy, qpol_validatetrans_t * vtrans, qpol_class_t ** obj_class);
+	extern int qpol_validatetrans_get_class(const qpol_policy_t * policy, const qpol_validatetrans_t * vtrans,
+						const qpol_class_t ** obj_class);
 
 /**
  *  Get an iterator over the nodes in a validatetrans expression.
@@ -132,7 +136,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_validatetrans_get_expr_iter(qpol_policy_t * policy, qpol_validatetrans_t * vtrans, qpol_iterator_t ** iter);
+	extern int qpol_validatetrans_get_expr_iter(const qpol_policy_t * policy, const qpol_validatetrans_t * vtrans,
+						    qpol_iterator_t ** iter);
 
 /* expr_type values */
 #define QPOL_CEXPR_TYPE_NOT   1
@@ -150,7 +155,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *op will be 0.
  */
-	extern int qpol_constraint_expr_node_get_expr_type(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr,
+	extern int qpol_constraint_expr_node_get_expr_type(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr,
 							   uint32_t * expr_type);
 
 /* attr values */
@@ -176,7 +181,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *sym_type will be 0.
  */
-	extern int qpol_constraint_expr_node_get_sym_type(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr,
+	extern int qpol_constraint_expr_node_get_sym_type(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr,
 							  uint32_t * sym_type);
 
 /* op values */
@@ -196,7 +201,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *op will be 0.
  */
-	extern int qpol_constraint_expr_node_get_op(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr, uint32_t * op);
+	extern int qpol_constraint_expr_node_get_op(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr,
+						    uint32_t * op);
 
 /**
  *  Get an iterator of the names in an expression node.
@@ -214,7 +220,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_constraint_expr_node_get_names_iter(qpol_policy_t * policy, qpol_constraint_expr_node_t * expr,
+	extern int qpol_constraint_expr_node_get_names_iter(const qpol_policy_t * policy, const qpol_constraint_expr_node_t * expr,
 							    qpol_iterator_t ** iter);
 
 /**
@@ -230,7 +236,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *constr will be NULL.
  */
-	extern int qpol_class_get_constraint_iter(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_iterator_t ** constr);
+	extern int qpol_class_get_constraint_iter(const qpol_policy_t * policy, const qpol_class_t * obj_class,
+						  qpol_iterator_t ** constr);
 
 /**
  *  Get an iterator for the validatetrans statements for a class.
@@ -245,7 +252,8 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *vtrans will be NULL.
  */
-	extern int qpol_class_get_validatetrans_iter(qpol_policy_t * policy, qpol_class_t * obj_class, qpol_iterator_t ** vtrans);
+	extern int qpol_class_get_validatetrans_iter(const qpol_policy_t * policy, const qpol_class_t * obj_class,
+						     qpol_iterator_t ** vtrans);
 
 #ifdef	__cplusplus
 }

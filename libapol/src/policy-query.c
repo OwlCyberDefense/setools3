@@ -45,7 +45,7 @@ void apol_regex_destroy(regex_t ** regex)
 	}
 }
 
-int apol_query_set(apol_policy_t * p, char **query_name, regex_t ** regex, const char *name)
+int apol_query_set(const apol_policy_t * p, char **query_name, regex_t ** regex, const char *name)
 {
 	if (*query_name != name) {
 		if (regex != NULL) {
@@ -61,7 +61,7 @@ int apol_query_set(apol_policy_t * p, char **query_name, regex_t ** regex, const
 	return 0;
 }
 
-int apol_query_set_flag(apol_policy_t * p __attribute__ ((unused)), unsigned int *flags, const int is_flag, int flag_value)
+int apol_query_set_flag(const apol_policy_t * p __attribute__ ((unused)), unsigned int *flags, const int is_flag, int flag_value)
 {
 	if (is_flag) {
 		*flags |= flag_value;
@@ -71,24 +71,33 @@ int apol_query_set_flag(apol_policy_t * p __attribute__ ((unused)), unsigned int
 	return 0;
 }
 
-int apol_query_set_regex(apol_policy_t * p, unsigned int *flags, const int is_regex)
+int apol_query_set_regex(const apol_policy_t * p, unsigned int *flags, const int is_regex)
 {
 	return apol_query_set_flag(p, flags, is_regex, APOL_QUERY_REGEX);
 }
 
 /********************* comparison helpers *********************/
 
-int apol_compare(apol_policy_t * p, const char *target, const char *name, unsigned int flags, regex_t ** regex)
+int apol_compare(const apol_policy_t * p, const char *target, const char *name, unsigned int flags, regex_t ** regex)
 {
 	if (name == NULL || *name == '\0') {
 		return 1;
 	}
+	char errbuf[1024] = { '\0' };
 	if ((flags & APOL_QUERY_REGEX) && regex != NULL) {
 		if (*regex == NULL) {
-			if ((*regex = malloc(sizeof(**regex))) == NULL || regcomp(*regex, name, REG_EXTENDED | REG_NOSUB)) {
+			if ((*regex = malloc(sizeof(**regex))) == NULL) {
 				free(*regex);
 				*regex = NULL;
 				ERR(p, "%s", strerror(ENOMEM));
+				return -1;
+			}
+			int regretv = regcomp(*regex, name, REG_EXTENDED | REG_NOSUB);
+			if (regretv) {
+				regerror(regretv, *regex, errbuf, 1024);
+				free(*regex);
+				*regex = NULL;
+				ERR(p, "%s", errbuf);
 				return -1;
 			}
 		}
@@ -104,7 +113,7 @@ int apol_compare(apol_policy_t * p, const char *target, const char *name, unsign
 	}
 }
 
-int apol_compare_iter(apol_policy_t * p, qpol_iterator_t * iter,
+int apol_compare_iter(const apol_policy_t * p, qpol_iterator_t * iter,
 		      const char *name, unsigned int flags, regex_t ** regex, int do_free)
 {
 	int compval;
@@ -128,9 +137,10 @@ int apol_compare_iter(apol_policy_t * p, qpol_iterator_t * iter,
 	return 0;
 }
 
-int apol_compare_type(apol_policy_t * p, qpol_type_t * type, const char *name, unsigned int flags, regex_t ** type_regex)
+int apol_compare_type(const apol_policy_t * p, const qpol_type_t * type, const char *name, unsigned int flags,
+		      regex_t ** type_regex)
 {
-	char *type_name;
+	const char *type_name;
 	int compval;
 	qpol_iterator_t *alias_iter = NULL;
 	if (qpol_type_get_name(p->p, type, &type_name) < 0) {
@@ -150,7 +160,8 @@ int apol_compare_type(apol_policy_t * p, qpol_type_t * type, const char *name, u
 	return compval;
 }
 
-int apol_compare_cond_expr(apol_policy_t * p, qpol_cond_t * cond, const char *name, unsigned int flags, regex_t ** bool_regex)
+int apol_compare_cond_expr(const apol_policy_t * p, const qpol_cond_t * cond, const char *name, unsigned int flags,
+			   regex_t ** bool_regex)
 {
 	qpol_iterator_t *expr_iter = NULL;
 	int compval = -1;
@@ -160,8 +171,8 @@ int apol_compare_cond_expr(apol_policy_t * p, qpol_cond_t * cond, const char *na
 	for (; !qpol_iterator_end(expr_iter); qpol_iterator_next(expr_iter)) {
 		qpol_cond_expr_node_t *expr;
 		uint32_t expr_type;
-		qpol_bool_t *bool;
-		char *bool_name;
+		qpol_bool_t *qbool;
+		const char *bool_name;
 		if (qpol_iterator_get_item(expr_iter, (void **)&expr) < 0 ||
 		    qpol_cond_expr_node_get_expr_type(p->p, expr, &expr_type) < 0) {
 			goto cleanup;
@@ -169,7 +180,7 @@ int apol_compare_cond_expr(apol_policy_t * p, qpol_cond_t * cond, const char *na
 		if (expr_type != QPOL_COND_EXPR_BOOL) {
 			continue;
 		}
-		if (qpol_cond_expr_node_get_bool(p->p, expr, &bool) < 0 || qpol_bool_get_name(p->p, bool, &bool_name) < 0) {
+		if (qpol_cond_expr_node_get_bool(p->p, expr, &qbool) < 0 || qpol_bool_get_name(p->p, qbool, &bool_name) < 0) {
 			goto cleanup;
 		}
 		compval = apol_compare(p, bool_name, name, flags, bool_regex);
@@ -183,9 +194,10 @@ int apol_compare_cond_expr(apol_policy_t * p, qpol_cond_t * cond, const char *na
 	return compval;
 }
 
-int apol_compare_level(apol_policy_t * p, qpol_level_t * level, const char *name, unsigned int flags, regex_t ** level_regex)
+int apol_compare_level(const apol_policy_t * p, const qpol_level_t * level, const char *name, unsigned int flags,
+		       regex_t ** level_regex)
 {
-	char *level_name;
+	const char *level_name;
 	int compval;
 	qpol_iterator_t *alias_iter = NULL;
 	if (qpol_level_get_name(p->p, level, &level_name) < 0) {
@@ -205,9 +217,9 @@ int apol_compare_level(apol_policy_t * p, qpol_level_t * level, const char *name
 	return compval;
 }
 
-int apol_compare_cat(apol_policy_t * p, qpol_cat_t * cat, const char *name, unsigned int flags, regex_t ** cat_regex)
+int apol_compare_cat(const apol_policy_t * p, const qpol_cat_t * cat, const char *name, unsigned int flags, regex_t ** cat_regex)
 {
-	char *cat_name;
+	const char *cat_name;
 	int compval;
 	qpol_iterator_t *alias_iter = NULL;
 	if (qpol_cat_get_name(p->p, cat, &cat_name) < 0) {
@@ -227,7 +239,7 @@ int apol_compare_cat(apol_policy_t * p, qpol_cat_t * cat, const char *name, unsi
 	return compval;
 }
 
-int apol_compare_context(apol_policy_t * p, qpol_context_t * target, apol_context_t * search, unsigned int flags)
+int apol_compare_context(const apol_policy_t * p, const qpol_context_t * target, const apol_context_t * search, unsigned int flags)
 {
 	apol_context_t *apol_context;
 	int retval;
@@ -242,14 +254,14 @@ int apol_compare_context(apol_policy_t * p, qpol_context_t * target, apol_contex
 
 /******************** other helpers ********************/
 
-int apol_query_get_type(apol_policy_t * p, const char *type_name, qpol_type_t ** type)
+int apol_query_get_type(const apol_policy_t * p, const char *type_name, const qpol_type_t ** type)
 {
 	unsigned char isalias;
 	if (qpol_policy_get_type_by_name(p->p, type_name, type) < 0 || qpol_type_get_isalias(p->p, *type, &isalias) < 0) {
 		return -1;
 	}
 	if (isalias) {
-		char *primary_name;
+		const char *primary_name;
 		if (qpol_type_get_name(p->p, *type, &primary_name) < 0 ||
 		    qpol_policy_get_type_by_name(p->p, primary_name, type) < 0) {
 			return -1;
@@ -269,37 +281,37 @@ int apol_query_get_type(apol_policy_t * p, const char *type_name, qpol_type_t **
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_query_append_type(apol_policy_t * p, apol_vector_t * v, qpol_type_t * type)
+static int apol_query_append_type(const apol_policy_t * p, apol_vector_t * v, const qpol_type_t * type)
 {
 	unsigned char isalias;
-	qpol_type_t *real_type = type;
-	if (qpol_type_get_isattr(p->p, type, &isalias) < 0) {
+	const qpol_type_t *real_type = type;
+	if (qpol_type_get_isalias(p->p, type, &isalias) < 0) {
 		return -1;
 	}
 	if (isalias) {
-		char *primary_name;
+		const char *primary_name;
 		if (qpol_type_get_name(p->p, type, &primary_name) < 0 ||
 		    qpol_policy_get_type_by_name(p->p, primary_name, &real_type) < 0) {
 			return -1;
 		}
 	}
-	if (apol_vector_append(v, real_type) < 0) {
+	if (apol_vector_append(v, (void *)real_type) < 0) {
 		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	return 0;
 }
 
-apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
+apol_vector_t *apol_query_create_candidate_type_list(const apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
 						     unsigned int ta_flag)
 {
 	apol_vector_t *list = apol_vector_create(NULL);
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	regex_t *regex = NULL;
 	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
 	int retval = -1, error = 0;
 	unsigned char isalias, isattr;
-	char *type_name;
+	const char *type_name;
 	int compval;
 	size_t i, orig_vector_size;
 
@@ -376,8 +388,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 			error = errno;
 			goto cleanup;
 		}
-		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE))
-		    || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
+		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE)) || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
 			apol_vector_remove(list, i);
 			i--;
 		}
@@ -430,16 +441,16 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t * p, const ch
 	return list;
 }
 
-apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
+apol_vector_t *apol_query_create_candidate_syn_type_list(const apol_policy_t * p, const char *symbol, int do_regex, int do_indirect,
 							 unsigned int ta_flag)
 {
 	apol_vector_t *list = apol_vector_create(NULL);
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	regex_t *regex = NULL;
 	qpol_iterator_t *iter = NULL, *alias_iter = NULL;
 	int retval = -1, error = 0;
 	unsigned char isalias, isattr;
-	char *type_name;
+	const char *type_name;
 	int compval;
 	size_t i, orig_vector_size;
 
@@ -523,8 +534,7 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 			error = errno;
 			goto cleanup;
 		}
-		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE))
-		    || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
+		if ((isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_ATTRIBUTE)) || (!isattr && !(ta_flag & APOL_QUERY_SYMBOL_IS_TYPE))) {
 			apol_vector_remove(list, i);
 			i--;
 		}
@@ -577,10 +587,10 @@ apol_vector_t *apol_query_create_candidate_syn_type_list(apol_policy_t * p, cons
 	return list;
 }
 
-apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *symbol, int do_regex)
+apol_vector_t *apol_query_create_candidate_role_list(const apol_policy_t * p, char *symbol, int do_regex)
 {
 	apol_vector_t *list = apol_vector_create(NULL);
-	qpol_role_t *role;
+	const qpol_role_t *role;
 	regex_t *regex = NULL;
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
@@ -591,7 +601,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *sy
 	}
 
 	if (!do_regex && qpol_policy_get_role_by_name(p->p, symbol, &role) == 0) {
-		if (apol_vector_append(list, role) < 0) {
+		if (apol_vector_append(list, (void *)role) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -602,7 +612,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *sy
 			goto cleanup;
 		}
 		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			char *role_name;
+			const char *role_name;
 			int compval;
 			if (qpol_iterator_get_item(iter, (void **)&role) < 0 || qpol_role_get_name(p->p, role, &role_name) < 0) {
 				goto cleanup;
@@ -611,7 +621,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *sy
 			if (compval < 0) {
 				goto cleanup;
 			}
-			if (compval && apol_vector_append(list, role)) {
+			if (compval && apol_vector_append(list, (void *)role)) {
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -633,7 +643,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t * p, char *sy
 	return list;
 }
 
-apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t * p, apol_vector_t * classes)
+apol_vector_t *apol_query_create_candidate_class_list(const apol_policy_t * p, apol_vector_t * classes)
 {
 	apol_vector_t *list = apol_vector_create(NULL);
 	size_t i;
@@ -646,9 +656,9 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t * p, apol_ve
 
 	for (i = 0; i < apol_vector_get_size(classes); i++) {
 		char *class_string = (char *)apol_vector_get_element(classes, i);
-		qpol_class_t *class;
+		const qpol_class_t *class;
 		if (qpol_policy_get_class_by_name(p->p, class_string, &class) == 0) {
-			if (apol_vector_append(list, class) < 0) {
+			if (apol_vector_append(list, (void *)class) < 0) {
 				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
@@ -664,7 +674,7 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t * p, apol_ve
 	return list;
 }
 
-apol_vector_t *apol_query_expand_type(apol_policy_t * p, qpol_type_t * t)
+apol_vector_t *apol_query_expand_type(const apol_policy_t * p, const qpol_type_t * t)
 {
 	apol_vector_t *v = NULL;
 	int retval = -1;
@@ -679,7 +689,7 @@ apol_vector_t *apol_query_expand_type(apol_policy_t * p, qpol_type_t * t)
 		goto cleanup;
 	}
 	if (!isattr) {
-		if (apol_vector_append(v, t) < 0) {
+		if (apol_vector_append(v, (void *)t) < 0) {
 			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
@@ -813,7 +823,7 @@ int apol_obj_perm_compare_class(const void *a, const void *b, void *policy)
 	const apol_obj_perm_t *opa = (const apol_obj_perm_t *)a;
 	const apol_obj_perm_t *opb = (const apol_obj_perm_t *)b;
 	apol_policy_t *p = (apol_policy_t *) policy;
-	qpol_class_t *obja = NULL, *objb = NULL;
+	const qpol_class_t *obja = NULL, *objb = NULL;
 	uint32_t a_val = 0, b_val = 0;
 
 	qpol_policy_get_class_by_name(p->p, opa->obj_class, &obja);
@@ -824,7 +834,7 @@ int apol_obj_perm_compare_class(const void *a, const void *b, void *policy)
 	return (int)(a_val - b_val);
 }
 
-int apol_query_type_set_uses_types_directly(apol_policy_t * p, qpol_type_set_t * set, const apol_vector_t * v)
+int apol_query_type_set_uses_types_directly(const apol_policy_t * p, const qpol_type_set_t * set, const apol_vector_t * v)
 {
 	qpol_iterator_t *iter = NULL;
 	qpol_type_t *type = NULL;

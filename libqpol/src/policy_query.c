@@ -35,7 +35,7 @@
 #include "qpol_internal.h"
 
 /* generic information about policydb*/
-int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
+static int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
 
@@ -100,51 +100,51 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 
 	switch (cap) {
 	case QPOL_CAP_ATTRIB_NAMES:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_SYN_RULES:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_LINE_NOS:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_CONDITIONALS:
-		{
-			if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_MLS:
-		{
-			return qpol_policy_is_mls_enabled(policy);
-		}
+	{
+		return qpol_policy_is_mls_enabled(policy);
+	}
 	case QPOL_CAP_MODULES:
-		{
-			if (policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_RULES_LOADED:
-		{
-			if (policy->rules_loaded)
-				return 1;
-			break;
-		}
+	{
+		if (policy->rules_loaded)
+			return 1;
+		break;
+	}
 	default:
-		{
-			ERR(policy, "%s", "Unknown capability");
-			errno = EDOM;
-			break;
-		}
+	{
+		ERR(policy, "%s", "Unknown capability");
+		errno = EDOM;
+		break;
+	}
 	}
 	return 0;
 }

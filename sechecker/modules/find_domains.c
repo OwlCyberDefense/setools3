@@ -180,7 +180,7 @@ int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 			apol_attr_query_set_attr(policy, attr_query, opt->value);
 			apol_attr_get_by_query(policy, attr_query, &attr_vector);
 			for (j = 0; j < apol_vector_get_size(attr_vector); j++) {
-				char *domain_attrib;
+				const char *domain_attrib;
 				attr = apol_vector_get_element(attr_vector, j);
 				qpol_type_get_name(q, attr, &domain_attrib);
 				if (apol_vector_append(datum->domain_attribs, (void *)domain_attrib) < 0) {
@@ -200,13 +200,13 @@ int find_domains_init(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
 int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __attribute__ ((unused)))
 {
-	int i, j, error = 0;
+	int error = 0;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	char *type_name = NULL;
+	const char *type_name = NULL;
 	find_domains_data_t *datum = NULL;
-	size_t num_items, proof_idx;
+	size_t i, j, proof_idx;
 	apol_vector_t *domain_vector = NULL, *avrule_vector = NULL, *terule_vector = NULL, *role_vector = NULL;
 	apol_terule_query_t *terule_query = NULL;
 	apol_avrule_query_t *avrule_query = NULL;
@@ -255,10 +255,6 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 		goto find_domains_run_fail;
 	}
 
-	if ((num_items = apol_vector_get_size(domain_vector)) < 0) {
-		goto find_domains_run_fail;
-	}
-
 	for (i = 0; i < apol_vector_get_size(domain_vector); i++) {
 		qpol_type_t *type = apol_vector_get_element(domain_vector, i);
 		qpol_type_get_name(q, type, &type_name);
@@ -270,14 +266,14 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 		}
 
 		for (; !qpol_iterator_end(domain_attr_iter); qpol_iterator_next(domain_attr_iter)) {
-			char *attr_name;
-			qpol_type_t *attr;
-			int nfta;
+			const char *attr_name;
+			const qpol_type_t *attr;
+			size_t nfta;
 
 			qpol_iterator_get_item(domain_attr_iter, (void **)&attr);
 			qpol_type_get_name(q, attr, &attr_name);
 			for (nfta = 0; nfta < apol_vector_get_size(datum->domain_attribs); nfta++) {
-				char *domain_attrib;
+				const char *domain_attrib;
 
 				domain_attrib = apol_vector_get_element(datum->domain_attribs, nfta);
 				if (!strcmp(attr_name, domain_attrib)) {
@@ -288,7 +284,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 						goto find_domains_run_fail;
 					}
 					proof->type = SECHK_ITEM_ATTRIB;
-					proof->elem = attr;
+					proof->elem = (void *)attr;
 					asprintf(&proof->text, "%s has attribute %s", type_name, attr_name);
 					if (!proof->text) {
 						error = errno;
@@ -334,9 +330,9 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 			goto find_domains_run_fail;
 		}
 		for (j = 0; j < apol_vector_get_size(avrule_vector); j++) {
-			qpol_avrule_t *avrule = NULL;
-			qpol_class_t *class = NULL;
-			char *class_name = NULL;
+			const qpol_avrule_t *avrule = NULL;
+			const qpol_class_t *class = NULL;
+			const char *class_name = NULL;
 
 			avrule = apol_vector_get_element(avrule_vector, j);
 			qpol_avrule_get_object_class(q, avrule, &class);
@@ -439,8 +435,8 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 		apol_role_query_set_type(policy, role_query, type_name);
 		apol_role_get_by_query(policy, role_query, &role_vector);
 		for (j = 0; j < apol_vector_get_size(role_vector); j++) {
-			qpol_role_t *role;
-			char *role_name;
+			const qpol_role_t *role;
+			const char *role_name;
 
 			role = (qpol_role_t *) apol_vector_get_element(role_vector, j);
 			qpol_role_get_name(q, role, &role_name);
@@ -453,7 +449,7 @@ int find_domains_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __a
 				goto find_domains_run_fail;
 			}
 			proof->type = SECHK_ITEM_ROLE;
-			proof->elem = role;
+			proof->elem = (void *)role;
 			asprintf(&proof->text, "role %s types %s;", role_name, type_name);
 			if (!item) {
 				item = sechk_item_new(NULL);
@@ -531,11 +527,11 @@ int find_domains_print(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	find_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0, j = 0, k = 0, l = 0, num_items;
+	size_t i = 0, j = 0, k = 0, l = 0, num_items;
 	sechk_proof_t *proof = NULL;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", strerror(EINVAL));

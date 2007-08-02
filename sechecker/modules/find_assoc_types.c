@@ -181,10 +181,10 @@ int find_assoc_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	sechk_proof_t *proof = NULL;
 	char *buff = NULL;
 	size_t buff_sz = 0;
-	qpol_isid_t *isid;
-	char *type_name = NULL;
-	qpol_type_t *type;
-	qpol_context_t *context;
+	const qpol_isid_t *isid;
+	const char *type_name = NULL;
+	const qpol_type_t *type;
+	const qpol_context_t *context;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
 	int error = 0;
 
@@ -303,9 +303,9 @@ int find_assoc_types_print(sechk_module_t * mod, apol_policy_t * policy, void *a
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	size_t i = 0, j = 0, k = 0, num_items;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

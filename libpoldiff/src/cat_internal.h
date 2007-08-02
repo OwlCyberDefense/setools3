@@ -70,7 +70,7 @@ extern "C"
  * responsible for calling apol_vector_destroy() afterwards.  On
  * error, return NULL and set errno.
  */
-	apol_vector_t *cat_get_items(poldiff_t * diff, apol_policy_t * policy);
+	apol_vector_t *cat_get_items(poldiff_t * diff, const apol_policy_t * policy);
 
 /**
  * Compare two qpol_cat_t objects, determining if they have the same
@@ -84,7 +84,7 @@ extern "C"
  * @return < 0, 0, or > 0 if category x is respectively less than, equal
  * to, or greater than category y.
  */
-	int cat_comp(const void *x, const void *y, poldiff_t * diff);
+	int cat_comp(const void *x, const void *y, const poldiff_t * diff);
 
 /**
  * Create, initialize, and insert a new semantic difference entry for

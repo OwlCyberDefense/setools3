@@ -48,13 +48,13 @@ struct apol_relabel_result
 	apol_vector_t *to;
 	apol_vector_t *from;
 	apol_vector_t *both;
-	qpol_type_t *type;
+	const qpol_type_t *type;
 };
 
 struct apol_relabel_result_pair
 {
-	qpol_avrule_t *ruleA, *ruleB;
-	qpol_type_t *intermed;
+	const qpol_avrule_t *ruleA, *ruleB;
+	const qpol_type_t *intermed;
 };
 
 #define PERM_RELABELTO "relabelto"
@@ -72,7 +72,7 @@ struct apol_relabel_result_pair
  * @return One of APOL_RELABEL_DIR_TO, APOL_RELABEL_DIR_FROM,
  * APOL_RELABEL_DIR_BOTH, or < 0 if direction could not be determined.
  */
-static int relabel_analysis_get_direction(apol_policy_t * p, qpol_avrule_t * avrule)
+static int relabel_analysis_get_direction(const apol_policy_t * p, const qpol_avrule_t * avrule)
 {
 	qpol_iterator_t *iter;
 	int to = 0, from = 0, retval = -1;
@@ -148,7 +148,7 @@ static void relabel_result_free(void *result)
  * @return An apol_relabel_result_t node from which to append results,
  * or NULL upon error.
  */
-static apol_relabel_result_t *relabel_result_get_node(apol_policy_t * p, apol_vector_t * results, qpol_type_t * type)
+static apol_relabel_result_t *relabel_result_get_node(const apol_policy_t * p, apol_vector_t * results, const qpol_type_t * type)
 {
 	apol_relabel_result_t *result;
 	size_t i;
@@ -181,7 +181,7 @@ static apol_relabel_result_t *relabel_result_get_node(apol_policy_t * p, apol_ve
  * with apol_vector_destroy().  If a type name was not found or upon
  * other error return NULL.
  */
-static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t * p, apol_vector_t * v)
+static apol_vector_t *relabel_analysis_get_type_vector(const apol_policy_t * p, const apol_vector_t * v)
 {
 	apol_vector_t *types = NULL;
 	size_t i;
@@ -193,11 +193,11 @@ static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t * p, apol_v
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		char *s = (char *)apol_vector_get_element(v, i);
-		qpol_type_t *type;
+		const qpol_type_t *type;
 		if (apol_query_get_type(p, s, &type) < 0) {
 			goto cleanup;
 		}
-		if (apol_vector_append(types, type)) {
+		if (apol_vector_append(types, (void *)type)) {
 			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
@@ -224,7 +224,7 @@ static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t * p, apol_v
  *
  * @return 1 if type is a member of v, 0 if not, < 0 on error.
  */
-static int relabel_analysis_compare_type_to_vector(apol_policy_t * p, apol_vector_t * v, qpol_type_t * type)
+static int relabel_analysis_compare_type_to_vector(const apol_policy_t * p, const apol_vector_t * v, const qpol_type_t * type)
 {
 	size_t i;
 	unsigned char isattr;
@@ -274,11 +274,11 @@ static int relabel_analysis_compare_type_to_vector(apol_policy_t * p, apol_vecto
  *
  * @return 0 on success, < 0 on error.
  */
-static int append_avrules_to_subject_vector(apol_policy_t * p,
-					    apol_relabel_analysis_t * r,
-					    qpol_avrule_t * ruleA, qpol_avrule_t * ruleB, apol_vector_t * results)
+static int append_avrules_to_object_vector(const apol_policy_t * p,
+					   apol_relabel_analysis_t * r,
+					   const qpol_avrule_t * ruleA, const qpol_avrule_t * ruleB, apol_vector_t * results)
 {
-	qpol_type_t *sourceA, *sourceB, *target, *intermed;
+	const qpol_type_t *sourceA, *sourceB, *target, *intermed;
 	unsigned char isattrA, isattrB;
 	apol_vector_t *target_v = NULL, *result_list;
 	size_t i;
@@ -293,6 +293,9 @@ static int append_avrules_to_subject_vector(apol_policy_t * p,
 	    qpol_type_get_isattr(p->p, sourceA, &isattrA) < 0 || qpol_type_get_isattr(p->p, sourceB, &isattrB) < 0) {
 		goto cleanup;
 	}
+	/* If both rules use the same attribute, retain the attribute
+	 * to minimize the number of results and to indicate that all
+	 * types with that attribute have the permission to relabel. */
 	if ((isattrA && isattrB) || !isattrA) {
 		intermed = sourceA;
 	} else {
@@ -364,13 +367,13 @@ static int append_avrules_to_subject_vector(apol_policy_t * p,
  *
  * @return 0 on success, < 0 upon error.
  */
-static int relabel_analysis_matchup(apol_policy_t * p,
+static int relabel_analysis_matchup(const apol_policy_t * p,
 				    apol_relabel_analysis_t * r,
-				    apol_vector_t * av, apol_vector_t * bv, apol_vector_t * subjects_v, apol_vector_t * v)
+				    apol_vector_t * av, apol_vector_t * bv, const apol_vector_t * subjects_v, apol_vector_t * v)
 {
-	qpol_avrule_t *a_avrule, *b_avrule;
-	qpol_type_t *a_source, *a_target, *b_source, *b_target, *start_type;
-	qpol_class_t *a_class, *b_class;
+	const qpol_avrule_t *a_avrule, *b_avrule;
+	const qpol_type_t *a_source, *a_target, *b_source, *b_target, *start_type;
+	const qpol_class_t *a_class, *b_class;
 	apol_vector_t *start_v = NULL;
 	size_t i, j;
 	int compval, retval = -1;
@@ -408,7 +411,7 @@ static int relabel_analysis_matchup(apol_policy_t * p,
 			    b_target == start_type || a_class != b_class) {
 				continue;
 			}
-			if (append_avrules_to_subject_vector(p, r, a_avrule, b_avrule, v) < 0) {
+			if (append_avrules_to_object_vector(p, r, a_avrule, b_avrule, v) < 0) {
 				goto cleanup;
 			}
 		}
@@ -435,9 +438,9 @@ static int relabel_analysis_matchup(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int relabel_analysis_object(apol_policy_t * p,
+static int relabel_analysis_object(const apol_policy_t * p,
 				   apol_relabel_analysis_t * r,
-				   apol_vector_t * v, unsigned int direction, apol_vector_t * subjects_v)
+				   apol_vector_t * v, unsigned int direction, const apol_vector_t * subjects_v)
 {
 	apol_avrule_query_t *a = NULL, *b = NULL;
 	apol_vector_t *a_rules = NULL, *b_rules = NULL;
@@ -511,10 +514,10 @@ static int relabel_analysis_object(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int append_avrule_to_subject_vector(apol_policy_t * p,
-					   apol_relabel_analysis_t * r, qpol_avrule_t * avrule, apol_vector_t * results)
+static int append_avrule_to_subject_vector(const apol_policy_t * p,
+					   apol_relabel_analysis_t * r, const qpol_avrule_t * avrule, apol_vector_t * results)
 {
-	qpol_type_t *target;
+	const qpol_type_t *target;
 	apol_vector_t *target_v = NULL, *result_list = NULL;
 	size_t i;
 	apol_relabel_result_t *result;
@@ -586,11 +589,11 @@ static int append_avrule_to_subject_vector(apol_policy_t * p,
  *
  * @return 0 on success, < 0 on error.
  */
-static int relabel_analysis_subject(apol_policy_t * p, apol_relabel_analysis_t * r, apol_vector_t * v)
+static int relabel_analysis_subject(const apol_policy_t * p, apol_relabel_analysis_t * r, apol_vector_t * v)
 {
 	apol_avrule_query_t *a = NULL;
 	apol_vector_t *avrules_v = NULL;
-	qpol_avrule_t *avrule;
+	const qpol_avrule_t *avrule;
 	size_t i;
 	int retval = -1;
 
@@ -628,10 +631,10 @@ static int relabel_analysis_subject(apol_policy_t * p, apol_relabel_analysis_t *
 
 /******************** public functions below ********************/
 
-int apol_relabel_analysis_do(apol_policy_t * p, apol_relabel_analysis_t * r, apol_vector_t ** v)
+int apol_relabel_analysis_do(const apol_policy_t * p, apol_relabel_analysis_t * r, apol_vector_t ** v)
 {
 	apol_vector_t *subjects_v = NULL;
-	qpol_type_t *start_type;
+	const qpol_type_t *start_type;
 	int retval = -1;
 	*v = NULL;
 
@@ -692,7 +695,7 @@ void apol_relabel_analysis_destroy(apol_relabel_analysis_t ** r)
 	}
 }
 
-int apol_relabel_analysis_set_dir(apol_policy_t * p, apol_relabel_analysis_t * r, unsigned int dir)
+int apol_relabel_analysis_set_dir(const apol_policy_t * p, apol_relabel_analysis_t * r, unsigned int dir)
 {
 	if (p == NULL || r == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -702,25 +705,28 @@ int apol_relabel_analysis_set_dir(apol_policy_t * p, apol_relabel_analysis_t * r
 	switch (dir) {
 	case APOL_RELABEL_DIR_BOTH:
 	case APOL_RELABEL_DIR_TO:
-	case APOL_RELABEL_DIR_FROM:{
-			r->mode = APOL_RELABEL_MODE_OBJ;
-			r->direction = dir;
-			break;
-		}
-	case APOL_RELABEL_DIR_SUBJECT:{
-			r->mode = APOL_RELABEL_MODE_SUBJ;
-			r->direction = APOL_RELABEL_DIR_BOTH;
-			break;
-		}
-	default:{
-			ERR(p, "%s", strerror(EINVAL));
-			return -1;
-		}
+	case APOL_RELABEL_DIR_FROM:
+	{
+		r->mode = APOL_RELABEL_MODE_OBJ;
+		r->direction = dir;
+		break;
+	}
+	case APOL_RELABEL_DIR_SUBJECT:
+	{
+		r->mode = APOL_RELABEL_MODE_SUBJ;
+		r->direction = APOL_RELABEL_DIR_BOTH;
+		break;
+	}
+	default:
+	{
+		ERR(p, "%s", strerror(EINVAL));
+		return -1;
+	}
 	}
 	return 0;
 }
 
-int apol_relabel_analysis_set_type(apol_policy_t * p, apol_relabel_analysis_t * r, const char *name)
+int apol_relabel_analysis_set_type(const apol_policy_t * p, apol_relabel_analysis_t * r, const char *name)
 {
 	if (p == NULL || r == NULL || name == NULL) {
 		ERR(p, "%s", strerror(EINVAL));
@@ -729,7 +735,7 @@ int apol_relabel_analysis_set_type(apol_policy_t * p, apol_relabel_analysis_t * 
 	return apol_query_set(p, &r->type, NULL, name);
 }
 
-int apol_relabel_analysis_append_class(apol_policy_t * p, apol_relabel_analysis_t * r, const char *obj_class)
+int apol_relabel_analysis_append_class(const apol_policy_t * p, apol_relabel_analysis_t * r, const char *obj_class)
 {
 	char *s;
 	if (p == NULL || r == NULL) {
@@ -746,7 +752,7 @@ int apol_relabel_analysis_append_class(apol_policy_t * p, apol_relabel_analysis_
 	return 0;
 }
 
-int apol_relabel_analysis_append_subject(apol_policy_t * p, apol_relabel_analysis_t * r, const char *subject)
+int apol_relabel_analysis_append_subject(const apol_policy_t * p, apol_relabel_analysis_t * r, const char *subject)
 {
 	char *s;
 	if (p == NULL || r == NULL) {
@@ -764,44 +770,44 @@ int apol_relabel_analysis_append_subject(apol_policy_t * p, apol_relabel_analysi
 	return 0;
 }
 
-int apol_relabel_analysis_set_result_regex(apol_policy_t * p, apol_relabel_analysis_t * r, const char *result)
+int apol_relabel_analysis_set_result_regex(const apol_policy_t * p, apol_relabel_analysis_t * r, const char *result)
 {
 	return apol_query_set(p, &r->result, &r->result_regex, result);
 }
 
 /******************** functions to access relabel results ********************/
 
-apol_vector_t *apol_relabel_result_get_to(apol_relabel_result_t * r)
+const apol_vector_t *apol_relabel_result_get_to(const apol_relabel_result_t * r)
 {
 	return r->to;
 }
 
-apol_vector_t *apol_relabel_result_get_from(apol_relabel_result_t * r)
+const apol_vector_t *apol_relabel_result_get_from(const apol_relabel_result_t * r)
 {
 	return r->from;
 }
 
-apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t * r)
+const apol_vector_t *apol_relabel_result_get_both(const apol_relabel_result_t * r)
 {
 	return r->both;
 }
 
-qpol_type_t *apol_relabel_result_get_result_type(apol_relabel_result_t * r)
+const qpol_type_t *apol_relabel_result_get_result_type(const apol_relabel_result_t * r)
 {
 	return r->type;
 }
 
-qpol_avrule_t *apol_relabel_result_pair_get_ruleA(apol_relabel_result_pair_t * p)
+const qpol_avrule_t *apol_relabel_result_pair_get_ruleA(const apol_relabel_result_pair_t * p)
 {
 	return p->ruleA;
 }
 
-qpol_avrule_t *apol_relabel_result_pair_get_ruleB(apol_relabel_result_pair_t * p)
+const qpol_avrule_t *apol_relabel_result_pair_get_ruleB(const apol_relabel_result_pair_t * p)
 {
 	return p->ruleB;
 }
 
-qpol_type_t *apol_relabel_result_pair_get_intermediate_type(apol_relabel_result_pair_t * p)
+const qpol_type_t *apol_relabel_result_pair_get_intermediate_type(const apol_relabel_result_pair_t * p)
 {
 	return p->intermed;
 }

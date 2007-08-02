@@ -133,7 +133,7 @@ void qpol_module_destroy(qpol_module_t ** module)
 	*module = NULL;
 }
 
-int qpol_module_get_path(qpol_module_t * module, char **path)
+int qpol_module_get_path(const qpol_module_t * module, const char **path)
 {
 	if (!module || !path) {
 		errno = EINVAL;
@@ -145,7 +145,7 @@ int qpol_module_get_path(qpol_module_t * module, char **path)
 	return STATUS_SUCCESS;
 }
 
-int qpol_module_get_name(qpol_module_t * module, char **name)
+int qpol_module_get_name(const qpol_module_t * module, const char **name)
 {
 	if (!module || !name) {
 		errno = EINVAL;
@@ -157,7 +157,7 @@ int qpol_module_get_name(qpol_module_t * module, char **name)
 	return STATUS_SUCCESS;
 }
 
-int qpol_module_get_version(qpol_module_t * module, char **version)
+int qpol_module_get_version(const qpol_module_t * module, const char **version)
 {
 	if (!module || !version) {
 		errno = EINVAL;
@@ -169,7 +169,7 @@ int qpol_module_get_version(qpol_module_t * module, char **version)
 	return STATUS_SUCCESS;
 }
 
-int qpol_module_get_type(qpol_module_t * module, int *type)
+int qpol_module_get_type(const qpol_module_t * module, int *type)
 {
 	if (!module || !type) {
 		errno = EINVAL;
@@ -181,7 +181,7 @@ int qpol_module_get_type(qpol_module_t * module, int *type)
 	return STATUS_SUCCESS;
 }
 
-int qpol_module_get_enabled(qpol_module_t * module, int *enabled)
+int qpol_module_get_enabled(const qpol_module_t * module, int *enabled)
 {
 	if (!module || !enabled) {
 		errno = EINVAL;

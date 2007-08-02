@@ -209,7 +209,7 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t * lib)
 				} else {
 					/* set the values on the existing module */
 					current_module = apol_vector_get_element(lib->modules, idx);
-					current_module->selected = TRUE;
+					current_module->selected = true;
 				}
 				free(attrib);
 				attrib = NULL;

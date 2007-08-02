@@ -1,3 +1,388 @@
+2007-08-02  J. Tang  <jtang@tresys.com>
+
+	* Official release of SETools 3.3.
+
+2007-08-02  J. Mowery  <jmowery@tresys.com>
+
+	* Corrected sechecker module incomplete domain transitions
+	  to once again return results for missing RBAC and user policy
+	  for transitions that have sufficient type enforcement rules.
+
+2007-07-27  J. Tang  <jtang@tresys.com>
+
+	* Library jar files are now installed in
+	$PREFIX/share/setools-<version>, with symlinks in
+	$PREFIX/share/java.  They used to be placed in
+	$PREFIX/lib/setools.
+
+	* Added framework for CUnit tests for libseaudit.
+
+2007-07-26  J. Tang  <jtang@tresys.com>
+
+	* Updated all linker map and SWIG interface files to match
+	exported library headers.
+
+	* libseaudit/src/filter.c (seaudit_filter_set_match): Added
+	ability to set strictness of libseaudit filters.  Be default,
+	filters are not strict; this matches previous libseaudit behavior.
+	See seaudit_filter_set_match() for definition of "strictness".
+
+2007-07-26  M. Goldman <mgoldman@tresys.com>
+	* Added tooltip to glade interface noting that diffing never
+	  allow rules could dramaticly increase run time
+
+	* Fixed names in sediffx to be more descriptive (the tree view
+	  in the upper left hand corner).  Names changed from
+	  AVRules auditallow to Audit Allow Rules as an example.
+
+2007-07-24  J. Tang  <jtang@tresys.com>
+
+	* Added framework for CUnit tests for libapol.
+
+2007-07-23  J. Tang  <jtang@tresys.com>
+
+	* Added framework for CUnit tests for libpoldiff and libqpol.
+	configure now has the option --with-test-policies to specify where
+	the test policies reside.
+
+2007-07-20  J. Tang  <jtang@tresys.com>
+
+	* Added seaudit_filter for PID.
+
+2007-07-19  J. Tang  <jtang@tresys.com>
+
+	* Added many optimizations to qpol_policy_build_syn_rule_table()
+	and associated functions.  With some code rewrites, a doubling of
+	the syntactic rule hash table size, and an improved hashing
+	function, it is at least three times faster to build the table.
+
+2007-07-18  J. Tang  <jtang@tresys.com>
+
+	* Fixed error in libpoldiff where if an AV or a TE rule was within
+	a conditional that had multiple boolean variables, the diff
+	algorithm would generate an incorrect STC key for that rule.
+
+2007-07-17  J. Mowery  <jmowery@tresys.com>
+
+	* Updated domain transition analysis to use the BST internally;
+	  this should result in improved performance.
+
+2007-07-13  J. Tang  <jtang@tresys.com>
+
+	* Java SWIG libraries now check if the libraries needs to be
+	loaded before doing such.
+
+	* Added more filtering options to libseaudit.
+
+2007-07-12  J. Tang  <jtang@tresys.com>
+
+	* seaudit_filter_set_ipaddress() is renamed to
+	seaudit_filter_set_anyaddr().  seaudit_filter_set_port() is now
+	seaudit_filter_set_anyport().  Similar changes occurred to the
+	respective accessors.
+
+2007-07-11  M. Goldman  <mgoldman@tresys.com>
+
+	* Split functions relating to item records out into their own
+	  file.  Added documentation for same.
+
+2007-07-09  J. Tang  <jtang@tresys.com>
+
+	* Added additional sort constructors to libseaudit.
+
+2007-07-05  J. Tang  <jtang@tresys.com>
+
+	* seaudit now has a button to clear all messages from a view.
+	This is useful when doing log monitoring, to show only new
+	messages.
+
+	* Added seaudit_model_hide_message(), to suppress display of
+	certain messages within a model.
+
+2007-06-28  J. Tang  <jtang@tresys.com>
+
+	* Updated apol and sediffx to delay loading neverallow rules
+	unless the user requested analyzing them.
+
+2007-06-25  J. Tang  <jtang@tresys.com>
+
+	* Updated apol(1) to use new libsefs
+
+	* Updated replcon(1) to use new libsefs.
+
+2007-06-19  J. Tang  <jtang@tresys.com>
+
+	* Updated indexcon(1) to use new libsefs.
+
+	* Merged searchcon(1) functionality into findcon(1); man pages
+	updated.  searchcon(1) has been removed from SETools.
+
+	* libsefs.so.4 is now wrapped by SWIG, for Python, Java, and
+	Tcl.
+
+	* Rewrite of libsefs to meet coding standards.  libsefs.so.4 is an
+	object-oriented library that abstracts away filesystems,
+	file_contexts files, and databases into a unified object that can
+	be queried easily.
+
+2007-06-18  J. Tang  <jtang@tresys.com>
+
+	* libpoldiff/include/poldiff/rbac_diff.h: Added
+	poldiff_role_allow_get_unmodified_roles().  The return values
+	poldiff_role_allow_get_added_roles() and
+	poldiff_role_allow_get_removed_roles() have been changed for forms
+	POLDIFF_FORM_ADDED and POLDIFF_FORM_REMOVED.
+
+2007-06-14  J. Tang  <jtang@tresys.com>
+
+	* SETools can now compile against GTK+ 2.4.  Nonetheless, GTK+ 2.8
+	is still the recommended toolkit.
+
+2007-06-13  J. Tang  <jtang@tresys.com>
+
+	* libseaudit/src/log.c (seaudit_log_clear): Added ability to clear
+	a log of its messages.
+
+2007-06-12  J. Tang  <jtang@tresys.com>
+
+	* SETools now requires libsqlite3, version 3.2.0 or greater.  It
+	used to ship with its own copy of sqlite3; that is no longer the
+	case.
+
+2007-06-11  M. Goldman  <mgoldman@tresys.com>
+	* Updated swig interface to properly expose av and te rule
+	  vector accessor functions for libpoldiff.
+
+2007-06-08  J. Mowery  <jmowery@tresys.com>
+
+	* Fixed an error in libpoldiff where
+	  poldiff_terule_get_modified_default() was returning the
+	  original default; it now correctly returns the modified
+	  default type.
+
+2007-06-08  M. Goldman <mgoldman@tresys.com>
+
+	* updated sediffx diffs so that the subrules for avrules and
+	  terules are broken out into allow, neverallow, auditallow,
+	  dontaudit type_member, type_change, and type_transition rules
+
+2007-06-04  J. Tang  <jtang@tresys.com>
+
+	* added convert functions to apol_context_t and
+	apol_mls_range_t; added constructors
+	apol_mls_range_create_from_string() and
+	apol_mls_range_create_from_literal().
+
+2007-05-31  J. Tang  <jtang@tresys.com>
+
+	* libapol/src/util.c (apol_str_to_objclass): Added this function,
+	as the complement to apol_objclass_to_str().
+
+	* libapol/src/mls_level.c (apol_mls_level_is_literal),
+	  libapol/src/mls_range.c (apol_mls_range_is_literal): Added
+	  ability to query if level/range is literal.  This is needed when
+	  printing an apol_context_t containing a literal level.
+
+	* libapol: split mls-query.h into mls-query.h, mls_level.h, and
+	mls_range.h.  This file was much too large.
+
+2007-05-30  J. Tang  <jtang@tresys.com>
+
+	* libapol/src/mls-query.c (apol_mls_level_create_from_literal)
+	(apol_mls_level_convert): The apol_mls_level_t object can now be
+	created without relying upon a policy.  Call
+	apol_mls_level_convert() to complete its category list.
+
+2007-05-30  J. Mowery  <jmowery@tresys.com>
+
+	* The --regex flag in sesearch now also applies to --class.
+
+2007-05-29  J. Tang  <jtang@tresys.com>
+
+	* ./configure no longer has --enable-sefs flag, for libselinux is
+	required to build SETools.  (The kernel does need to have SELinux
+	running, though.)  Therefore, libsefs is now always built.
+
+	* apol converted to use the SWIG interface for Tcl.
+
+	* libapol/src/types-relation-analysis.c
+	(apol_types_relation_domain): Domain transition table was not
+	correctly reset when intermixing calls between
+	apol_types_relation_analysis_do() and
+	apol_domain_trans_analysis_do().
+
+2007-05-22  J. Tang  <jtang@tresys.com>
+
+	* Added infoflow defines to apol.i.  Added apol_file_find_path()
+	to apol.i.  They were inadvertently missing from the interface
+	file.
+
+2007-05-22  J. Mowery  <jmowery@tresys.com>
+
+	* Renamed apol_permmap_*() to apol_policy_*_permmap() to
+	  correctly reflect the fact that the policy owns the permmap.
+
+2007-05-21  J. Mowery  <jmowery@tresys.com>
+
+	* Renamed apol_policy_domain_trans_table_build() and
+	  apol_domain_trans_table_reset() to apol_policy_build_domain_trans_table()
+	  and apol_polciy_reset_domain_trans_table() respectively.  This change
+	  reflects the correct namespace for these operations.
+
+2007-05-18  J. Mowery  <jmowery@tresys.com>
+
+	* Deprecated qpol_policy_extend(); this function is called
+	  automatically by qpol_policy_open* and qpol_policy_rebuild()
+	  and therefore does not need to be called separately.
+
+2007-05-16  J. Tang  <jtang@tresys.com>
+
+	* Right-clicking an apol results display now pops up a menu, that
+	allows the user to copy and to select all.
+
+	* libapol/swig/apol.i: Within the SWIG interfaces, there now
+	exists an object "apol_ip_t", that represents both an IP address
+	and a protocol.  apol_str_to_internal_ip() returns an apol_ip_t,
+	which may then be used when setting an apol_nodecon_query_t.  Note
+	that this only affects the SWIG generated libraries, not the
+	original libapol.
+
+	* SETools now requires a C99 compliant C compiler.  The supplied
+	configure script will check for a working C99 compiler.
+
+2007-05-16  M. Goldman  <mgoldman@tresys.com>
+	* modified libpoldiff to support partial diffing of avrules
+
+	* modified sediff to expose partial diffing of avrules functionality
+
+2007-05-15  J. Tang  <jtang@tresys.com>
+
+	* libqpol/src/mls_query.c (qpol_level_get_alias_iter): Fixed
+	possible error when getting a level's alias iterator, where the
+	first element returned might be the original level instead of one
+	of its alias.
+
+	* libapol/include/apol/policy-path.h, libapol/include/apol/util.h:
+	Headers errantly included <config.h>.
+
+	* libapol/src/netcon-query.c (apol_nodecon_query_set_proto)
+	(apol_portcon_query_set_proto): These have been renamed to
+	apol_nodecon_query_set_protocol() and
+	apol_portcon_query_set_protocol() respectively.
+
+	* libapol/src/util.c (apol_str_to_protocol): Added this function,
+	to complement existing apol_protocol_to_str().
+
+	* libapol/src/mls-query.c (apol_mls_range_contain_subrange): Fixed
+	potential segfault if a range's high level is not yet set when
+	comparison occurs.
+
+2007-05-14  J. Mowery  <jmowery@tresys.com>
+
+	* correctly marked libqpol defines for genfscon object classes
+	  and fs_use behaviors as unsigned constants.
+
+2007-05-14  J. Tang  <jtang@tresys.com>
+
+	* libapol/src/role-query.c (apol_role_get_by_query),
+	libapol/src/user-query.c (apol_user_get_by_query): Extra logic
+	added when "object_r" is given as the role.  For user queries, all
+	users implicitly have object_r assigned to them.  For role
+	queries, all types are assigned to object_r.
+
+	* libapol/swig/apol.i: apol_context_validate() and
+	apol_context_validate_partial() are now member functions of class
+	apol_context_t, rather than being a library function.
+
+	* libapol/include/mls-query.h (apol_mls_cat_name_compare): Removed
+	apol_mls_cat_name_compare() from the libapol public API.  This
+	function should never have been made public.
+
+	* libapol/src/context-query.c: Fixed potential segfaults in
+	modifiers to apol_context_t object, if the same pointer returned
+	by its accessor is then passed back in the modifier modifier.
+
+	* libapol/src/context-query.c (apol_context_render): When
+	rendering a partial context, unset fields are now explicitly
+	represented by an asterisk, rather than by an empty string.
+
+2007-05-11  J. Mowery  <jmowery@tresys.com>
+
+	* removed usage of typedef'ed bool_t and replaced with bool as
+	  defined by stdbool.h; also replaced defined TRUE and FALSE
+	  with true and false constants as defined by stdbool.h.
+
+2007-05-11  J. Tang  <jtang@tresys.com>
+
+	* Fix potential segfaults in apol_mls_range functions if the high
+	level is not set.
+
+	* Added apol_mls_level_validate() to SWIG wrappers.  Added
+	apol_mls_range_get_low() and apol_mls_range_get_high().
+	apol_mls_range_validate() is now a member function of class
+	apol_mls_range_t, rather than a library function.
+
+	* Within the SWIG wrappers, apol_mls_level_get_cats() returns a
+	vector.  This should have been a string vector instead.
+
+	* Added function apol_mls_level_validate().
+
+2007-05-10  J. Tang  <jtang@tresys.com>
+
+	* Added setools-libs-tcl target to setools.spec.
+
+	* Removed apol/apol.c; apol is now just a Tcl script that is
+	executed by tclsh, rather than a custom compiled Tcl interpreter.
+
+	* Removed the deprecated header apol/avl-util.h and its associated
+	source file.
+
+2007-05-08  M. Goldman  <mgoldman@tresys.com>
+	* Added next and previous buttons to seaudit
+
+	* Added apol_bst_inorder_map()
+
+2007-05-07  J. Mowery  <jmowery@tresys.com>
+
+	* Changed apol_ipv4_addr_render so that it now takes an array
+	  of uint32_t's instead of a single uint32_t.
+
+	* Changed SWIG wrapping for apol_perm_query_t::run() to return
+	  apol_string_vector_t instead of apol_vector_t.
+
+	* Added exported pointers to SWIG wrappers of each library
+	  to allow changing of the message handler callback and its
+	  void * argument.
+
+	* qpol_policy_rebuild() no longer requires a modular policy;
+	  it can safely be called for any type of policy.
+
+2007-05-04  J. Tang  <jtang@tresys.com>
+
+	* Fixed qpol_module function names in the libqpol SWIG wrappers.
+
+2007-05-04  J. Mowery  <jmowery@tresys.com>
+
+	* Added SWIG wrappers for tcl to libpoldiff and libseaudit.
+
+2007-05-02  J. Mowery  <jmowery@tresys.com>
+
+	* Versioned symbols in other libraries.
+
+2007-05-01  J. Mowery  <jmowery@tresys.com>
+
+	* Versioned symbols in libqpol to allow conditional expansion
+	  of neverallow rules from qpol_policy_open_from_*.
+
+2007-05-01  J. Tang  <jtang@tresys.com>
+
+	* Added apol_avrule_query_set_all_perms().  This changes the
+	behavior when matching multiple permissions.
+
+2007-04-30  J. Tang  <jtang@tresys.com>
+
+	* Added --enable-swig-tcl flag to configure script.
+
 2007-04-25  J. Tang  <jtang@tresys.com>
 
 	* Official release of SETools-3.2.

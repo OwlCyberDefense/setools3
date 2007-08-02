@@ -178,7 +178,9 @@ static void filter_view_init_widgets(struct filter_view *fv, GtkWindow * parent)
 	filter_view_init_widgets_date(fv);
 
 	fv->description_buffer = gtk_text_buffer_new(NULL);
+#ifdef GTK_2_8
 	g_object_ref_sink(fv->description_buffer);
+#endif
 	description_view = GTK_TEXT_VIEW(glade_xml_get_widget(fv->xml, "FilterViewDescView"));
 	assert(description_view != NULL);
 	gtk_text_view_set_buffer(description_view, fv->description_buffer);
@@ -223,7 +225,7 @@ static void filter_view_context_items_to_entries(struct filter_view *fv)
 
 static void filter_view_init_context(struct filter_view *fv)
 {
-	apol_vector_t *v;
+	const apol_vector_t *v;
 	v = seaudit_filter_get_source_user(fv->filter);
 	if (v != NULL && (fv->suser.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
@@ -267,9 +269,9 @@ static void filter_view_init_context(struct filter_view *fv)
  * is NULL then clear the entry's contents; otherwise set the entry to
  * the returned string.
  */
-static void filter_view_init_entry(struct filter_view *fv, char *(*accessor) (seaudit_filter_t *), GtkEntry * entry)
+static void filter_view_init_entry(struct filter_view *fv, const char *(*accessor) (const seaudit_filter_t *), GtkEntry * entry)
 {
-	char *s = accessor(fv->filter);
+	const char *s = accessor(fv->filter);
 	if (s == NULL) {
 		s = "";
 	}
@@ -279,11 +281,11 @@ static void filter_view_init_entry(struct filter_view *fv, char *(*accessor) (se
 static void filter_view_init_other(struct filter_view *fv)
 {
 	char s[32];
-	filter_view_init_entry(fv, seaudit_filter_get_ipaddress, fv->ipaddr_entry);
-	if (seaudit_filter_get_port(fv->filter) <= 0) {
+	filter_view_init_entry(fv, seaudit_filter_get_anyaddr, fv->ipaddr_entry);
+	if (seaudit_filter_get_anyport(fv->filter) <= 0) {
 		s[0] = '\0';
 	} else {
-		snprintf(s, 32, "%d", seaudit_filter_get_port(fv->filter));
+		snprintf(s, 32, "%d", seaudit_filter_get_anyport(fv->filter));
 	}
 	gtk_entry_set_text(fv->port_entry, s);
 	filter_view_init_entry(fv, seaudit_filter_get_netif, fv->netif_entry);
@@ -305,7 +307,8 @@ static void filter_view_init_other(struct filter_view *fv)
 
 static void filter_view_init_date(struct filter_view *fv)
 {
-	struct tm *start, *end, values[2];
+	const struct tm *start, *end;
+	struct tm values[2];
 	int has_value[2] = { 0, 0 };
 	seaudit_filter_date_match_e match;
 	size_t i;
@@ -345,8 +348,8 @@ static void filter_view_init_date(struct filter_view *fv)
  */
 static void filter_view_init_dialog(struct filter_view *fv)
 {
-	char *name = seaudit_filter_get_name(fv->filter);
-	char *desc = seaudit_filter_get_description(fv->filter);;
+	const char *name = seaudit_filter_get_name(fv->filter);
+	const char *desc = seaudit_filter_get_description(fv->filter);;
 	if (name == NULL) {
 		name = "Untitled";
 	}
@@ -403,12 +406,12 @@ static void filter_view_apply_other(struct filter_view *fv)
 	int port = 0;
 	seaudit_avc_message_type_e message_type;
 
-	filter_view_apply_entry(fv, fv->ipaddr_entry, seaudit_filter_set_ipaddress);
+	filter_view_apply_entry(fv, fv->ipaddr_entry, seaudit_filter_set_anyaddr);
 	s = gtk_entry_get_text(fv->port_entry);
 	if (strcmp(s, "") != 0) {
 		port = atoi(s);
 	}
-	if (seaudit_filter_set_port(fv->filter, port) < 0) {
+	if (seaudit_filter_set_anyport(fv->filter, port) < 0) {
 		toplevel_ERR(fv->top, "Error setting filter: %s", strerror(errno));
 		return;
 	}
@@ -530,10 +533,10 @@ static apol_vector_t *filter_view_get_policy_users(struct filter_view *fv)
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		qpol_user_t *e = apol_vector_get_element(v, i);
-		char *name;
+		const qpol_user_t *e = apol_vector_get_element(v, i);
+		const char *name;
 		qpol_user_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy users: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);
@@ -562,10 +565,10 @@ static apol_vector_t *filter_view_get_policy_roles(struct filter_view *fv)
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		qpol_role_t *e = apol_vector_get_element(v, i);
-		char *name;
+		const qpol_role_t *e = apol_vector_get_element(v, i);
+		const char *name;
 		qpol_role_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy roles: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);
@@ -595,10 +598,10 @@ static apol_vector_t *filter_view_get_policy_types(struct filter_view *fv)
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		qpol_type_t *e = apol_vector_get_element(v, i);
-		char *name;
+		const qpol_type_t *e = apol_vector_get_element(v, i);
+		const char *name;
 		qpol_type_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy types: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);
@@ -628,10 +631,10 @@ static apol_vector_t *filter_view_get_policy_classes(struct filter_view *fv)
 		return NULL;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		qpol_class_t *e = apol_vector_get_element(v, i);
-		char *name;
+		const qpol_class_t *e = apol_vector_get_element(v, i);
+		const char *name;
 		qpol_class_get_name(apol_policy_get_qpol(p), e, &name);
-		if (apol_vector_append(policy_items, name) < 0) {
+		if (apol_vector_append(policy_items, (void *)name) < 0) {
 			toplevel_ERR(fv->top, "Error getting a list of policy classes: %s", strerror(errno));
 			apol_vector_destroy(&v);
 			apol_vector_destroy(&policy_items);

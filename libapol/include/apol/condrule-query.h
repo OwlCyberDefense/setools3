@@ -52,7 +52,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_cond_get_by_query(apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v);
+	extern int apol_cond_get_by_query(const apol_policy_t * p, apol_cond_query_t * c, apol_vector_t ** v);
 
 /**
  * Allocate and return a new cond query structure.  All fields are
@@ -85,7 +85,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_cond_query_set_bool(apol_policy_t * p, apol_cond_query_t * c, const char *name);
+	extern int apol_cond_query_set_bool(const apol_policy_t * p, apol_cond_query_t * c, const char *name);
 
 /**
  * Set a cond query to use regular expression searching for all of its
@@ -97,7 +97,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_cond_query_set_regex(apol_policy_t * p, apol_cond_query_t * c, int is_regex);
+	extern int apol_cond_query_set_regex(const apol_policy_t * p, apol_cond_query_t * c, int is_regex);
 
 /**
  * Given a conditional node, allocate and return a string
@@ -110,7 +110,7 @@ extern "C"
  * expression, or NULL on failure.  The caller is responsible for
  * calling free() on the returned string.
  */
-	extern char *apol_cond_expr_render(apol_policy_t * p, qpol_cond_t * cond);
+	extern char *apol_cond_expr_render(const apol_policy_t * p, const qpol_cond_t * cond);
 
 #ifdef	__cplusplus
 }

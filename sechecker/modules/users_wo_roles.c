@@ -270,8 +270,8 @@ int users_wo_roles_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	size_t i = 0, j = 0, num_items;
-	qpol_user_t *user;
-	char *user_name;
+	const qpol_user_t *user;
+	const char *user_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

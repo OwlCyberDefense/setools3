@@ -66,7 +66,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *path will be NULL.
  */
-	extern int qpol_module_get_path(qpol_module_t * module, char **path);
+	extern int qpol_module_get_path(const qpol_module_t * module, const char **path);
 
 /**
  *  Get the name of a module.
@@ -77,7 +77,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_module_get_name(qpol_module_t * module, char **name);
+	extern int qpol_module_get_name(const qpol_module_t * module, const char **name);
 
 /**
  *  Get the version of a module.
@@ -87,7 +87,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *version will be NULL.
  */
-	extern int qpol_module_get_version(qpol_module_t * module, char **version);
+	extern int qpol_module_get_version(const qpol_module_t * module, const char **version);
 
 /**
  *  Get the type of module (base or other).
@@ -97,7 +97,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *type will be QPOL_MODULE_UNKNOWN.
  */
-	extern int qpol_module_get_type(qpol_module_t * module, int *type);
+	extern int qpol_module_get_type(const qpol_module_t * module, int *type);
 
 /**
  *  Determine if a module is enabled.
@@ -107,7 +107,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *enabled will be 0.
  */
-	extern int qpol_module_get_enabled(qpol_module_t * module, int *enabled);
+	extern int qpol_module_get_enabled(const qpol_module_t * module, int *enabled);
 
 /**
  *  Enable or disable a module. Note that the caller must still

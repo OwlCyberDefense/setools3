@@ -328,3 +328,25 @@ int apol_bst_insert_and_get(apol_bst_t * b, void **elem, void *data)
 	}
 	return retval;
 }
+
+static int bst_inorder_map(const bst_node_t * node, int (*fn) (void *, void *), void *data)
+{
+	int retval;
+	if (node == NULL) {
+		return 0;
+	}
+	if ((retval = bst_inorder_map(node->child[0], fn, data)) < 0) {
+		return retval;
+	}
+	if ((retval = fn(node->elem, data)) < 0) {
+		return retval;
+	}
+	return bst_inorder_map(node->child[1], fn, data);
+}
+
+int apol_bst_inorder_map(const apol_bst_t * b, int (*fn) (void *, void *), void *data)
+{
+	if (b == NULL || fn == NULL)
+		return -1;
+	return bst_inorder_map(b->head, fn, data);
+}

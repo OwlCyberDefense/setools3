@@ -33,6 +33,7 @@
 #include <sepol/policydb/ebitmap.h>
 #include <sepol/policydb/expand.h>
 #include <qpol/policy.h>
+#include <qpol/policy_extend.h>
 #include <qpol/iterator.h>
 #include <errno.h>
 #include <assert.h>
@@ -42,15 +43,18 @@
 #include "iterator_internal.h"
 #include "syn_rule_internal.h"
 
-#define QPOL_SYN_RULE_TABLE_BITS 15
+#ifdef SETOOLS_DEBUG
+#include <math.h>
+#endif
+
+#define QPOL_SYN_RULE_TABLE_BITS 16
 #define QPOL_SYN_RULE_TABLE_SIZE (1 << QPOL_SYN_RULE_TABLE_BITS)
 #define QPOL_SYN_RULE_TABLE_MASK (QPOL_SYN_RULE_TABLE_SIZE - 1)
 
 #define QPOL_SYN_RULE_TABLE_HASH(rule_key) \
-((rule_key->class_val + \
- (rule_key->target_val << 2) +\
- (rule_key->source_val << 9)) & \
- QPOL_SYN_RULE_TABLE_MASK)
+(((((rule_key->source_val & 0xff) << 8) | (rule_key->target_val & 0xff)) ^ \
+ (rule_key->class_val & 0xf) ^ \
+ ((int) rule_key->cond & 0xfff0)) & QPOL_SYN_RULE_TABLE_MASK)
 
 typedef struct qpol_syn_rule_key
 {
@@ -69,7 +73,7 @@ typedef struct qpol_syn_rule_list
 
 typedef struct qpol_syn_rule_node
 {
-	qpol_syn_rule_key_t *key;
+	qpol_syn_rule_key_t key;
 	qpol_syn_rule_list_t *rules;
 	struct qpol_syn_rule_node *next;
 } qpol_syn_rule_node_t;
@@ -356,6 +360,7 @@ static int qpol_policy_add_cond_rule_traceback(qpol_policy_t * policy)
 	qpol_iterator_t *iter = NULL;
 	avtab_ptr_t rule = NULL;
 	int error = 0;
+	uint32_t rules = 0;
 
 	INFO(policy, "%s", "Building conditional rules tables. (Step 5 of 5)");
 	if (!policy) {
@@ -366,9 +371,12 @@ static int qpol_policy_add_cond_rule_traceback(qpol_policy_t * policy)
 
 	db = &policy->p->p;
 
+	rules = (QPOL_RULE_ALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT);
+	if (!(policy->options & QPOL_POLICY_OPTION_NO_NEVERALLOWS))
+		rules |= QPOL_RULE_NEVERALLOW;
+
 	/* mark all unconditional rules as enabled */
-	if (qpol_policy_get_avrule_iter
-	    (policy, (QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT), &iter))
+	if (qpol_policy_get_avrule_iter(policy, rules, &iter))
 		return STATUS_ERR;
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		if (qpol_iterator_get_item(iter, (void **)&rule)) {
@@ -477,7 +485,6 @@ static void qpol_syn_rule_node_destroy(qpol_syn_rule_node_t ** node)
 	for (cur = *node; cur; cur = next) {
 		next = cur->next;
 		qpol_syn_rule_list_destroy(&cur->rules);
-		free(cur->key);
 		free(cur);
 	}
 }
@@ -507,18 +514,16 @@ static void qpol_syn_rule_table_destroy(qpol_syn_rule_table_t ** t)
  *  @param key The key for which to search.
  *  @return a valid qpol_syn_rule_node_t pointer on success or NULL on failure.
  */
-static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(qpol_syn_rule_table_t * table, qpol_syn_rule_key_t * key)
+static qpol_syn_rule_node_t *qpol_syn_rule_table_find_node_by_key(const qpol_syn_rule_table_t * table,
+								  const qpol_syn_rule_key_t * key)
 {
 	qpol_syn_rule_node_t *node = NULL;
 
-	if (!table || !key)
-		return NULL;
-
 	for (node = table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)]; node; node = node->next) {
-		if (node->key->rule_type & key->rule_type &&
-		    node->key->source_val == key->source_val &&
-		    node->key->target_val == key->target_val &&
-		    node->key->class_val == key->class_val && node->key->cond == key->cond)
+		if ((node->key.rule_type & key->rule_type) &&
+		    (node->key.source_val == key->source_val) &&
+		    (node->key.target_val == key->target_val) &&
+		    (node->key.class_val == key->class_val) && (node->key.cond == key->cond))
 			return node;
 	}
 
@@ -543,12 +548,10 @@ static int qpol_syn_rule_table_insert_entry(qpol_policy_t * policy,
 	int error = 0;
 	qpol_syn_rule_node_t *table_node = NULL;
 	qpol_syn_rule_list_t *list_entry = NULL;
-	qpol_syn_rule_key_t *tmp_key = NULL;
 
-	if (!(list_entry = calloc(1, sizeof(qpol_syn_rule_list_t)))) {
+	if (!(list_entry = malloc(sizeof(qpol_syn_rule_list_t)))) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
-		free(key);
 		return -1;
 	}
 	list_entry->rule = rule;
@@ -558,24 +561,18 @@ static int qpol_syn_rule_table_insert_entry(qpol_policy_t * policy,
 		list_entry->next = table_node->rules;
 		table_node->rules = list_entry;
 	} else {
-		if (!(table_node = calloc(1, sizeof(qpol_syn_rule_node_t)))) {
+		list_entry->next = NULL;
+		if (!(table_node = malloc(sizeof(qpol_syn_rule_node_t)))) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			free(list_entry);
 			return -1;
 		}
-		if (!(tmp_key = calloc(1, sizeof(qpol_syn_rule_key_t)))) {
-			error = errno;
-			ERR(policy, "%s", strerror(error));
-			qpol_syn_rule_node_destroy(&table_node);
-			errno = error;
-			return -1;
-		}
-		*tmp_key = *key;       /* shallow copy */
-		table_node->key = tmp_key;
+		table_node->key = *key;
 		table_node->rules = list_entry;
-		table_node->next = table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)];
-		table->buckets[QPOL_SYN_RULE_TABLE_HASH(key)] = table_node;
+		size_t hash = QPOL_SYN_RULE_TABLE_HASH(key);
+		table_node->next = table->buckets[hash];
+		table->buckets[hash] = table_node;
 	}
 	return 0;
 }
@@ -603,7 +600,7 @@ static int qpol_syn_rule_table_insert_sepol_avrule(qpol_policy_t * policy, qpol_
 	unsigned int i, j;
 	class_perm_node_t *class_node = NULL;
 
-	if (!(new_rule = calloc(1, sizeof(struct qpol_syn_rule)))) {
+	if (!(new_rule = malloc(sizeof(struct qpol_syn_rule)))) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
@@ -788,6 +785,45 @@ int qpol_policy_build_syn_rule_table(qpol_policy_t * policy)
 		}
 	}
 
+#ifdef SETOOLS_DEBUG
+	/*
+	 * Debugging code to measure the how well the syntactic rules
+	 * are being hashed.  Calculate the min, max, and std
+	 * deviation.
+	 */
+	size_t bucket;
+	float o2 = 0.0f;
+	long total_entries = 0;
+	for (bucket = 0; bucket < QPOL_SYN_RULE_TABLE_SIZE; bucket++) {
+		qpol_syn_rule_node_t *n = policy->ext->syn_rule_table->buckets[bucket];
+		while (n != NULL) {
+			total_entries++;
+			n = n->next;
+		}
+	}
+	float expected_value = total_entries * 1.0f / QPOL_SYN_RULE_TABLE_SIZE;
+	size_t min_items = total_entries;
+	size_t max_items = 0;
+	for (bucket = 0; bucket < QPOL_SYN_RULE_TABLE_SIZE; bucket++) {
+		size_t num_items = 0;
+		qpol_syn_rule_node_t *n = policy->ext->syn_rule_table->buckets[bucket];
+		while (n != NULL) {
+			num_items++;
+			n = n->next;
+		}
+		if (num_items > max_items) {
+			max_items = num_items;
+		}
+		if (num_items < min_items) {
+			min_items = num_items;
+		}
+		o2 += (num_items - expected_value) * (num_items - expected_value);
+	}
+	float stddev = sqrtf(o2 / QPOL_SYN_RULE_TABLE_SIZE);
+	fprintf(stderr, "libqpol synrule table:  total entries %lu, expected %g\n", total_entries, expected_value);
+	fprintf(stderr, "                        min %zd, max %zd, stddev %g\n", min_items, max_items, stddev);
+#endif
+
 	return 0;
 
       err:
@@ -821,6 +857,11 @@ void qpol_extended_image_destroy(qpol_extended_image_t ** ext)
 
 int qpol_policy_extend(qpol_policy_t * policy)
 {
+	return policy_extend(policy);
+}
+
+int policy_extend(qpol_policy_t * policy)
+{
 	int retv, error;
 	policydb_t *db = NULL;
 
@@ -851,7 +892,7 @@ int qpol_policy_extend(qpol_policy_t * policy)
 		goto err;
 	}
 
-	if (!policy->rules_loaded)
+	if (policy->options & QPOL_POLICY_OPTION_NO_RULES)
 		return STATUS_SUCCESS;
 
 	retv = qpol_policy_add_cond_rule_traceback(policy);
@@ -875,7 +916,7 @@ typedef struct syn_rule_state
 	qpol_syn_rule_list_t *cur;
 } syn_rule_state_t;
 
-static int syn_rule_state_end(qpol_iterator_t * iter)
+static int syn_rule_state_end(const qpol_iterator_t * iter)
 {
 	syn_rule_state_t *srs = NULL;
 
@@ -887,7 +928,7 @@ static int syn_rule_state_end(qpol_iterator_t * iter)
 	return (srs->cur ? 0 : 1);
 }
 
-static void *syn_rule_state_get_cur(qpol_iterator_t * iter)
+static void *syn_rule_state_get_cur(const qpol_iterator_t * iter)
 {
 	syn_rule_state_t *srs = NULL;
 
@@ -917,7 +958,7 @@ static int syn_rule_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t syn_rule_state_size(qpol_iterator_t * iter)
+static size_t syn_rule_state_size(const qpol_iterator_t * iter)
 {
 	size_t count = 0;
 	qpol_syn_rule_list_t *tmp = NULL;
@@ -934,12 +975,12 @@ static size_t syn_rule_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *rule, qpol_iterator_t ** iter)
+int qpol_avrule_get_syn_avrule_iter(const qpol_policy_t * policy, const struct qpol_avrule *rule, qpol_iterator_t ** iter)
 {
 	qpol_syn_rule_key_t *key = NULL;
-	qpol_type_t *tmp_type;
-	qpol_class_t *tmp_class;
-	qpol_cond_t *tmp_cond;
+	const qpol_type_t *tmp_type;
+	const qpol_class_t *tmp_class;
+	const qpol_cond_t *tmp_cond;
 	syn_rule_state_t *srs = NULL;
 	uint32_t tmp_val;
 	int error = 0;
@@ -1018,8 +1059,8 @@ int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *
 	srs->cur = srs->node->rules;
 
 	if (qpol_iterator_create(policy, (void *)srs,
-				 syn_rule_state_get_cur, syn_rule_state_next,
-				 syn_rule_state_end, syn_rule_state_size, free, iter)) {
+				 syn_rule_state_get_cur, syn_rule_state_next, syn_rule_state_end, syn_rule_state_size, free, iter))
+	{
 		error = errno;
 		goto err;
 	}
@@ -1035,12 +1076,12 @@ int qpol_avrule_get_syn_avrule_iter(qpol_policy_t * policy, struct qpol_avrule *
 	return -1;
 }
 
-int qpol_terule_get_syn_terule_iter(qpol_policy_t * policy, struct qpol_terule *rule, qpol_iterator_t ** iter)
+int qpol_terule_get_syn_terule_iter(const qpol_policy_t * policy, const struct qpol_terule *rule, qpol_iterator_t ** iter)
 {
 	qpol_syn_rule_key_t *key = NULL;
-	qpol_type_t *tmp_type;
-	qpol_class_t *tmp_class;
-	qpol_cond_t *tmp_cond;
+	const qpol_type_t *tmp_type;
+	const qpol_class_t *tmp_class;
+	const qpol_cond_t *tmp_cond;
 	syn_rule_state_t *srs = NULL;
 	uint32_t tmp_val;
 	int error = 0;
@@ -1119,8 +1160,8 @@ int qpol_terule_get_syn_terule_iter(qpol_policy_t * policy, struct qpol_terule *
 	srs->cur = srs->node->rules;
 
 	if (qpol_iterator_create(policy, (void *)srs,
-				 syn_rule_state_get_cur, syn_rule_state_next,
-				 syn_rule_state_end, syn_rule_state_size, free, iter)) {
+				 syn_rule_state_get_cur, syn_rule_state_next, syn_rule_state_end, syn_rule_state_size, free, iter))
+	{
 		error = errno;
 		goto err;
 	}

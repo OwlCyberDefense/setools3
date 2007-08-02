@@ -51,18 +51,18 @@ struct qpol_iterator
 {
 	policydb_t *policy;
 	void *state;
-	void *(*get_cur) (qpol_iterator_t * iter);
+	void *(*get_cur) (const qpol_iterator_t * iter);
 	int (*next) (qpol_iterator_t * iter);
-	int (*end) (qpol_iterator_t * iter);
-	 size_t(*size) (qpol_iterator_t * iter);
+	int (*end) (const qpol_iterator_t * iter);
+	 size_t(*size) (const qpol_iterator_t * iter);
 	void (*free_fn) (void *x);
 };
 
-int qpol_iterator_create(qpol_policy_t * policy, void *state,
-			 void *(*get_cur) (qpol_iterator_t * iter),
+int qpol_iterator_create(const qpol_policy_t * policy, void *state,
+			 void *(*get_cur) (const qpol_iterator_t * iter),
 			 int (*next) (qpol_iterator_t * iter),
-			 int (*end) (qpol_iterator_t * iter),
-			 size_t(*size) (qpol_iterator_t * iter), void (*free_fn) (void *x), qpol_iterator_t ** iter)
+			 int (*end) (const qpol_iterator_t * iter),
+			 size_t(*size) (const qpol_iterator_t * iter), void (*free_fn) (void *x), qpol_iterator_t ** iter)
 {
 	int error = 0;
 
@@ -94,7 +94,7 @@ int qpol_iterator_create(qpol_policy_t * policy, void *state,
 	return STATUS_SUCCESS;
 }
 
-void *qpol_iterator_state(qpol_iterator_t * iter)
+void *qpol_iterator_state(const qpol_iterator_t * iter)
 {
 	if (iter == NULL || iter->state == NULL) {
 		errno = EINVAL;
@@ -104,7 +104,7 @@ void *qpol_iterator_state(qpol_iterator_t * iter)
 	return iter->state;
 }
 
-policydb_t *qpol_iterator_policy(qpol_iterator_t * iter)
+const policydb_t *qpol_iterator_policy(const qpol_iterator_t * iter)
 {
 	if (iter == NULL || iter->policy == NULL) {
 		errno = EINVAL;
@@ -114,7 +114,7 @@ policydb_t *qpol_iterator_policy(qpol_iterator_t * iter)
 	return iter->policy;
 }
 
-void *hash_state_get_cur(qpol_iterator_t * iter)
+void *hash_state_get_cur(const qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -128,7 +128,7 @@ void *hash_state_get_cur(qpol_iterator_t * iter)
 	return hs->node->datum;
 }
 
-void *hash_state_get_cur_key(qpol_iterator_t * iter)
+void *hash_state_get_cur_key(const qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -142,7 +142,7 @@ void *hash_state_get_cur_key(qpol_iterator_t * iter)
 	return hs->node->key;
 }
 
-void *ocon_state_get_cur(qpol_iterator_t * iter)
+void *ocon_state_get_cur(const qpol_iterator_t * iter)
 {
 	ocon_state_t *os = NULL;
 
@@ -156,7 +156,7 @@ void *ocon_state_get_cur(qpol_iterator_t * iter)
 	return os->cur;
 }
 
-void *avtab_state_get_cur(qpol_iterator_t * iter)
+void *avtab_state_get_cur(const qpol_iterator_t * iter)
 {
 	avtab_state_t *state;
 
@@ -290,7 +290,7 @@ int avtab_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-int hash_state_end(qpol_iterator_t * iter)
+int hash_state_end(const qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -307,7 +307,7 @@ int hash_state_end(qpol_iterator_t * iter)
 	return 0;
 }
 
-int ebitmap_state_end(qpol_iterator_t * iter)
+int ebitmap_state_end(const qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 
@@ -324,7 +324,7 @@ int ebitmap_state_end(qpol_iterator_t * iter)
 	return 0;
 }
 
-int ocon_state_end(qpol_iterator_t * iter)
+int ocon_state_end(const qpol_iterator_t * iter)
 {
 	ocon_state_t *os = NULL;
 
@@ -341,7 +341,7 @@ int ocon_state_end(qpol_iterator_t * iter)
 	return 0;
 }
 
-int avtab_state_end(qpol_iterator_t * iter)
+int avtab_state_end(const qpol_iterator_t * iter)
 {
 	avtab_state_t *state;
 	avtab_t *avtab;
@@ -357,7 +357,7 @@ int avtab_state_end(qpol_iterator_t * iter)
 	return 0;
 }
 
-size_t hash_state_size(qpol_iterator_t * iter)
+size_t hash_state_size(const qpol_iterator_t * iter)
 {
 	hash_state_t *hs = NULL;
 
@@ -371,7 +371,7 @@ size_t hash_state_size(qpol_iterator_t * iter)
 	return (*(hs->table))->nel;
 }
 
-size_t ebitmap_state_size(qpol_iterator_t * iter)
+size_t ebitmap_state_size(const qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
 	size_t count = 0, bit = 0;
@@ -391,7 +391,7 @@ size_t ebitmap_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-size_t ocon_state_size(qpol_iterator_t * iter)
+size_t ocon_state_size(const qpol_iterator_t * iter)
 {
 	ocon_state_t *os = NULL;
 	size_t count = 0;
@@ -410,7 +410,7 @@ size_t ocon_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-size_t avtab_state_size(qpol_iterator_t * iter)
+size_t avtab_state_size(const qpol_iterator_t * iter)
 {
 	avtab_state_t *state;
 	avtab_t *avtab;
@@ -457,7 +457,7 @@ void qpol_iterator_destroy(qpol_iterator_t ** iter)
 	*iter = NULL;
 }
 
-int qpol_iterator_get_item(qpol_iterator_t * iter, void **item)
+int qpol_iterator_get_item(const qpol_iterator_t * iter, void **item)
 {
 	if (item != NULL)
 		*item = NULL;
@@ -484,7 +484,7 @@ int qpol_iterator_next(qpol_iterator_t * iter)
 	return iter->next(iter);
 }
 
-int qpol_iterator_end(qpol_iterator_t * iter)
+int qpol_iterator_end(const qpol_iterator_t * iter)
 {
 	if (iter == NULL || iter->end == NULL) {
 		errno = EINVAL;
@@ -494,7 +494,7 @@ int qpol_iterator_end(qpol_iterator_t * iter)
 	return iter->end(iter);
 }
 
-int qpol_iterator_get_size(qpol_iterator_t * iter, size_t * size)
+int qpol_iterator_get_size(const qpol_iterator_t * iter, size_t * size)
 {
 	if (size != NULL)
 		*size = 0;
@@ -509,10 +509,10 @@ int qpol_iterator_get_size(qpol_iterator_t * iter, size_t * size)
 	return STATUS_SUCCESS;
 }
 
-void *ebitmap_state_get_cur_type(qpol_iterator_t * iter)
+void *ebitmap_state_get_cur_type(const qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 
 	if (iter == NULL) {
 		errno = EINVAL;
@@ -532,10 +532,10 @@ void *ebitmap_state_get_cur_type(qpol_iterator_t * iter)
 	return db->type_val_to_struct[es->cur];
 }
 
-void *ebitmap_state_get_cur_role(qpol_iterator_t * iter)
+void *ebitmap_state_get_cur_role(const qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 
 	if (iter == NULL) {
 		errno = EINVAL;
@@ -555,11 +555,11 @@ void *ebitmap_state_get_cur_role(qpol_iterator_t * iter)
 	return db->role_val_to_struct[es->cur];
 }
 
-void *ebitmap_state_get_cur_cat(qpol_iterator_t * iter)
+void *ebitmap_state_get_cur_cat(const qpol_iterator_t * iter)
 {
 	ebitmap_state_t *es = NULL;
-	policydb_t *db = NULL;
-	qpol_cat_t *cat = NULL;
+	const policydb_t *db = NULL;
+	const qpol_cat_t *cat = NULL;
 	sepol_policydb_t sp;
 	qpol_policy_t qp;
 
@@ -585,7 +585,10 @@ void *ebitmap_state_get_cur_cat(qpol_iterator_t * iter)
 
 	qpol_policy_get_cat_by_name(&qp, db->p_cat_val_to_name[es->cur], &cat);
 
-	return cat;
+	/* There is no val_to_struct for categories; this requires that qpol
+	 * search for the struct, but it can't be returned as const here so
+	 * cast it to void* explicitly. */
+	return (void *)cat;
 }
 
 void ebitmap_state_destroy(void *es)
@@ -600,10 +603,10 @@ void ebitmap_state_destroy(void *es)
 	free(ies);
 }
 
-int perm_state_end(qpol_iterator_t * iter)
+int perm_state_end(const qpol_iterator_t * iter)
 {
 	perm_state_t *ps = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 	unsigned int perm_max = 0;
 
 	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL || (db = qpol_iterator_policy(iter)) == NULL) {
@@ -625,9 +628,9 @@ int perm_state_end(qpol_iterator_t * iter)
 	return 0;
 }
 
-void *perm_state_get_cur(qpol_iterator_t * iter)
+void *perm_state_get_cur(const qpol_iterator_t * iter)
 {
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 	class_datum_t *obj_class = NULL;
 	common_datum_t *comm = NULL;
 	perm_state_t *ps = NULL;
@@ -659,7 +662,8 @@ void *perm_state_get_cur(qpol_iterator_t * iter)
 		return NULL;
 	}
 
-	tmp = sepol_av_to_string(db, ps->obj_class_val, (sepol_access_vector_t) 1 << (ps->cur));
+	/* explicit const_cast for sepol */
+	tmp = sepol_av_to_string((policydb_t *) db, ps->obj_class_val, (sepol_access_vector_t) 1 << (ps->cur));
 	if (tmp) {
 		tmp++;		       /*sepol_av_to_string prepends a ' ' to the name */
 		return strdup(tmp);
@@ -672,7 +676,7 @@ void *perm_state_get_cur(qpol_iterator_t * iter)
 int perm_state_next(qpol_iterator_t * iter)
 {
 	perm_state_t *ps = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 	unsigned int perm_max = 0;
 
 	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL ||
@@ -701,10 +705,10 @@ int perm_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-size_t perm_state_size(qpol_iterator_t * iter)
+size_t perm_state_size(const qpol_iterator_t * iter)
 {
 	perm_state_t *ps = NULL;
-	policydb_t *db = NULL;
+	const policydb_t *db = NULL;
 	unsigned int perm_max = 0;
 	size_t i, count = 0;
 

@@ -40,7 +40,7 @@ typedef struct range_trans_state
 	range_trans_t *cur;
 } range_trans_state_t;
 
-static int range_trans_state_end(qpol_iterator_t * iter)
+static int range_trans_state_end(const qpol_iterator_t * iter)
 {
 	range_trans_state_t *rs = NULL;
 
@@ -52,7 +52,7 @@ static int range_trans_state_end(qpol_iterator_t * iter)
 	return rs->cur ? 0 : 1;
 }
 
-static void *range_trans_state_get_cur(qpol_iterator_t * iter)
+static void *range_trans_state_get_cur(const qpol_iterator_t * iter)
 {
 	range_trans_state_t *rs = NULL;
 
@@ -83,7 +83,7 @@ static int range_trans_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t range_trans_state_size(qpol_iterator_t * iter)
+static size_t range_trans_state_size(const qpol_iterator_t * iter)
 {
 	range_trans_state_t *rs = NULL;
 	size_t count = 0;
@@ -100,7 +100,7 @@ static size_t range_trans_state_size(qpol_iterator_t * iter)
 	return count;
 }
 
-int qpol_policy_get_range_trans_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_range_trans_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	range_trans_state_t *rs = NULL;
@@ -137,7 +137,7 @@ int qpol_policy_get_range_trans_iter(qpol_policy_t * policy, qpol_iterator_t ** 
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_source_type(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_type_t ** source)
+int qpol_range_trans_get_source_type(const qpol_policy_t * policy, const qpol_range_trans_t * rule, const qpol_type_t ** source)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;
@@ -160,7 +160,7 @@ int qpol_range_trans_get_source_type(qpol_policy_t * policy, qpol_range_trans_t 
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_target_type(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_type_t ** target)
+int qpol_range_trans_get_target_type(const qpol_policy_t * policy, const qpol_range_trans_t * rule, const qpol_type_t ** target)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;
@@ -183,7 +183,7 @@ int qpol_range_trans_get_target_type(qpol_policy_t * policy, qpol_range_trans_t 
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_target_class(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_class_t ** target)
+int qpol_range_trans_get_target_class(const qpol_policy_t * policy, const qpol_range_trans_t * rule, const qpol_class_t ** target)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;
@@ -206,7 +206,7 @@ int qpol_range_trans_get_target_class(qpol_policy_t * policy, qpol_range_trans_t
 	return STATUS_SUCCESS;
 }
 
-int qpol_range_trans_get_range(qpol_policy_t * policy, qpol_range_trans_t * rule, qpol_mls_range_t ** range)
+int qpol_range_trans_get_range(const qpol_policy_t * policy, const qpol_range_trans_t * rule, const qpol_mls_range_t ** range)
 {
 	policydb_t *db = NULL;
 	range_trans_t *rt = NULL;

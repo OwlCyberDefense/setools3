@@ -38,7 +38,41 @@
 extern void swab(const void *from, void *to, ssize_t n);
 #endif
 
-char *apol_ipv4_addr_render(apol_policy_t * policydb, uint32_t addr)
+#if LINK_SHARED == 1
+__asm__(".symver apol_ipv4_addr_render_old,apol_ipv4_addr_render@");
+__asm__(".symver apol_ipv4_addr_render_new,apol_ipv4_addr_render@@VERS_4.1");
+#endif
+
+/**
+ * @brief Internal version of apol_ipv4_addr_render() version 4.1
+ *
+ * Implementation of the exported function apol_ipv4_addr_render()
+ * for version 4.1; this symbol name is not exported.
+ */
+char *apol_ipv4_addr_render_new(const apol_policy_t * policydb, uint32_t addr[4])
+{
+	char buf[40], *b;
+	unsigned char *p = (unsigned char *)&(addr[0]);
+	snprintf(buf, sizeof(buf), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
+	if ((b = strdup(buf)) == NULL) {
+		ERR(policydb, "%s", strerror(ENOMEM));
+	}
+	return b;
+}
+
+#if LINK_SHARED == 0
+char *apol_ipv4_addr_render(const apol_policy_t * policydb, uint32_t addr[4])
+{
+	return apol_ipv4_addr_render_new(policydb, addr);
+}
+#endif
+
+/**
+ * @brief Internal version of apol_ipv4_addr_render() version 4.0 or earlier
+ * @deprecated use the 4.1 version.
+ * @see apol_ipv4_addr_render()
+ */
+char *apol_ipv4_addr_render_old(apol_policy_t * policydb, uint32_t addr)
 {
 	char buf[40], *b;
 	unsigned char *p = (unsigned char *)&addr;
@@ -49,7 +83,7 @@ char *apol_ipv4_addr_render(apol_policy_t * policydb, uint32_t addr)
 	return b;
 }
 
-char *apol_ipv6_addr_render(apol_policy_t * policydb, uint32_t addr[4])
+char *apol_ipv6_addr_render(const apol_policy_t * policydb, uint32_t addr[4])
 {
 	uint16_t tmp[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	int i, sz = 0, retv;
@@ -104,13 +138,16 @@ char *apol_ipv6_addr_render(apol_policy_t * policydb, uint32_t addr[4])
 	return b;
 }
 
-char *apol_qpol_context_render(apol_policy_t * p, qpol_context_t * context)
+char *apol_qpol_context_render(const apol_policy_t * p, const qpol_context_t * context)
 {
 	apol_context_t *c = NULL;
 	char *rendered_context;
 
-	if (p == NULL)
+	if (p == NULL || context == NULL) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
 		return NULL;
+	}
 
 	if ((c = apol_context_create_from_qpol_context(p, context)) == NULL) {
 		return NULL;

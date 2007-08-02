@@ -47,8 +47,9 @@ extern "C"
 
 /**
  *  Get an iterator over all av rules in a policy of a rule type in
- *  rule_type_mask. It is an error to call this function if rules are not
- *  loaded.
+ *  rule_type_mask.  It is an error to call this function if rules are
+ *  not loaded.  Likewise, it is an error if neverallows are requested
+ *  but they were not loaded.
  *  @param policy Policy from which to get the av rules.
  *  @param rule_type_mask Bitwise or'ed set of QPOL_RULE_* values.
  *  It is an error to specify any of QPOL_RULE_TYPE_* in the mask.
@@ -60,7 +61,7 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_avrule_iter(qpol_policy_t * policy, uint32_t rule_type_mask, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_avrule_iter(const qpol_policy_t * policy, uint32_t rule_type_mask, qpol_iterator_t ** iter);
 
 /**
  *  Get the source type from an av rule.
@@ -71,7 +72,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-	extern int qpol_avrule_get_source_type(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_type_t ** source);
+	extern int qpol_avrule_get_source_type(const qpol_policy_t * policy, const qpol_avrule_t * rule,
+					       const qpol_type_t ** source);
 
 /**
  *  Get the target type from an av rule.
@@ -82,7 +84,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-	extern int qpol_avrule_get_target_type(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_type_t ** target);
+	extern int qpol_avrule_get_target_type(const qpol_policy_t * policy, const qpol_avrule_t * rule,
+					       const qpol_type_t ** target);
 
 /**
  *  Get the object class from an av rule.
@@ -93,7 +96,8 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-	extern int qpol_avrule_get_object_class(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_class_t ** obj_class);
+	extern int qpol_avrule_get_object_class(const qpol_policy_t * policy, const qpol_avrule_t * rule,
+						const qpol_class_t ** obj_class);
 
 /**
  *  Get an iterator over the permissions in an av rule.
@@ -108,7 +112,7 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-	extern int qpol_avrule_get_perm_iter(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_iterator_t ** perms);
+	extern int qpol_avrule_get_perm_iter(const qpol_policy_t * policy, const qpol_avrule_t * rule, qpol_iterator_t ** perms);
 
 /**
  *  Get the rule type value for an av rule.
@@ -119,7 +123,7 @@ extern "C"
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *rule_type will be 0.
  */
-	extern int qpol_avrule_get_rule_type(qpol_policy_t * policy, qpol_avrule_t * rule, uint32_t * rule_type);
+	extern int qpol_avrule_get_rule_type(const qpol_policy_t * policy, const qpol_avrule_t * rule, uint32_t * rule_type);
 
 /**
  *  Get the conditional from which an av rule comes. If the rule
@@ -131,7 +135,7 @@ extern "C"
  *  errno will be set and *cond will be NULL. If the rule is not conditional
  *  *cond is set to NULL and the function is considered successful.
  */
-	extern int qpol_avrule_get_cond(qpol_policy_t * policy, qpol_avrule_t * rule, qpol_cond_t ** cond);
+	extern int qpol_avrule_get_cond(const qpol_policy_t * policy, const qpol_avrule_t * rule, const qpol_cond_t ** cond);
 
 /**
  *  Determine if a rule is enabled. Unconditional rules are always enabled.
@@ -142,7 +146,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *is_enabled will be 0.
  */
-	extern int qpol_avrule_get_is_enabled(qpol_policy_t * policy, qpol_avrule_t * rule, uint32_t * is_enabled);
+	extern int qpol_avrule_get_is_enabled(const qpol_policy_t * policy, const qpol_avrule_t * rule, uint32_t * is_enabled);
 
 /**
  *  Get the list (true or false) in which a conditional rule is. It is
@@ -154,7 +158,7 @@ extern "C"
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *which_list will be 0.
  */
-	extern int qpol_avrule_get_which_list(qpol_policy_t * policy, qpol_avrule_t * rule, uint32_t * which_list);
+	extern int qpol_avrule_get_which_list(const qpol_policy_t * policy, const qpol_avrule_t * rule, uint32_t * which_list);
 
 #ifdef	__cplusplus
 }

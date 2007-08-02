@@ -68,7 +68,34 @@ const apol_mls_range_t *poldiff_range_get_modified_range(const poldiff_range_t *
 	return range->mod_range;
 }
 
-char *poldiff_range_to_string_brief(poldiff_t * diff, const poldiff_range_t * range)
+apol_vector_t *poldiff_range_get_min_added_cats(const poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->min_added_cats;
+}
+
+apol_vector_t *poldiff_range_get_min_removed_cats(const poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->min_removed_cats;
+}
+
+apol_vector_t *poldiff_range_get_min_unmodified_cats(const poldiff_range_t * range)
+{
+	if (range == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return range->min_unmodified_cats;
+}
+
+char *poldiff_range_to_string_brief(const poldiff_t * diff, const poldiff_range_t * range)
 {
 	char *r1 = NULL, *r2 = NULL;
 	char *s = NULL, *t = NULL, *sep = "", *cat;
@@ -153,7 +180,8 @@ char *poldiff_range_to_string_brief(poldiff_t * diff, const poldiff_range_t * ra
 	return s;
 }
 
-poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, qpol_mls_range_t * mod_range, poldiff_form_e form)
+poldiff_range_t *range_create(const poldiff_t * diff, const qpol_mls_range_t * orig_range, const qpol_mls_range_t * mod_range,
+			      poldiff_form_e form)
 {
 	poldiff_range_t *pr = NULL;
 	apol_policy_t *p;
@@ -194,8 +222,8 @@ poldiff_range_t *range_create(poldiff_t * diff, qpol_mls_range_t * orig_range, q
 		const char *sens = apol_mls_level_get_sens(l);
 		const apol_vector_t *cats = apol_mls_level_get_cats(l);
 		if ((pl = calloc(1, sizeof(*pl))) == NULL ||
-		    (pl->name = strdup(sens)) == NULL
-		    || (pl->unmodified_cats = apol_vector_create_with_capacity(1, free)) == NULL) {
+		    (pl->name = strdup(sens)) == NULL || (pl->unmodified_cats = apol_vector_create_with_capacity(1, free)) == NULL)
+		{
 			ERR(diff, "%s", strerror(errno));
 			goto cleanup;
 		}
@@ -268,7 +296,7 @@ static int range_comp(const void *a, const void *b, void *data)
 	const poldiff_level_t *l2 = b;
 	poldiff_t *diff = data;
 	qpol_policy_t *q;
-	qpol_level_t *ql1, *ql2;
+	const qpol_level_t *ql1, *ql2;
 	uint32_t v1, v2;
 	if (l1->form != l2->form) {
 		return l1->form - l2->form;

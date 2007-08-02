@@ -12,7 +12,6 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libapol_a_SOURCES = \
-	avl-util.c \
 	avrule-query.c \
 	bool-query.c \
 	bst.c \
@@ -25,6 +24,8 @@ libapol_a_SOURCES = \
 	infoflow-analysis.c infoflow-analysis-internal.h \
 	isid-query.c \
 	mls-query.c \
+	mls_level.c \
+	mls_range.c \
 	netcon-query.c \
 	perm-map.c \
 	policy.c \

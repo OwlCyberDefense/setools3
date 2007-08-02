@@ -47,7 +47,7 @@ extern "C"
  *  POLDIFF_FORM_REMOVED, number of POLDIFF_FORM_MODIFIED, number of
  *  POLDIFF_FORM_ADD_TYPE, and number of POLDIFF_FORM_REMOVE_TYPE.
  */
-	extern void poldiff_level_get_stats(poldiff_t * diff, size_t stats[5]);
+	extern void poldiff_level_get_stats(const poldiff_t * diff, size_t stats[5]);
 
 /**
  *  Get the vector of level differences from the level difference
@@ -60,7 +60,7 @@ extern "C"
  *  error.  The caller should <b>not</b> destroy the vector
  *  returned.  If the call fails, errno will be set.
  */
-	extern apol_vector_t *poldiff_get_level_vector(poldiff_t * diff);
+	extern const apol_vector_t *poldiff_get_level_vector(const poldiff_t * diff);
 
 /**
  *  Obtain a newly allocated string representation of a difference in
@@ -73,7 +73,7 @@ extern "C"
  *  responsible for free()ing this string.  On error, return NULL and
  *  set errno.
  */
-	extern char *poldiff_level_to_string(poldiff_t * diff, const void *level);
+	extern char *poldiff_level_to_string(const poldiff_t * diff, const void *level);
 
 /**
  * Allocate and return a string rendering of a poldiff_level_t,
@@ -86,7 +86,7 @@ extern "C"
  * @return String rendering of level, or NULL upon error.  Caller must
  * free() string afterwards.
  */
-	char *poldiff_level_to_string_brief(poldiff_t * diff, const poldiff_level_t * level);
+	char *poldiff_level_to_string_brief(const poldiff_t * diff, const poldiff_level_t * level);
 
 /**
  *  Get the name of the level (i.e., the sensitivity) from a level diff.
@@ -120,7 +120,7 @@ extern "C"
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_level_get_unmodified_cats(const poldiff_level_t * level);
+	extern const apol_vector_t *poldiff_level_get_unmodified_cats(const poldiff_level_t * level);
 
 /**
  *  Get a vector of categories added to the level.  These will be
@@ -135,7 +135,7 @@ extern "C"
  *  the size of the returned vector will be 0.  The caller must not
  *  modify this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_level_get_added_cats(const poldiff_level_t * level);
+	extern const apol_vector_t *poldiff_level_get_added_cats(const poldiff_level_t * level);
 
 /**
  *  Get a vector of categories removed from the level.  These will be
@@ -150,7 +150,7 @@ extern "C"
  *  size of the returned vector will be 0.  The caller must not
  *  destroy this vector.  On error, errno will be set.
  */
-	extern apol_vector_t *poldiff_level_get_removed_cats(const poldiff_level_t * level);
+	extern const apol_vector_t *poldiff_level_get_removed_cats(const poldiff_level_t * level);
 
 #ifdef	__cplusplus
 }

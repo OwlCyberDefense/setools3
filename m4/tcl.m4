@@ -11,7 +11,7 @@
 #
 # RCS: @(#) $Id: tcl.m4,v 1.92 2006/05/26 19:15:38 das Exp $
 
-AC_PREREQ(2.50)
+AC_PREREQ(2.59)
 
 dnl TEA extensions pass this us the version of TEA they think they
 dnl are compatible with (must be set in TEA_INIT below)
@@ -965,7 +965,7 @@ AC_DEFUN([TEA_CONFIG_CFLAGS], [
 
     # Require ranlib early so we can override it in special cases below.
 
-    AC_REQUIRE([AC_PROG_RANLIB])
+    AC_REQUIRE([AC_PROG_LIBTOOL])
 
     # Step 3: set configuration options based on system name and version.
     # This is similar to Tcl's unix/tcl.m4 except that we've added a
@@ -3066,7 +3066,7 @@ AC_DEFUN([TEA_SETUP_COMPILER_CC], [
     # Find ranlib
     #--------------------------------------------------------------------
 
-    AC_PROG_RANLIB
+    AC_PROG_LIBTOOL
 
     #--------------------------------------------------------------------
     # Determines the correct binary file extension (.o, .obj, .exe etc.)

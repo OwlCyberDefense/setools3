@@ -54,7 +54,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_type_get_by_query(apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v);
+	extern int apol_type_get_by_query(const apol_policy_t * p, apol_type_query_t * t, apol_vector_t ** v);
 
 /**
  * Allocate and return a new type query structure.  All fields are
@@ -87,7 +87,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_type_query_set_type(apol_policy_t * p, apol_type_query_t * t, const char *name);
+	extern int apol_type_query_set_type(const apol_policy_t * p, apol_type_query_t * t, const char *name);
 
 /**
  * Set a type query to use regular expression searching for all of its
@@ -100,7 +100,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_type_query_set_regex(apol_policy_t * p, apol_type_query_t * t, int is_regex);
+	extern int apol_type_query_set_regex(const apol_policy_t * p, apol_type_query_t * t, int is_regex);
 
 /******************** attribute queries ********************/
 
@@ -118,7 +118,7 @@ extern "C"
  *
  * @return 0 on success (including none found), negative on error.
  */
-	extern int apol_attr_get_by_query(apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v);
+	extern int apol_attr_get_by_query(const apol_policy_t * p, apol_attr_query_t * a, apol_vector_t ** v);
 
 /**
  * Allocate and return a new attribute query structure.	 All fields
@@ -150,7 +150,7 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_attr_query_set_attr(apol_policy_t * p, apol_attr_query_t * a, const char *name);
+	extern int apol_attr_query_set_attr(const apol_policy_t * p, apol_attr_query_t * a, const char *name);
 
 /**
  * Set an attribute query to use regular expression searching for all
@@ -163,7 +163,7 @@ extern "C"
  *
  * @return Always 0.
  */
-	extern int apol_attr_query_set_regex(apol_policy_t * p, apol_attr_query_t * a, int is_regex);
+	extern int apol_attr_query_set_regex(const apol_policy_t * p, apol_attr_query_t * a, int is_regex);
 
 #ifdef	__cplusplus
 }

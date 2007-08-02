@@ -7,7 +7,7 @@ package_name = com.tresys.setools.poldiff
 package_dir = $(dir $(subst .,/,$(package_name)))poldiff
 
 wrappedjar_DATA = poldiff.jar
-wrappedjardir = $(libdir)/setools
+wrappedjardir = $(setoolsdir)
 
 dist_noinst_DATA = $(srcdir)/../poldiff.i
 BUILT_SOURCES = poldiff_wrap.c \
@@ -44,9 +44,9 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ \
 	@APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @POLDIFF_LIB_FLAG@
 DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so \
 	$(top_builddir)/libapol/src/libapol.so \
-	$(top_builddir)/libpoldiff/src/poldiff.so
+	$(top_builddir)/libpoldiff/src/libpoldiff.so
 
-$(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA)
+$(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ \
 	-I$(top_srcdir)/libpoldiff/include -I$(top_srcdir)/libapol/include -I$(top_srcdir)/libqpol/include \
 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
@@ -84,6 +84,7 @@ $(wrappedjar_DATA): $(classes)
 install-data-hook:
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(wrappedso_SONAME)
 	cd $(DESTDIR)$(wrappedsodir) && $(LN_S) -f $(wrappedso_DATA) $(short_name)
+	$(mkdir_p) $(DESTDIR)$(javadir) && cd $(DESTDIR)$(javadir) && $(LN_S) -f $(wrappedjardir)/$(wrappedjar_DATA)
 
 uninstall-local:
 	-rm -rf $(DESTDIR)$(wrappedsodir)/$(wrappedso_SONAME) $(DESTDIR)$(wrappedsodir)/$(short_name)

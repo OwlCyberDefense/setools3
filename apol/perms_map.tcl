@@ -13,28 +13,39 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget 1.7 or greater
-
-##############################################################
-# ::Apol_Perms_Map
-#
-# Permissions map namespace.
-##############################################################
 namespace eval Apol_Perms_Map {
-    variable edit_dialog .apol_perms
-    variable user_default_pmap_name  [file join "$::env(HOME)" ".apol_perm_mapping"]
+    variable dialog .apol_perms
+    variable user_default_pmap_name [file join $::env(HOME) .apol_perm_mapping]
 
     variable opts           ;# options for edit perm map dialog
     variable widgets
 }
 
+proc Apol_Perms_Map::close {} {
+    variable opts
+
+    _close_dialog
+    set opts(filename) {}
+    set opts(is_saveable) 0
+    set opts(modified) 0
+}
+
+proc Apol_Perms_Map::showPermMappings {} {
+    variable dialog
+    if {[winfo exists $dialog]} {
+        raise $dialog
+    } else {
+        _createEditDialog
+        _refreshEditDialog
+    }
+}
+
 # Let the user select a permission map file to load.  Returns 1 on
 # success, 0 on error.
-proc Apol_Perms_Map::loadPermMapFromFile {} {
+proc Apol_Perms_Map::openPermMapFromFile {} {
     set pmap_name [tk_getOpenFile -title "Select Perm Map to Load" -parent .]
     if {$pmap_name != {}} {
-        return [loadPermMap $pmap_name [file tail $pmap_name] 1]
+        return [_loadPermMap $pmap_name [file tail $pmap_name] 1]
     }
     return 0
 }
@@ -46,12 +57,7 @@ proc Apol_Perms_Map::loadPermMapFromFile {} {
 # policy version number.  If that fails then simply try
 # "apol_perm_mapping".  If all of that fails, then display an error
 # message and abort the loading.  Returns 1 on success, 0 on error.
-proc Apol_Perms_Map::loadDefaultPermMap {} {
-    if {![ApolTop::is_policy_open]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
-        return 0
-    }
-
+proc Apol_Perms_Map::openDefaultPermMap {} {
     variable user_default_pmap_name
     if {[file exists $user_default_pmap_name]} {
         set pmap_name $user_default_pmap_name
@@ -60,57 +66,76 @@ proc Apol_Perms_Map::loadDefaultPermMap {} {
     } else {
         set pmap_editable 0
         # try policy-specific file
-        set policy_version [apol_GetPolicyVersionNumber]
-        set pmap_name [apol_GetDefault_PermMap "apol_perm_mapping_ver${policy_version}"]
+        set policy_version [apol_tcl_get_policy_version $::ApolTop::policy]
+        set pmap_name [apol_file_find_path "apol_perm_mapping_ver${policy_version}"]
         if {$pmap_name == {}} {
             # finally try fallback one
-            set pmap_name [apol_GetDefault_PermMap apol_perm_mapping]
+            set pmap_name [apol_file_find_path apol_perm_mapping]
             if {$pmap_name == {}} {
-                 tk_messageBox -icon error -type ok -title "Error" \
-                     -message "Could not locate system default perm map. You must explicitly load a perm map from file."
+                set message "Could not locate system default permission map.  You must explicitly load a permission map from file."
+                if {[Apol_Progress_Dialog::is_waiting]} {
+                    error $message
+                }
+                else {
+                    tk_messageBox -icon error -type ok -title "Permission Maps" \
+                        -message $message
+                }
                 return 0
             }
         }
         set pmap_short "System Default Permission Map (Read-Only)"
     }
-    return [loadPermMap $pmap_name $pmap_short $pmap_editable]
+    return [_loadPermMap $pmap_name $pmap_short $pmap_editable]
 }
 
-proc Apol_Perms_Map::close {} {
+proc Apol_Perms_Map::savePermMap {} {
     variable opts
-    variable edit_dialog
-    trace remove variable Apol_Perms_Map::opts(modified) write \
-        Apol_Perms_Map::toggleSaveButtons
-    trace remove variable Apol_Perms_Map::opts(is_saveable) write \
-        Apol_Perms_Map::toggleSaveButtons
-    destroy $edit_dialog
-    array unset opts c:*
-    array unset opts p:*
+    if {!$opts(is_saveable)} {
+        savePermMapAs
+    } else {
+        _savePermMap $opts(filename) $opts(shortname)
+    }
+}
+
+proc Apol_Perms_Map::savePermMapAs {} {
+    set pmap_name [tk_getSaveFile -title "Save Perm Map" -parent .]
+    if {$pmap_name != {}} {
+         _savePermMap $pmap_name [file tail $pmap_name]
+    }
+}
+
+proc Apol_Perms_Map::saveDefaultPermMap {} {
+    variable user_default_pmap_name
+    variable opts
+    _savePermMap $user_default_pmap_name "User Default Permission Map"
 }
 
 proc Apol_Perms_Map::is_pmap_loaded {} {
-    return [apol_IsPermMapLoaded]
-}
-
-proc Apol_Perms_Map::editPermMappings {} {
-    variable edit_dialog
-    if {[winfo exists $edit_dialog]} {
-        raise $edit_dialog
-    } else {
-        createEditDialog
-        refreshEditDialog
+    variable opts
+    if {$opts(filename) == {}} {
+        return 0
     }
+    return 1
 }
 
 #################### private functions below ####################
 
 
-proc Apol_Perms_Map::loadPermMap {filename shortname saveable} {
-    if {[catch {apol_LoadPermMap $filename} err]} {
-        tk_messageBox -icon error -type ok \
-            -title "Error Loading Permission Map File" -message $err
-        return 0
-    } elseif {$err != {}} {
+proc Apol_Perms_Map::_loadPermMap {filename shortname saveable} {
+    if {[catch {$::ApolTop::policy open_permmap $filename} err]} {
+        if {[Apol_Progress_Dialog::is_waiting]} {
+            error $err
+        } else {
+            tk_messageBox -icon error -type ok -title "Permission Maps" -message $err
+            return 0
+        }
+    }
+    variable opts
+    set opts(filename) $filename
+    set opts(shortname) $shortname
+    set opts(is_saveable) $saveable
+    set opts(modified) 0
+    if {$err != {}} {
         set len [llength [split $err "\n"]]
         if {$len > 5} {
             incr len -4
@@ -118,69 +143,70 @@ proc Apol_Perms_Map::loadPermMap {filename shortname saveable} {
             lappend err "(plus $len more lines)"
             set err [join $err "\n"]
         }
-        set message "The permission map has been loaded, but there were warnings:"
-        tk_messageBox -icon warning -type ok \
-            -title "Warning While Loading Permission Map" \
-            -message "$message\n\n$err"
+        if {![Apol_Progress_Dialog::is_waiting]} {
+            set message "There were warnings while opening the permission map:"
+            tk_messageBox -icon warning -type ok -title "Permission Maps" \
+                -message "$message\n\n$err"
+        }
+    } else {
+        if {![Apol_Progress_Dialog::is_waiting]} {
+            tk_messageBox -icon info -type ok -title "Permission Maps" \
+                -message "Permission map successfully loaded."
+        }
     }
-    variable opts
-    set opts(filename) $filename
-    set opts(shortname) $shortname
-    set opts(is_saveable) $saveable
-    set opts(modified) 0
-    variable edit_dialog
-    if {[winfo exists $edit_dialog]} {
-        refreshEditDialog
+    variable dialog
+    if {[winfo exists $dialog]} {
+        _refreshEditDialog
     }
-    ApolTop::configure_edit_pmap_menu_item 1
     return 1
 }
 
-proc Apol_Perms_Map::createEditDialog {} {
-    variable edit_dialog
+proc Apol_Perms_Map::_createEditDialog {} {
+    variable dialog
     variable opts
     variable widgets
 
-    set title "Edit Permissions Mappings: $opts(shortname)"
-    Dialog $edit_dialog -parent . -separator 1 -title $title -modal none -cancel 3
-    set topf [frame [$edit_dialog getframe].top]
+    set title "Permissions Mappings: $opts(shortname)"
+    Dialog $dialog -parent . -separator 1 -title $title -modal none \
+        -default 0 -cancel 2
+    set topf [frame [$dialog getframe].top]
     pack $topf -side top -expand 1 -fill both
+
     set classes_box [TitleFrame $topf.classes -text "Object Classes"]
     pack $classes_box -side left -padx 2 -pady 2 -expand 0 -fill y
     set widgets(classes) [Apol_Widget::makeScrolledListbox [$classes_box getframe].c \
-                              -height 16 -width 30 -listvar Apol_Perms_Map::opts(classes)]
-    bind $widgets(classes).lb <<ListboxSelect>> Apol_Perms_Map::refreshPermEdit
+                              -height 16 -width 24 -listvar Apol_Perms_Map::opts(classes)]
+    bind $widgets(classes).lb <<ListboxSelect>> Apol_Perms_Map::_refreshPermEdit
     pack $widgets(classes) -expand 1 -fill both
 
     set results_box [TitleFrame $topf.perms -text "Permission Mappings"]
     pack $results_box -side right -padx 2 -pady 2 -expand 1 -fill both
     set sw [ScrolledWindow [$results_box getframe].sw -auto both]
-    set widgets(perms) [ScrollableFrame $sw.perms -bg white -width 450]
+    set widgets(perms) [ScrollableFrame $sw.perms -width 300]
     $sw setwidget $widgets(perms)
     pack $sw -expand 1 -fill both
 
-    set label_box [frame [$edit_dialog getframe].l]
+    set label_box [frame [$dialog getframe].l]
     pack $label_box -side bottom -anchor center
     set widgets(l1) [label $label_box.l1 -fg red -text ""]
     set widgets(l2) [label $label_box.l2 -text ""]
     pack $widgets(l1) $widgets(l2) -side left
-    # delay setting the labels' text until [refresh_edit_dialog], to
+    # delay setting the labels' text until [_refresh_edit_dialog], to
     # see if anything is unmapped
 
-    $edit_dialog add -text "Save and Load Changes" -command Apol_Perms_Map::save -width -1
-    $edit_dialog add -text "Save As..." -command Apol_Perms_Map::saveAs
-    $edit_dialog add -text "Save As User Default" -command Apol_Perms_Map::saveAsDefault
-    $edit_dialog add -text "Exit" -command Apol_Perms_Map::exitDialog
+    $dialog add -text "OK" -command Apol_Perms_Map::_okay
+    $dialog add -text "Apply" -command Apol_Perms_Map::_apply
+    $dialog add -text "Cancel" -command Apol_Perms_Map::_cancel
 
     trace add variable Apol_Perms_Map::opts(modified) write \
-        Apol_Perms_Map::toggleSaveButtons
-    trace add variable Apol_Perms_Map::opts(is_saveable) write \
-        Apol_Perms_Map::toggleSaveButtons
+        Apol_Perms_Map::_toggleButtons
 
-    $edit_dialog draw
+    # forcibly invoke the button callback
+    set opts(modified) $opts(modified)
+    $dialog draw
 }
 
-proc Apol_Perms_Map::refreshEditDialog {} {
+proc Apol_Perms_Map::_refreshEditDialog {} {
     variable opts
     variable widgets
 
@@ -188,28 +214,25 @@ proc Apol_Perms_Map::refreshEditDialog {} {
         classes {}
     }
 
-    if {[catch {apol_GetPermMap} perm_map]} {
-        tk_messageBox -icon error -type ok \
-            -title "Error Getting Permission Map" -message $perm_map
-        return
-    }
-
-    set all_unmapped 1
+    set all_mapped 1
     set class_index 0
-    foreach class_tuple [lsort -index 0 $perm_map] {
-        foreach {class perm_list} $class_tuple {break}
+    foreach class [Apol_Class_Perms::getClasses] {
         set suffix {}
-        # store original perm map values, needed if user exits without saving
-        set opts(c:$class) [lsort -index 0 $perm_list]
-        foreach perm $opts(c:$class) {
-            foreach {perm map weight} $perm {break}
-            set opts(p:${class}:${perm}:map) $map
+        set perm_list {}
+        foreach perm [Apol_Class_Perms::getPermsForClass $class] {
+            set direction [$::ApolTop::policy get_permmap_direction $class $perm]
+            set weight [$::ApolTop::policy get_permmap_weight $class $perm]
+            set opts(p:${class}:${perm}:map) $direction
             set opts(p:${class}:${perm}:weight) $weight
-            if {$map == "u"} {
+            if {$direction == $::APOL_PERMMAP_UNMAPPED} {
                 set suffix *
-                set all_unmapped 0
+                set all_mapped 0
             }
+            lappend perm_list [list $perm $direction $weight]
         }
+
+        # store original perm map values, needed if user cancels dialog
+        set opts(c:$class) $perm_list
         lappend opts(classes) "$class$suffix"
         if {$suffix != {}} {
             $widgets(classes).lb itemconfigure $class_index -foreground red
@@ -218,20 +241,16 @@ proc Apol_Perms_Map::refreshEditDialog {} {
     }
 
     # add the warning to the bottom if there exists any unmapped permissions
-    if {!$all_unmapped} {
+    if {!$all_mapped} {
         $widgets(l1) configure -text "*"
         $widgets(l2) configure -text " - Undefined permission mapping(s)"
     } else {
         $widgets(l1) configure -text ""
         $widgets(l2) configure -text ""
     }
-
-    # force refresh of button states, to invoke their traces
-    set opts(modified) $opts(modified)
-    set opts(is_saveable) $opts(is_saveable)
 }
 
-proc Apol_Perms_Map::refreshPermEdit {} {
+proc Apol_Perms_Map::_refreshPermEdit {} {
     variable opts
     variable widgets
 
@@ -250,130 +269,143 @@ proc Apol_Perms_Map::refreshPermEdit {} {
 
     foreach perm $opts(c:$class) {
         foreach {perm map weight} $perm {break}
-        if {$map != "u"} {
-            set l [label $perms.$perm:l -text $perm -bg white -anchor w]
+        if {$map != $::APOL_PERMMAP_UNMAPPED} {
+            set l [label $perms.$perm:l -text $perm -anchor w]
         } else {
-            set l [label $perms.$perm:l -text "${perm}*" -fg red -bg white -anchor w]
+            set l [label $perms.$perm:l -text "${perm}*" -fg red -anchor w]
         }
-        set r [radiobutton $perms.$perm:r -text "Read" -value r -bg white \
-                   -highlightthickness 0 \
-                   -command [list Apol_Perms_Map::togglePermMap $class $perm] \
-                   -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)]
-        set w [radiobutton $perms.$perm:w -text "Write" -value w -bg white \
-                   -highlightthickness 0 \
-                   -command [list Apol_Perms_Map::togglePermMap $class $perm] \
-                   -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)]
-        set b [radiobutton $perms.$perm:b -text "Both" -value b -bg white \
-                   -highlightthickness 0 \
-                   -command [list Apol_Perms_Map::togglePermMap $class $perm] \
-                   -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)]
-        set n [radiobutton $perms.$perm:n -text "None" -value n -bg white \
-                   -highlightthickness 0 \
-                   -command [list Apol_Perms_Map::togglePermMap $class $perm] \
-                   -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)]
-        set l2 [label $perms.$perm:l2 -text "Weight:" -bg white -anchor e]
+        # tk_optionMenu does not have a -command flag, so implement an
+        # option menu via a menubutton
+        set menubutton [menubutton $perms.$perm:mb -bd 2 -relief raised \
+                            -indicatoron 1 -width 8 \
+                            -textvariable Apol_Perms_Map::opts(p:${class}:${perm}:map_label)]
+        set menu [menu $menubutton.m -type normal -tearoff 0]
+        $menubutton configure -menu $menu
+        $menu add radiobutton -label "Read" -value $::APOL_PERMMAP_READ \
+            -command [list Apol_Perms_Map::_togglePermMap $class $perm 1] \
+            -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)
+        $menu add radiobutton -label "Write" -value $::APOL_PERMMAP_WRITE \
+            -command [list Apol_Perms_Map::_togglePermMap $class $perm 1] \
+            -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)
+        $menu add radiobutton -label "Both" -value $::APOL_PERMMAP_BOTH \
+            -command [list Apol_Perms_Map::_togglePermMap $class $perm 1] \
+            -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)
+        $menu add radiobutton -label "None" -value $::APOL_PERMMAP_NONE \
+            -command [list Apol_Perms_Map::_togglePermMap $class $perm 1] \
+            -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)
+        set l2 [label $perms.$perm:l2 -text "Weight:" -anchor e]
         set weight [spinbox $perms.$perm:weight -from 1 -to 10 -increment 1 \
                         -width 2 -bg white \
-                        -command [list Apol_Perms_Map::togglePermMap $class $perm] \
+                        -command [list Apol_Perms_Map::_togglePermMap $class $perm 1] \
                         -textvariable Apol_Perms_Map::opts(p:${class}:${perm}:weight)]
-        grid $l $r $w $b $n $l2 $weight -padx 2 -sticky w -pady 4
+        grid $l $menubutton $l2 $weight -padx 2 -sticky w -pady 4
         grid configure $l2 -ipadx 10
+        _togglePermMap $class $perm 0
     }
     grid columnconfigure $perms 0 -minsize 100 -weight 1
-    foreach i {1 2 3 4} {
-        grid columnconfigure $perms $i -uniform 1 -weight 0
-    }
     $widgets(perms) xview moveto 0
     $widgets(perms) yview moveto 0
 }
 
-proc Apol_Perms_Map::toggleSaveButtons {name1 name2 op} {
-    variable opts
-    variable widgets
-    variable edit_dialog
-    if {$opts(modified)} {
-        if {$opts(is_saveable)} {
-            $edit_dialog itemconfigure 0 -state normal
-        } else {
-            $edit_dialog itemconfigure 0 -state disabled
-        }
-        $edit_dialog itemconfigure 1 -state normal
-        $edit_dialog itemconfigure 2 -state normal
-    } else {
-        $edit_dialog itemconfigure 0 -state disabled
-        $edit_dialog itemconfigure 1 -state disabled
-        $edit_dialog itemconfigure 2 -state disabled
-    }
-}
-
-proc Apol_Perms_Map::togglePermMap {class perm} {
+proc Apol_Perms_Map::_togglePermMap {class perm modification} {
     variable opts
     set map $opts(p:${class}:${perm}:map)
-    set weight $opts(p:${class}:${perm}:weight)
-    if {[catch {apol_SetPermMap $class $perm $map $weight} err]} {
-        tk_messageBox -icon error -type ok -title Error -message "Error setting permission map: $err"
+    if {$map == $::APOL_PERMMAP_READ} {
+        set opts(p:${class}:${perm}:map_label) "Read"
+    } elseif {$map == $::APOL_PERMMAP_WRITE} {
+        set opts(p:${class}:${perm}:map_label) "Write"
+    } elseif {$map == $::APOL_PERMMAP_BOTH} {
+        set opts(p:${class}:${perm}:map_label) "Both"
+    } elseif {$map == $::APOL_PERMMAP_NONE} {
+        set opts(p:${class}:${perm}:map_label) "None"
+    } else {
+        set opts(p:${class}:${perm}:map_label) "Unmapped"
     }
-    set opts(modified) 1
+    set opts(modified) $modification
 }
 
-proc Apol_Perms_Map::save {} {
+proc Apol_Perms_Map::_toggleButtons {name1 name2 op} {
     variable opts
-    savePermMap $opts(filename) [file tail $opts(shortname)]
-}
-
-proc Apol_Perms_Map::saveAs {} {
-    variable edit_dialog
-    set pmap_name [tk_getSaveFile -title "Save Perm Map" -parent $edit_dialog]
-    if {$pmap_name != {}} {
-         savePermMap $pmap_name [file tail $pmap_name]
-    }
-}
-
-proc Apol_Perms_Map::saveAsDefault {} {
-    variable user_default_pmap_name
-    variable opts
-    savePermMap $user_default_pmap_name "User Default Permission Map"
-}
-
-proc Apol_Perms_Map::exitDialog {} {
-    variable opts
-    variable edit_dialog
+    variable dialog
     if {$opts(modified)} {
-        set ans [tk_messageBox -icon question -type yesno -title "Exit Perm Map Editor" \
-                     -parent $edit_dialog \
-                     -message "There were unsaved changes to the perm map.  Exit without saving changes to the perm map?"]
-        if {$ans == "no"} {
-            return
+        $dialog itemconfigure 1 -state normal
+    } else {
+        $dialog itemconfigure 1 -state disabled
+    }
+}
+
+proc Apol_Perms_Map::_okay {} {
+    _apply
+    _close_dialog
+}
+
+proc Apol_Perms_Map::_apply {} {
+    variable dialog
+    variable opts
+
+    if {[winfo exists $dialog] && $opts(modified)} {
+        foreach class $opts(classes) {
+            set class [string trimright $class "*"]
+            set perm_list {}
+            foreach perm [Apol_Class_Perms::getPermsForClass $class] {
+                set map $opts(p:${class}:${perm}:map)
+                set weight $opts(p:${class}:${perm}:weight)
+                if {$map != $::APOL_PERMMAP_UNMAPPED} {
+                    $::ApolTop::policy set_permmap $class $perm $map $weight
+                }
+                lappend perm_list [list $perm $map $weight]
+            }
+            # overwrite perm map values with applied values
+            set opts(c:$class) $perm_list
         }
-        # revert the permission map to original values
+    }
+    set opts(modified) 0
+}
+
+proc Apol_Perms_Map::_cancel {} {
+    variable opts
+
+    # revert the permission map to original values
+    if {$opts(modified)} {
         foreach class $opts(classes) {
             set class [string trimright $class "*"]
             foreach perm $opts(c:$class) {
                 foreach {perm map weight} $perm {break}
-                if {[catch {apol_SetPermMap $class $perm $map $weight} err]} {
-                    tk_messageBox -icon error -type ok -title Error -message "Error restoring permission map: $err"
-                }
+                $::ApolTop::policy set_permmap $class $perm $map $weight
             }
         }
-        set opts(modified) 0
     }
-    Apol_Perms_Map::close  ;# invoke my close to remove traces and clear memory
+    _close_dialog
 }
 
-proc Apol_Perms_Map::savePermMap {filename shortname} {
+proc Apol_Perms_Map::_close_dialog {} {
     variable opts
-    variable edit_dialog
+    array unset opts c:*
+    array unset opts p:*
+    trace remove variable Apol_Perms_Map::opts(modified) write \
+        Apol_Perms_Map::_toggleButtons
 
-    if {[catch {apol_SavePermMap $filename} err]} {
-        tk_messageBox -icon error -type ok -title Error -message "Error saving permission map: $err"
+    variable dialog
+    destroy $dialog
+}
+
+proc Apol_Perms_Map::_savePermMap {filename shortname} {
+    variable opts
+    variable dialog
+
+    _apply
+    if {[catch {$::ApolTop::policy save_permmap $filename} err]} {
+        tk_messageBox -icon error -type ok -title "Permission Maps" -message "Error saving permission map: $err"
     } else {
         set opts(filename) $filename
         set opts(shortname) $shortname
         set opts(is_saveable) 1
         set opts(modified) 0
-        set title "Edit Permissions Mappings: $opts(shortname)"
-        $edit_dialog configure -title $title
-        refreshEditDialog
-        refreshPermEdit
+        set title "Permissions Mappings: $opts(shortname)"
+        if {[winfo exists $dialog]} {
+            $dialog configure -title $title
+            _refreshEditDialog
+            _refreshPermEdit
+        }
     }
 }

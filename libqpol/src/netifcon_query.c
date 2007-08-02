@@ -34,7 +34,7 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_netifcon_by_name(qpol_policy_t * policy, const char *name, qpol_netifcon_t ** ocon)
+int qpol_policy_get_netifcon_by_name(const qpol_policy_t * policy, const char *name, const qpol_netifcon_t ** ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -65,7 +65,7 @@ int qpol_policy_get_netifcon_by_name(qpol_policy_t * policy, const char *name, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_netifcon_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_netifcon_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -101,7 +101,7 @@ int qpol_policy_get_netifcon_iter(qpol_policy_t * policy, qpol_iterator_t ** ite
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_name(qpol_policy_t * policy, qpol_netifcon_t * ocon, char **name)
+int qpol_netifcon_get_name(const qpol_policy_t * policy, const qpol_netifcon_t * ocon, const char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -120,7 +120,7 @@ int qpol_netifcon_get_name(qpol_policy_t * policy, qpol_netifcon_t * ocon, char 
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_msg_con(qpol_policy_t * policy, qpol_netifcon_t * ocon, qpol_context_t ** context)
+int qpol_netifcon_get_msg_con(const qpol_policy_t * policy, const qpol_netifcon_t * ocon, const qpol_context_t ** context)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -139,7 +139,7 @@ int qpol_netifcon_get_msg_con(qpol_policy_t * policy, qpol_netifcon_t * ocon, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_if_con(qpol_policy_t * policy, qpol_netifcon_t * ocon, qpol_context_t ** context)
+int qpol_netifcon_get_if_con(const qpol_policy_t * policy, const qpol_netifcon_t * ocon, const qpol_context_t ** context)
 {
 	ocontext_t *internal_ocon = NULL;
 

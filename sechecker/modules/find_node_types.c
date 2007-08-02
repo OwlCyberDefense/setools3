@@ -211,15 +211,16 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	}
 
 	/* search initial SIDs */
-	qpol_isid_t *isid = NULL;
+	const qpol_isid_t *isid = NULL;
 
 	buff = NULL;
 	qpol_policy_get_isid_by_name(q, "node", &isid);
 	if (isid) {
-		qpol_context_t *context;
+		const qpol_context_t *context;
 		apol_context_t *a_context;
-		qpol_type_t *context_type;
-		char *context_type_name, *tmp;
+		const qpol_type_t *context_type;
+		const char *context_type_name;
+		char *tmp;
 
 		proof = NULL;
 		qpol_isid_get_context(q, isid, &context);
@@ -264,7 +265,7 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 		}
 
 		proof->type = SECHK_ITEM_ISID;
-		proof->elem = isid;
+		proof->elem = (void *)isid;
 		proof->text = buff;
 
 		item->item = (void *)context_type;
@@ -293,10 +294,10 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 	}
 
 	for (i = 0; i < apol_vector_get_size(nodecon_vector); i++) {
-		char *type_name;
-		int j;
-		qpol_context_t *context;
-		qpol_type_t *context_type;
+		const char *type_name;
+		size_t j;
+		const qpol_context_t *context;
+		const qpol_type_t *context_type;
 		qpol_nodecon_t *nodecon = apol_vector_get_element(nodecon_vector, i);
 		qpol_nodecon_get_context(q, nodecon, &context);
 		qpol_context_get_type(q, context, &context_type);
@@ -313,8 +314,8 @@ int find_node_types_run(sechk_module_t * mod, apol_policy_t * policy, void *arg 
 
 		for (j = 0; j < apol_vector_get_size(res->items); j++) {
 			sechk_item_t *res_item;
-			qpol_type_t *res_type;
-			char *res_type_name;
+			const qpol_type_t *res_type;
+			const char *res_type_name;
 
 			res_item = apol_vector_get_element(res->items, j);
 			res_type = res_item->item;
@@ -373,10 +374,10 @@ int find_node_types_print(sechk_module_t * mod, apol_policy_t * policy, void *ar
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, j = 0, k = 0, num_items = 0;
-	qpol_type_t *type;
+	size_t i = 0, j = 0, k = 0, num_items = 0;
+	const qpol_type_t *type;
 	qpol_policy_t *q = apol_policy_get_qpol(policy);
-	char *type_name;
+	const char *type_name;
 
 	if (!mod || !policy) {
 		ERR(policy, "%s", "Invalid parameters");

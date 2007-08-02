@@ -231,8 +231,8 @@ int roles_wo_users_run(sechk_module_t * mod, apol_policy_t * policy, void *arg _
 	}
 
 	for (i = 0; i < apol_vector_get_size(role_vector); i++) {
-		qpol_role_t *role;
-		char *role_name;
+		const qpol_role_t *role;
+		const char *role_name;
 
 		role = apol_vector_get_element(role_vector, i);
 		qpol_role_get_name(apol_policy_get_qpol(policy), role, &role_name);
@@ -315,8 +315,8 @@ int roles_wo_users_print(sechk_module_t * mod, apol_policy_t * policy, void *arg
 {
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	qpol_role_t *role;
-	char *role_name;
+	const qpol_role_t *role;
+	const char *role_name;
 	size_t i = 0, j = 0, num_items;
 
 	if (!mod || !policy) {

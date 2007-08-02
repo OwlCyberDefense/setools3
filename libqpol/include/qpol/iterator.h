@@ -57,7 +57,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *item will be NULL.
  */
-	extern int qpol_iterator_get_item(qpol_iterator_t * iter, void **item);
+	extern int qpol_iterator_get_item(const qpol_iterator_t * iter, void **item);
 
 /**
  *  Advance the iterator to the next item.
@@ -76,7 +76,7 @@ extern "C"
  *  zero in any other case. If there is an error determining if
  *  the iterator is at the end then non-zero will be returned.
  */
-	extern int qpol_iterator_end(qpol_iterator_t * iter);
+	extern int qpol_iterator_end(const qpol_iterator_t * iter);
 
 /**
  *  Get the total number of items in the list traversed by the iterator.
@@ -86,7 +86,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *size will be 0.
  */
-	extern int qpol_iterator_get_size(qpol_iterator_t * iter, size_t * size);
+	extern int qpol_iterator_get_size(const qpol_iterator_t * iter, size_t * size);
 
 #ifdef	__cplusplus
 }

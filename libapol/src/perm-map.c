@@ -48,7 +48,7 @@ typedef struct apol_permmap_class
 {
 	unsigned char mapped;	       /* mask */
 	/** pointer to within a qpol_policy_t that represents this class */
-	qpol_class_t *c;
+	const qpol_class_t *c;
 	/** vector of apol_permmap_perm, an element for each permission bit */
 	apol_vector_t *perms;
 } apol_permmap_class_t;
@@ -148,7 +148,7 @@ static apol_permmap_perm_t *apol_permmap_perm_create(const char *name, unsigned 
  * @return A newly allocated map, or NULL on error.  The caller is
  * responsible for deallocating this pointer via permmap_destroy().
  */
-static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
+static apol_permmap_t *apol_permmap_create_from_policy(const apol_policy_t * p)
 {
 	apol_permmap_t *t = NULL;
 	qpol_iterator_t *class_iter = NULL, *perm_iter = NULL, *common_iter = NULL;
@@ -172,8 +172,8 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t * p)
 		goto cleanup;
 	}
 	for (; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
-		qpol_class_t *c;
-		qpol_common_t *common;
+		const qpol_class_t *c;
+		const qpol_common_t *common;
 		apol_permmap_class_t *pc = NULL;
 		apol_permmap_perm_t *pp = NULL;
 		size_t num_unique_perms, num_common_perms = 0;
@@ -258,10 +258,10 @@ void permmap_destroy(apol_permmap_t ** p)
  * @return Pointer to the class within the permission map, or NULL if
  * not found or on error.
  */
-static apol_permmap_class_t *find_permmap_class(apol_policy_t * p, const char *target)
+static apol_permmap_class_t *find_permmap_class(const apol_policy_t * p, const char *target)
 {
 	size_t i;
-	qpol_class_t *target_class;
+	const qpol_class_t *target_class;
 	if (qpol_policy_get_class_by_name(p->p, target, &target_class) < 0) {
 		return NULL;
 	}
@@ -285,7 +285,8 @@ static apol_permmap_class_t *find_permmap_class(apol_policy_t * p, const char *t
  * @return Pointer to the permission record within the class, or NULL
  * if not found or on error.
  */
-static apol_permmap_perm_t *find_permmap_perm(apol_policy_t * p, apol_permmap_class_t * pc, const char *target)
+static apol_permmap_perm_t *find_permmap_perm(const apol_policy_t * p
+					      __attribute__ ((unused)), const apol_permmap_class_t * pc, const char *target)
 {
 	size_t i;
 	for (i = 0; i < apol_vector_get_size(pc->perms); i++) {
@@ -307,7 +308,7 @@ static apol_permmap_perm_t *find_permmap_perm(apol_policy_t * p, apol_permmap_cl
  *
  * @return One of APOL_PERMMAP_READ, etc, or APOL_PERMMAP_UNMAPPED on error.
  */
-static char convert_map_char(apol_policy_t * p, char *perm_name, char mapid)
+static char convert_map_char(const apol_policy_t * p, const char *perm_name, char mapid)
 {
 	switch (mapid) {
 	case 'r':
@@ -336,13 +337,13 @@ static char convert_map_char(apol_policy_t * p, char *perm_name, char mapid)
  *
  * @return 1 if all classes had entries, 0 if any did not.
  */
-static int are_all_classes_mapped(apol_policy_t * p)
+static int are_all_classes_mapped(const apol_policy_t * p)
 {
 	size_t i;
 	for (i = 0; i < apol_vector_get_size(p->pmap->classes); i++) {
 		apol_permmap_class_t *pc = apol_vector_get_element(p->pmap->classes, i);
 		if (pc->mapped == 0) {
-			char *class_name;
+			const char *class_name;
 			if (qpol_class_get_name(p->p, pc->c, &class_name) < 0) {
 				return 0;
 			}
@@ -362,13 +363,13 @@ static int are_all_classes_mapped(apol_policy_t * p)
  *
  * @return 1 if all permissions had entries, 0 if any did not.
  */
-static int are_all_perms_mapped(apol_policy_t * p, apol_permmap_class_t * pc)
+static int are_all_perms_mapped(const apol_policy_t * p, const apol_permmap_class_t * pc)
 {
 	size_t i;
 	for (i = 0; i < apol_vector_get_size(pc->perms); i++) {
 		apol_permmap_perm_t *pp = apol_vector_get_element(pc->perms, i);
 		if (pp->map == 0) {
-			char *class_name;
+			const char *class_name;
 			if (qpol_class_get_name(p->p, pc->c, &class_name) < 0) {
 				return 0;
 			}
@@ -523,7 +524,7 @@ static int parse_permmap(apol_policy_t * p, FILE * fp)
 	return retval;
 }
 
-int apol_permmap_load(apol_policy_t * p, const char *filename)
+int apol_policy_open_permmap(apol_policy_t * p, const char *filename)
 {
 	FILE *outfile = NULL;
 	int retval = -1, rt = 0;
@@ -559,7 +560,12 @@ int apol_permmap_load(apol_policy_t * p, const char *filename)
 	return retval;
 }
 
-int apol_permmap_save(apol_policy_t * p, const char *filename)
+int apol_permmap_load(apol_policy_t * p, const char *filename)
+{
+	return apol_policy_open_permmap(p, filename);
+}
+
+int apol_policy_save_permmap(const apol_policy_t * p, const char *filename)
 {
 	time_t ltime;
 	size_t i, j;
@@ -588,7 +594,7 @@ int apol_permmap_save(apol_policy_t * p, const char *filename)
 
 	for (i = 0; i < apol_vector_get_size(p->pmap->classes); i++) {
 		apol_permmap_class_t *pc = apol_vector_get_element(p->pmap->classes, i);
-		char *class_name;
+		const char *class_name;
 		if (qpol_class_get_name(p->p, pc->c, &class_name) < 0) {
 			goto cleanup;
 		}
@@ -638,7 +644,12 @@ int apol_permmap_save(apol_policy_t * p, const char *filename)
 	return retval;
 }
 
-int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
+int apol_permmap_save(apol_policy_t * p, const char *filename)
+{
+	return apol_policy_save_permmap(p, filename);
+}
+
+int apol_policy_get_permmap(const apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
 {
 	apol_permmap_class_t *pc;
 	apol_permmap_perm_t *pp;
@@ -654,7 +665,12 @@ int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm
 	return 0;
 }
 
-int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
+int apol_permmap_get(apol_policy_t * p, const char *class_name, const char *perm_name, int *map, int *weight)
+{
+	return apol_policy_get_permmap(p, class_name, perm_name, map, weight);
+}
+
+int apol_policy_set_permmap(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
 {
 	apol_permmap_class_t *pc;
 	apol_permmap_perm_t *pp;
@@ -673,4 +689,9 @@ int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm
 	}
 	pp->weight = weight;
 	return 0;
+}
+
+int apol_permmap_set(apol_policy_t * p, const char *class_name, const char *perm_name, int map, int weight)
+{
+	return apol_policy_set_permmap(p, class_name, perm_name, map, weight);
 }

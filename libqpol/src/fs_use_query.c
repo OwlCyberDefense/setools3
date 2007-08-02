@@ -35,7 +35,7 @@
 #include "qpol_internal.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_fs_use_by_name(qpol_policy_t * policy, const char *name, qpol_fs_use_t ** ocon)
+int qpol_policy_get_fs_use_by_name(const qpol_policy_t * policy, const char *name, const qpol_fs_use_t ** ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -66,7 +66,7 @@ int qpol_policy_get_fs_use_by_name(qpol_policy_t * policy, const char *name, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_fs_use_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_fs_use_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -102,7 +102,7 @@ int qpol_policy_get_fs_use_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_name(qpol_policy_t * policy, qpol_fs_use_t * ocon, char **name)
+int qpol_fs_use_get_name(const qpol_policy_t * policy, const qpol_fs_use_t * ocon, const char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -121,7 +121,7 @@ int qpol_fs_use_get_name(qpol_policy_t * policy, qpol_fs_use_t * ocon, char **na
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_behavior(qpol_policy_t * policy, qpol_fs_use_t * ocon, uint32_t * behavior)
+int qpol_fs_use_get_behavior(const qpol_policy_t * policy, const qpol_fs_use_t * ocon, uint32_t * behavior)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -140,7 +140,7 @@ int qpol_fs_use_get_behavior(qpol_policy_t * policy, qpol_fs_use_t * ocon, uint3
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_context(qpol_policy_t * policy, qpol_fs_use_t * ocon, qpol_context_t ** context)
+int qpol_fs_use_get_context(const qpol_policy_t * policy, const qpol_fs_use_t * ocon, const qpol_context_t ** context)
 {
 	ocontext_t *internal_ocon = NULL;
 

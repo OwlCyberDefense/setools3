@@ -59,23 +59,27 @@ void result_item_print_string(GtkTextBuffer * tb, GtkTextIter * iter, const char
 	}
 	for (c = s; *c && tag == NULL; c++) {
 		switch (*c) {
-		case '+':{
-				tag = "added";
-				break;
-			}
-		case '-':{
-				tag = "removed";
-				break;
-			}
+		case '+':
+		{
+			tag = "added";
+			break;
+		}
+		case '-':
+		{
+			tag = "removed";
+			break;
+		}
 		case ' ':
 		case '\t':
-		case '\n':{
-				break;
-			}
-		default:{
-				tag = "modified";
-				break;
-			}
+		case '\n':
+		{
+			break;
+		}
+		default:
+		{
+			tag = "modified";
+			break;
+		}
 		}
 	}
 	for (c = s; *c; c++, end++) {
@@ -104,44 +108,44 @@ void result_item_print_string_inline(GtkTextBuffer * tb, GtkTextIter * iter, con
 	}
 	for (; *c; c++, end++) {
 		switch (*c) {
-		case '+':{
-				if (end > 0) {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
-										 NULL);
-				}
-				start = end;
-				current_tag = "added";
-				break;
+		case '+':
+		{
+			if (end > 0) {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
 			}
-		case '-':{
-				if (end > 0) {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag,
-										 NULL);
-				}
-				start = end;
-				current_tag = "removed";
-				break;
+			start = end;
+			current_tag = "added";
+			break;
+		}
+		case '-':
+		{
+			if (end > 0) {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start, current_tag, NULL);
 			}
-		case '\n':{
-				if (*(c + 1) != '\0') {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
-										 NULL);
-					for (i = 0; i < indent_level; i++) {
-						gtk_text_buffer_insert(tb, iter, indent, -1);
-					}
-					start = end + 1;
+			start = end;
+			current_tag = "removed";
+			break;
+		}
+		case '\n':
+		{
+			if (*(c + 1) != '\0') {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag, NULL);
+				for (i = 0; i < indent_level; i++) {
+					gtk_text_buffer_insert(tb, iter, indent, -1);
 				}
-				break;
+				start = end + 1;
 			}
-		case ' ':{
-				if (current_tag != "modified") {
-					gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag,
-										 NULL);
-					start = end + 1;
-					current_tag = "modified";
-				}
-				break;
+			break;
+		}
+		case ' ':
+		{
+			if (current_tag != "modified") {
+				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag, NULL);
+				start = end + 1;
+				current_tag = "modified";
 			}
+			break;
+		}
 		}
 	}
 	if (start < end) {
@@ -160,23 +164,27 @@ void result_item_print_string_avrule(GtkTextBuffer * tb, GtkTextIter * iter, con
 	}
 	for (c = s; *c && tag == NULL; c++) {
 		switch (*c) {
-		case '+':{
-				tag = "added";
-				break;
-			}
-		case '-':{
-				tag = "removed";
-				break;
-			}
+		case '+':
+		{
+			tag = "added";
+			break;
+		}
+		case '-':
+		{
+			tag = "removed";
+			break;
+		}
 		case ' ':
 		case '\t':
-		case '\n':{
-				break;
-			}
-		default:{
-				tag = "modified";
-				break;
-			}
+		case '\n':
+		{
+			break;
+		}
+		default:
+		{
+			tag = "modified";
+			break;
+		}
 		}
 	}
 	init_tag = tag;
@@ -191,17 +199,20 @@ void result_item_print_string_avrule(GtkTextBuffer * tb, GtkTextIter * iter, con
 		next_c = strchr(c, ' ');
 		assert(next_c != NULL);
 		switch (*c) {
-		case '+':{
-				tag = "added";
-				break;
-			}
-		case '-':{
-				tag = "removed";
-				break;
-			}
-		default:{
-				tag = init_tag;
-			}
+		case '+':
+		{
+			tag = "added";
+			break;
+		}
+		case '-':
+		{
+			tag = "removed";
+			break;
+		}
+		default:
+		{
+			tag = init_tag;
+		}
 		}
 		gtk_text_buffer_insert_with_tags_by_name(tb, iter, c, next_c - c, tag, "inline-link", NULL);
 		gtk_text_buffer_insert_with_tags_by_name(tb, iter, " ", 1, init_tag, NULL);
@@ -214,7 +225,7 @@ void result_item_print_string_avrule(GtkTextBuffer * tb, GtkTextIter * iter, con
 void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
 {
 	GtkTextIter iter;
-	apol_vector_t *v;
+	const apol_vector_t *v;
 	size_t i;
 	void *elem;
 	char *s = NULL;
@@ -235,7 +246,7 @@ void result_item_print_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_fo
 void result_item_print_rule_diff(result_item_t * item, GtkTextBuffer * tb, poldiff_form_e form)
 {
 	GtkTextIter iter;
-	apol_vector_t *v;
+	const apol_vector_t *v;
 	size_t i;
 	void *elem;
 	char *s = NULL;
@@ -310,35 +321,41 @@ void result_item_print_header(result_item_t * item, GtkTextBuffer * tb, poldiff_
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, "header", NULL);
 
 	switch (form) {
-	case POLDIFF_FORM_ADDED:{
-			g_string_printf(string, "Added %s:", label);
-			tag = "added-header";
-			break;
-		}
-	case POLDIFF_FORM_ADD_TYPE:{
-			g_string_printf(string, "Added %s because of new type:", label);
-			tag = "added-header";
-			break;
-		}
-	case POLDIFF_FORM_REMOVED:{
-			g_string_printf(string, "Removed %s:", label);
-			tag = "removed-header";
-			break;
-		}
-	case POLDIFF_FORM_REMOVE_TYPE:{
-			g_string_printf(string, "Removed %s because of missing type:", label);
-			tag = "removed-header";
-			break;
-		}
-	case POLDIFF_FORM_MODIFIED:{
-			g_string_printf(string, "Modified %s:", label);
-			tag = "modified-header";
-			break;
-		}
-	default:{
-			assert(0);
-			tag = NULL;
-		}
+	case POLDIFF_FORM_ADDED:
+	{
+		g_string_printf(string, "Added %s:", label);
+		tag = "added-header";
+		break;
+	}
+	case POLDIFF_FORM_ADD_TYPE:
+	{
+		g_string_printf(string, "Added %s because of new type:", label);
+		tag = "added-header";
+		break;
+	}
+	case POLDIFF_FORM_REMOVED:
+	{
+		g_string_printf(string, "Removed %s:", label);
+		tag = "removed-header";
+		break;
+	}
+	case POLDIFF_FORM_REMOVE_TYPE:
+	{
+		g_string_printf(string, "Removed %s because of missing type:", label);
+		tag = "removed-header";
+		break;
+	}
+	case POLDIFF_FORM_MODIFIED:
+	{
+		g_string_printf(string, "Modified %s:", label);
+		tag = "modified-header";
+		break;
+	}
+	default:
+	{
+		assert(0);
+		tag = NULL;
+	}
 	}
 	g_string_append_printf(string, " %zd\n", result_item_get_num_differences(item, form));
 	gtk_text_buffer_insert_with_tags_by_name(tb, &iter, string->str, -1, tag, NULL);

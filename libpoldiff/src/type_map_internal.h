@@ -129,7 +129,7 @@ extern "C"
  *  @return The type's remapped value.  On error this will be 0 and
  *  errno will be set.
  */
-	uint32_t type_map_lookup(poldiff_t * diff, qpol_type_t * type, int which_pol);
+	uint32_t type_map_lookup(const poldiff_t * diff, const qpol_type_t * type, int which_pol);
 
 /**
  *  Given a pseudo-type's value and a flag indicating for which policy
@@ -147,7 +147,7 @@ extern "C"
  *  free this vector.  If the call fails, NULL will be returned and
  *  errno will be set.
  */
-	apol_vector_t *type_map_lookup_reverse(poldiff_t * diff, uint32_t val, int which_pol);
+	const apol_vector_t *type_map_lookup_reverse(const poldiff_t * diff, uint32_t val, int which_pol);
 
 /**
  * Get the first name that can be found for a pseudo type value.
@@ -162,7 +162,7 @@ extern "C"
  * not modify the string; it is a pointer into the policy's symbol
  * table.
  */
-	const char *type_map_get_name(poldiff_t * diff, const uint32_t pseudo_val, int pol);
+	const char *type_map_get_name(const poldiff_t * diff, const uint32_t pseudo_val, int pol);
 
 #ifdef	__cplusplus
 }

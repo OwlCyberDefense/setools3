@@ -1,3 +1,57 @@
+SETools 3.3:
+
+SETools:
+
+  * SETools now has an external dependency upon libsqlite3 >= 3.2.  The
+    supplied configure script will enforce this dependency.
+
+  * pkg-config scripts are installed with the SETools libraries.
+
+libsefs:
+
+  * Rewrite of library to have proper namespaces and much more usable
+    object-oriented design.
+
+  * SWIG wrappers generated for this library if the appropriate
+    configure flags are set.
+
+findcon, searchcon:
+
+  * Merge searchcon's functionality into findcon.  The searchcon tool
+    has been removed from SETools.
+
+indexcon, replcon:
+
+  * Updated to use new libsefs design.
+
+apol:
+
+  * Updated to use new libsefs design.
+
+  * Modified to use the SWIG Tcl interface rather than a custom C
+    library.  apol is now a combination of a Tcl script (simply called
+    'apol') and associated packages that are required at runtime.
+
+  * Neverallow rules are only loaded and expanded when the user
+    performs a search for them.  This will dramatically speed up
+    initial policy load time.
+
+awish:
+
+  * awish is no longer needed and thus has been removed from SETools.
+
+sediff, sediffx:
+
+  * Instead of differentiating "AV rules" or "TE rules", user now
+    specifies which particular rule to compare (allow, dontaudit,
+    type_transition, etc.).
+
+  * Neverallow rules are only loaded and expanded when the user
+    performs a diff upon them.  This will dramatically speed up
+    initial policy load time.
+
+==================================================
+
 SETools 3.2:
 
 libapol, libqpol, libesaudit, libpoldiff:

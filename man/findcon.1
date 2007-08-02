@@ -3,58 +3,112 @@
 findcon \- SELinux file context search tool
 .SH SYNOPSIS
 .B findcon
-[OPTIONS] -c CONTEXT FILENAMES
+FCLIST [OPTIONS] [EXPRESSION]
 .SH DESCRIPTION
 .PP
 .B findcon
 allows the user to search for files with a specified context.
 Results can be filtered by object class as described below.
+.SH FCLIST
+The
+.B findcon
+tool operates upon a file context list source.  There are three valid
+file context lists.
+.IP directory
+If
+.B FCLIST
+is a name of a directory then begin the search at that directory and
+recurse within it.  Be sure there are no circular mounts within it.
+.IP file_contexts
+If
+.B FCLIST
+is the name of a file_contexts file (e.g.,
+/etc/selinux/strict/contexts/files/file_contexts) then open that file
+and find matching entries.
+.IP database
+If
+.B FCLIST
+is the name of a database as created by a previous run of
+.B indexcon
+or
+.B apol
+then open the database and execute queries into it.
+.SH EXPRESSION
+.P
+The following options allow the user to specify which files to print.
+A file must meet all specified criteria.
+If no expression is provided, all files are printed.
+.IP "-t TYPE, --type=TYPE"
+Search for files with a context containing the type TYPE.
+.IP "-u USER, --user=USER"
+Search for files with a context containing the user USER.
+.IP "-r ROLE, --role=ROLE"
+Search for files with a context containing the role ROLE.
+.IP "-m RANGE, --mls-range=RANGE"
+Search for files with a context with the MLS range of RANGE.  Note
+that
+.B findcon
+ignores the SELinux translation library, if present.  In addition,
+this flag is ignored if the
+.B FCLIST
+has no MLS information.
+.IP "--context=CONTEXT"
+Search for files matching this partial context.  This flag overrides
+-t, -u, -r, and -m.
+.IP "-p PATH, --path=PATH"
+Search for files which include PATH.
+.IP "-c CLASS, --class=CLASS"
+Search only files of object class CLASS.
 .SH OPTIONS
-.IP "-c, --context=CONTEXT"
-Search for files with context CONTEXT.
-A context is specified as a colon separated list of user, role, and type as follows: user_u:object_r:type_t.
-If the system supports MLS, additional MLS range can be added to the end as follows: user_u:object_r:type_t:s0.
-If a field is not specified, the query will always match that field.
-If the system supports MLS and the translation library is enabled, matching is done using translated contexts.
-To match raw contexts, use the --raw option.
-The special string "unlabeled" can also be specified to match files with no label.
-.IP "--raw"
-Match raw contexts, ignoring the translation library if present.
-.IP "-o, --object=OBJECT"
-Restrict search to files of object class OBJECT.
-.IP "-r, --recursive"
-Recurse through directories.
-.IP "-s, --stdin"
-Read FILENAMES from standard input.
-.IP "-q, --quiet"
-Suppress progress output.
-.IP "-v, --verbose"
-Display context info.
+The following additional options are available.
+.IP "-R, --regex"
+Search using regular expressions instead of exact string matching.
+This option does not affect the --class flag.
 .IP "-h, --help"
 Print help information and exit.
 .IP "-V, --version"
 Print version information and exit.
-.SH INFORMATION
-Valid object classes are
+.SH PARTIAL CONTEXT
+The
+.B --context
+flag specifies a partial context, which is a a colon separated list of
+user, role, and type.  If the system supports MLS, the context may
+have a fourth field that gives the range.  If a field is not specified
+or is the literal asterisk, then the query will always match the field.
+.SH OBJECT CLASSES
+Valid object class strings are
 .PP
-file,
+block,
+char,
 dir,
-lnk_file,
-chr_file,
-blk_file,
-sock_file,
-fifo_file
+fifo,
+file,
+link, or
+sock.
+.SH NOTE
+The findcon utility always operates on "raw" SELinux file contexts.
+If the system has an installed translation library (i.e., libsetrans),
+those translations are ignored in favor of reading the original
+contexts from the filesystem (if FCFILE is a directory).
 .SH EXAMPLES
 .TP
-.B findcon -c : .
-Find every context in the current directory.
+.B findcon .
+Find every context in the current directory and all of its
+subdirectories.
 .TP
-.B findcon -c user_u: .
-Find every context in the current directory whose user is user_u.
+.B findcon -u user_u .
+Find every context whose user is user_u in the current directory and
+all subdirectories.
 .TP
-.B findcon -r -c ::type_t:s0 .
-Find every context with type type_t and MLS range s0, searching in the
-current directory and all subdirectories.
+.B findcon -u system_u -t bin_t file_contexts
+Find entries user system_u and type bin_t within a file_contexts file,
+assuming that file_contexts is a file contexts file.
+.TP
+.B findcon --context=system_u::bin_t file_contexts
+This is equivalent to the previous example.
+.TP
+.B findcon --context=system_u:*:bin_t:* file_contexts
+This is also equivalent to the above example.
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
@@ -62,4 +116,4 @@ Copyright(C) 2003-2007 Tresys Technology, LLC
 .SH BUGS
 Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
-replcon(1), indexcon(1), searchcon(1)
+replcon(1), indexcon(1)

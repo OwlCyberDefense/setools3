@@ -46,6 +46,7 @@
 #include <sepol/module.h>
 #include <sepol/policydb/module.h>
 
+#include <stdbool.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
@@ -86,12 +87,6 @@ extern int mlspol;
 #define le64_to_cpu(x) bswap_64(x)
 #endif
 
-#undef FALSE
-#define FALSE   0
-#undef TRUE
-#define TRUE    1
-typedef unsigned char bool_t;
-
 /* buffer for reading from file */
 typedef struct fbuf
 {
@@ -101,7 +96,8 @@ typedef struct fbuf
 } qpol_fbuf_t;
 
 static void qpol_handle_route_to_callback(void *varg
-					  __attribute__ ((unused)), qpol_policy_t * p, int level, const char *fmt, va_list va_args)
+					  __attribute__ ((unused)), const qpol_policy_t * p, int level, const char *fmt,
+					  va_list va_args)
 {
 	if (!p || !(p->fn)) {
 		vfprintf(stderr, fmt, va_args);
@@ -130,7 +126,7 @@ static void sepol_handle_route_to_callback(void *varg, sepol_handle_t * sh, cons
 	va_end(ap);
 }
 
-void qpol_handle_msg(qpol_policy_t * p, int level, const char *fmt, ...)
+void qpol_handle_msg(const qpol_policy_t * p, int level, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -143,37 +139,42 @@ void qpol_handle_msg(qpol_policy_t * p, int level, const char *fmt, ...)
 	}
 
 	va_start(ap, fmt);
-	qpol_handle_route_to_callback(p->varg, p, level, fmt, ap);
+	/* explicit cast here to remove const for sepol handle */
+	qpol_handle_route_to_callback((void *)p->varg, p, level, fmt, ap);
 	va_end(ap);
 }
 
-static void qpol_handle_default_callback(void *varg, qpol_policy_t * p, int level, const char *fmt, va_list va_args)
+static void qpol_handle_default_callback(void *varg __attribute__ ((unused)), const qpol_policy_t * p
+					 __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
 	switch (level) {
 	case QPOL_MSG_INFO:
-		{
-			/* by default ignore info messages */
-			return;
-		}
+	{
+		/* by default ignore info messages */
+		return;
+	}
 	case QPOL_MSG_WARN:
-		{
-			fprintf(stderr, "WARNING: ");
-			break;
-		}
+	{
+		fprintf(stderr, "WARNING: ");
+		break;
+	}
 	case QPOL_MSG_ERR:
 	default:
-		{
-			fprintf(stderr, "ERROR: ");
-			break;
-		}
+	{
+		fprintf(stderr, "ERROR: ");
+		break;
+	}
 	}
 
 	vfprintf(stderr, fmt, va_args);
 	fprintf(stderr, "\n");
 }
 
-static int read_source_policy(qpol_policy_t * qpolicy, char *progname, int load_rules)
+static int read_source_policy(qpol_policy_t * qpolicy, char *progname, int options)
 {
+	int load_rules = 1;
+	if (options & QPOL_POLICY_OPTION_NO_RULES)
+		load_rules = 0;
 	if ((id_queue = queue_create()) == NULL) {
 		ERR(qpolicy, "%s", strerror(ENOMEM));
 		return -1;
@@ -337,7 +338,7 @@ int qpol_is_file_mod_pkg(FILE * fp)
 {
 	size_t sz;
 	__u32 ubuf;
-	bool_t rt;
+	int rt;
 
 	sz = fread(&ubuf, sizeof(__u32), 1, fp);
 
@@ -356,13 +357,13 @@ int qpol_is_file_mod_pkg(FILE * fp)
 static int infer_policy_version(qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
-	qpol_class_t *obj_class = NULL;
+	const qpol_class_t *obj_class = NULL;
 	qpol_iterator_t *iter = NULL;
 	qpol_fs_use_t *fsuse = NULL;
 	qpol_range_trans_t *rangetrans = NULL;
 	uint32_t behavior = 0;
 	size_t nvtrans = 0, fsusexattr = 0;
-	char *obj_name = NULL;
+	const char *obj_name = NULL;
 
 	if (!policy) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -415,7 +416,7 @@ static int infer_policy_version(qpol_policy_t * policy)
 		db->policyvers = 19;
 	}
 	/* 18 : the netlink_audit_socket class added */
-	else if (!qpol_policy_get_class_by_name(policy, "netlink_audit_socket", &obj_class)) {
+	else if (hashtab_search(db->p_classes.table, (const hashtab_key_t)"netlink_audit_socket")) {
 		db->policyvers = 18;
 	}
 	/* 17 : IPv6 nodecon statements added */
@@ -423,7 +424,7 @@ static int infer_policy_version(qpol_policy_t * policy)
 		db->policyvers = 17;
 	}
 	/* 16 : conditional policy added */
-	else if (db->p_bool_val_to_name[0]) {
+	else if (db->p_bool_val_to_name && db->p_bool_val_to_name[0]) {
 		db->policyvers = 16;
 	}
 	/* 15 */
@@ -438,7 +439,190 @@ static int infer_policy_version(qpol_policy_t * policy)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+/* forward declarations see policy_extend.c */
+struct qpol_extended_image;
+extern void qpol_extended_image_destroy(struct qpol_extended_image **ext);
+
+#if LINK_SHARED == 1
+__asm__(".symver qpol_policy_open_from_file_old,qpol_policy_open_from_file@");
+__asm__(".symver qpol_policy_open_from_file_opt,qpol_policy_open_from_file@@VERS_1.3");
+__asm__(".symver qpol_policy_open_from_memory_old,qpol_policy_open_from_memory@");
+__asm__(".symver qpol_policy_open_from_memory_opt,qpol_policy_open_from_memory@VERS_1.3");
+__asm__(".symver qpol_policy_rebuild_old,qpol_policy_rebuild@");
+__asm__(".symver qpol_policy_rebuild_opt,qpol_policy_rebuild@@VERS_1.3");
+#endif
+
+/**
+ * @brief Internal version of qpol_policy_rebuild() version 1.3
+ *
+ * Implementation of the exported function qpol_policy_rebuild()
+ * for version 1.3; this symbol name is not exported.
+ * @see qpol_policy_rebuild()
+ */
+int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
+{
+	sepol_policydb_t *old_p = NULL;
+	sepol_policydb_t **modules = NULL;
+	qpol_module_t *base = NULL;
+	size_t num_modules = 0, i;
+	int error = 0, old_otions;
+
+	if (!policy) {
+		ERR(NULL, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	/* if kernel binary do nothing */
+	if (policy->type == QPOL_POLICY_KERNEL_BINARY)
+		return STATUS_SUCCESS;
+
+	/* if options are the same and the modules were not modified, do nothing */
+	if (options == policy->options && policy->modified == 0)
+		return STATUS_SUCCESS;
+
+	/* cache old policy in case of failure */
+	old_p = policy->p;
+	policy->p = NULL;
+	struct qpol_extended_image *ext = policy->ext;
+	policy->ext = NULL;
+	old_otions = policy->options;
+	policy->options = options;
+
+	/* QPOL_POLICY_OPTION_NO_RULES implies QPOL_POLICY_OPTION_NO_NEVERALLOWS */
+	if (policy->options & QPOL_POLICY_OPTION_NO_RULES)
+		policy->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
+
+	if (policy->type == QPOL_POLICY_MODULE_BINARY) {
+		/* allocate enough space for all modules then fill with list of enabled ones only */
+		if (!(modules = calloc(policy->num_modules, sizeof(sepol_policydb_t *)))) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
+		}
+		/* first module is base and cannot be disabled */
+		for (i = 1; i < policy->num_modules; i++) {
+			if ((policy->modules[i])->enabled) {
+				modules[num_modules++] = (policy->modules[i])->p;
+			}
+		}
+		/* have to reopen the base since link alters it */
+		if (qpol_module_create_from_file((policy->modules[0])->path, &base)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
+		}
+		/* take the policy from base and use as new base into which to link */
+		policy->p = base->p;
+		base->p = NULL;
+		qpol_module_destroy(&base);
+		if (sepol_link_modules(policy->sh, policy->p, modules, num_modules, 0)) {
+			error = EIO;
+			goto err;
+		}
+		free(modules);
+	} else {
+		/* repeat open process as if qpol_policy_open_from_memory() */
+		if (sepol_policydb_create(&(policy->p))) {
+			error = errno;
+			goto err;
+		}
+
+		qpol_src_input = policy->file_data;
+		qpol_src_inputptr = qpol_src_input;
+		qpol_src_inputlim = qpol_src_inputptr + policy->file_data_sz - 1;
+		qpol_src_originalinput = qpol_src_input;
+
+		/* read in source */
+		policy->p->p.policy_type = POLICY_BASE;
+		if (read_source_policy(policy, "parse", policy->options) < 0) {
+			error = errno;
+			goto err;
+		}
+
+		/* link the source */
+		INFO(policy, "%s", "Linking source policy. (Step 2 of 5)");
+		if (sepol_link_modules(policy->sh, policy->p, NULL, 0, 0)) {
+			error = EIO;
+			goto err;
+		}
+		avtab_destroy(&(policy->p->p.te_avtab));
+		avtab_destroy(&(policy->p->p.te_cond_avtab));
+		avtab_init(&(policy->p->p.te_avtab));
+		avtab_init(&(policy->p->p.te_cond_avtab));
+	}
+
+	if (qpol_expand_module(policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
+		error = errno;
+		goto err;
+	}
+
+	if (infer_policy_version(policy)) {
+		error = errno;
+		goto err;
+	}
+
+	if (policy_extend(policy)) {
+		error = errno;
+		goto err;
+	}
+	qpol_extended_image_destroy(&ext);
+
+	sepol_policydb_free(old_p);
+
+	return STATUS_SUCCESS;
+
+      err:
+	free(modules);
+
+	policy->p = old_p;
+	policy->ext = ext;
+	policy->options = old_otions;
+	errno = error;
+	return STATUS_ERR;
+}
+
+#if LINK_SHARED == 0
+int qpol_policy_rebuild(qpol_policy_t * policy, int options)
+{
+	return qpol_policy_rebuild_opt(policy, options);
+}
+#endif
+
+/**
+ * @brief Internal version of qpol_policy_rebuild() version 1.2 or earlier
+ * @deprecated use the 1.3 version.
+ * @see qpol_policy_rebuild()
+ */
+int qpol_policy_rebuild_old(qpol_policy_t * policy)
+{
+	if (!policy) {
+		ERR(NULL, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	/* fail if not a modular policy */
+	if (policy->type != QPOL_POLICY_MODULE_BINARY) {
+		ERR(policy, "%s", strerror(ENOTSUP));
+		errno = ENOTSUP;
+		return STATUS_ERR;
+	}
+
+	if (!policy->modified)
+		return STATUS_SUCCESS;
+
+	return qpol_policy_rebuild_opt(policy, policy->options);
+}
+
+/**
+ * @brief Internal version of qpol_policy_open_from_file() version 1.3
+ *
+ * Implementation of the exported function qpol_policy_open_from_file()
+ * for version 1.3; this symbol name is not exported.
+ * @see qpol_policy_open_from_file()
+ */
+int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg, const int options)
 {
 	int error = 0, retv = -1;
 	FILE *infile = NULL;
@@ -462,7 +646,11 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 		ERR(NULL, "%s", strerror(error));
 		goto err;
 	}
-	(*policy)->rules_loaded = 1;
+	(*policy)->options = options;
+
+	/* QPOL_POLICY_OPTION_NO_RULES implies QPOL_POLICY_OPTION_NO_NEVERALLOWS */
+	if ((*policy)->options & QPOL_POLICY_OPTION_NO_RULES)
+		(*policy)->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 
 	(*policy)->sh = sepol_handle_create();
 	if ((*policy)->sh == NULL) {
@@ -505,7 +693,10 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 			error = EIO;
 			goto err;
 		}
-		if (qpol_policy_extend(*policy)) {
+		/* By definition, binary policy cannot have neverallow rules and all other rules are always loaded. */
+		(*policy)->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
+		(*policy)->options &= ~(QPOL_POLICY_OPTION_NO_RULES);
+		if (policy_extend(*policy)) {
 			error = errno;
 			goto err;
 		}
@@ -522,7 +713,7 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 		}
 		/* *policy now owns mod */
 		mod = NULL;
-		if (qpol_policy_rebuild(*policy)) {
+		if (qpol_policy_rebuild_opt(*policy, options)) {
 			error = errno;
 			goto err;
 		}
@@ -549,8 +740,13 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size - 1];
 		qpol_src_originalinput = qpol_src_input;
 
+		/* store mmaped version for rebuild() */
+		(*policy)->file_data = qpol_src_originalinput;
+		(*policy)->file_data_sz = sb.st_size;
+		(*policy)->file_data_type = QPOL_POLICY_FILE_DATA_TYPE_MMAP;
+
 		(*policy)->p->p.policy_type = POLICY_BASE;
-		if (read_source_policy(*policy, "libqpol", (*policy)->rules_loaded) < 0) {
+		if (read_source_policy(*policy, "libqpol", (*policy)->options) < 0) {
 			error = errno;
 			goto err;
 		}
@@ -566,8 +762,8 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 		avtab_init(&((*policy)->p->p.te_avtab));
 		avtab_init(&((*policy)->p->p.te_cond_avtab));
 
-		/* expand :) */
-		if (qpol_expand_module(*policy)) {
+		/* expand */
+		if (qpol_expand_module(*policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 			error = errno;
 			goto err;
 		}
@@ -576,7 +772,7 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 			error = errno;
 			goto err;
 		}
-		if (qpol_policy_extend(*policy)) {
+		if (policy_extend(*policy)) {
 			error = errno;
 			goto err;
 		}
@@ -596,176 +792,27 @@ int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_c
 	return -1;
 }
 
-int qpol_open_policy_from_file(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+#if LINK_SHARED == 0
+int qpol_policy_open_from_file(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg, const int options)
 {
-	return qpol_policy_open_from_file(path, policy, fn, varg);
+	return qpol_policy_open_from_file_opt(path, policy, fn, varg, options);
 }
+#endif
 
 int qpol_policy_open_from_file_no_rules(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
 {
-	int error = 0, retv = -1;
-	FILE *infile = NULL;
-	sepol_policy_file_t *pfile = NULL;
-	qpol_module_t *mod = NULL;
-	int fd = 0;
-	struct stat sb;
-
-	if (policy != NULL)
-		*policy = NULL;
-
-	if (path == NULL || policy == NULL || policy == NULL) {
-		/* policy passed as NULL here as it has yet to be created */
-		ERR(NULL, "%s", strerror(EINVAL));
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
-		error = errno;
-		goto err;
-	}
-	/* rule loading only can be diabled for source policies, so will set to zero if source */
-	(*policy)->rules_loaded = 1;
-
-	(*policy)->sh = sepol_handle_create();
-	if ((*policy)->sh == NULL) {
-		error = errno;
-		ERR(*policy, "%s", strerror(error));
-		errno = error;
-		return -1;
-	}
-
-	if (fn) {
-		(*policy)->fn = fn;
-		(*policy)->varg = varg;
-	} else {
-		(*policy)->fn = qpol_handle_default_callback;
-	}
-	sepol_msg_set_callback((*policy)->sh, sepol_handle_route_to_callback, (*policy));
-
-	if (sepol_policydb_create(&((*policy)->p))) {
-		error = errno;
-		goto err;
-	}
-
-	if (sepol_policy_file_create(&pfile)) {
-		error = errno;
-		goto err;
-	}
-
-	infile = fopen(path, "rb");
-	if (infile == NULL) {
-		error = errno;
-		goto err;
-	}
-
-	sepol_policy_file_set_handle(pfile, (*policy)->sh);
-
-	if (qpol_is_file_binpol(infile)) {
-		(*policy)->type = retv = QPOL_POLICY_KERNEL_BINARY;
-		sepol_policy_file_set_fp(pfile, infile);
-		if (sepol_policydb_read((*policy)->p, pfile)) {
-			error = EIO;
-			goto err;
-		}
-		if (qpol_policy_extend(*policy)) {
-			error = errno;
-			goto err;
-		}
-	} else if (qpol_is_file_mod_pkg(infile)) {
-		(*policy)->type = retv = QPOL_POLICY_MODULE_BINARY;
-		if (qpol_module_create_from_file(path, &mod)) {
-			error = errno;
-			ERR(*policy, "%s", strerror(error));
-			goto err;
-		}
-		if (qpol_policy_append_module(*policy, mod)) {
-			error = errno;
-			goto err;
-		}
-		/* *policy now owns mod */
-		mod = NULL;
-		if (qpol_policy_rebuild(*policy)) {
-			error = errno;
-			goto err;
-		}
-	} else {
-		(*policy)->type = retv = QPOL_POLICY_KERNEL_SOURCE;
-		INFO(*policy, "%s", "Rule loading disabled");
-		(*policy)->rules_loaded = 0;
-		fd = fileno(infile);
-		if (fd < 0) {
-			error = errno;
-			goto err;
-		}
-		if (fstat(fd, &sb) < 0) {
-			error = errno;
-			ERR(*policy, "Can't stat '%s':	%s\n", path, strerror(errno));
-			goto err;
-		}
-		qpol_src_input = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-		if (qpol_src_input == MAP_FAILED) {
-			error = errno;
-			ERR(*policy, "Can't map '%s':  %s\n", path, strerror(errno));
-
-			goto err;
-		}
-		qpol_src_inputptr = qpol_src_input;
-		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size - 1];
-		qpol_src_originalinput = qpol_src_input;
-
-		(*policy)->p->p.policy_type = POLICY_BASE;
-		if (read_source_policy(*policy, "libqpol", (*policy)->rules_loaded) < 0) {
-			error = errno;
-			goto err;
-		}
-
-		/* link the source */
-		INFO(*policy, "%s", "Linking source policy. (Step 2 of 5)");
-		if (sepol_link_modules((*policy)->sh, (*policy)->p, NULL, 0, 0)) {
-			error = EIO;
-			goto err;
-		}
-		avtab_destroy(&((*policy)->p->p.te_avtab));
-		avtab_destroy(&((*policy)->p->p.te_cond_avtab));
-		avtab_init(&((*policy)->p->p.te_avtab));
-		avtab_init(&((*policy)->p->p.te_cond_avtab));
-
-		/* expand */
-		if (qpol_expand_module(*policy)) {
-			error = errno;
-			goto err;
-		}
-
-		if (infer_policy_version(*policy)) {
-			error = errno;
-			goto err;
-		}
-		if (qpol_policy_extend(*policy)) {
-			error = errno;
-			goto err;
-		}
-	}
-
-	fclose(infile);
-	sepol_policy_file_free(pfile);
-	return retv;
-
-      err:
-	qpol_policy_destroy(policy);
-	sepol_policy_file_free(pfile);
-	if (infile)
-		fclose(infile);
-	errno = error;
-	return -1;
+	return qpol_policy_open_from_file_opt(path, policy, fn, varg, QPOL_POLICY_OPTION_NO_RULES);
 }
 
-int qpol_open_policy_from_file_no_rules(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
-{
-	return qpol_policy_open_from_file_no_rules(path, policy, fn, varg);
-}
-
-int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
+/**
+ * @brief Internal version of qpol_policy_open_from_memory() version 1.3
+ *
+ * Implementation of the exported function qpol_policy_open_from_memory()
+ * for version 1.3; this symbol name is not exported.
+ * @see qpol_policy_open_from_memory()
+ */
+int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg,
+				     const int options)
 {
 	int error = 0;
 	if (policy == NULL || filedata == NULL)
@@ -776,6 +823,11 @@ int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, 
 		error = errno;
 		goto err;
 	}
+	(*policy)->options = options;
+
+	/* QPOL_POLICY_OPTION_NO_RULES implies QPOL_POLICY_OPTION_NO_NEVERALLOWS */
+	if ((*policy)->options & QPOL_POLICY_OPTION_NO_RULES)
+		(*policy)->options |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 
 	(*policy)->sh = sepol_handle_create();
 	if ((*policy)->sh == NULL) {
@@ -803,8 +855,18 @@ int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, 
 	qpol_src_inputlim = qpol_src_inputptr + size - 1;
 	qpol_src_originalinput = qpol_src_input;
 
+	/* store filedata for rebuild() */
+	if (!((*policy)->file_data = malloc(size))) {
+		error = errno;
+		goto err;
+	}
+	memcpy((*policy)->file_data, filedata, size);
+	(*policy)->file_data_sz = size;
+	(*policy)->file_data_type = QPOL_POLICY_FILE_DATA_TYPE_MEM;
+
 	/* read in source */
-	if (read_source_policy(*policy, "parse", (*policy)->rules_loaded) < 0)
+	(*policy)->p->p.policy_type = POLICY_BASE;
+	if (read_source_policy(*policy, "parse", (*policy)->options) < 0)
 		exit(1);
 
 	/* link the source */
@@ -819,7 +881,7 @@ int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, 
 	avtab_init(&((*policy)->p->p.te_cond_avtab));
 
 	/* expand :) */
-	if (qpol_expand_module(*policy)) {
+	if (qpol_expand_module(*policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 		error = errno;
 		goto err;
 	}
@@ -832,14 +894,33 @@ int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, 
 
 }
 
-int qpol_open_policy_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
+#if LINK_SHARED == 0
+int qpol_policy_open_from_memory(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg,
+				 const int options)
 {
-	return qpol_policy_open_from_memory(policy, filedata, size, fn, varg);
+	return qpol_policy_open_from_memory_opt(policy, filedata, size, fn, varg, options);
+}
+#endif
+
+/**
+ * @brief Internal version of qpol_policy_open_from_file() version 1.2 or earlier
+ * @deprecated use the 1.3 version.
+ * @see qpol_policy_open_from_file()
+ */
+int qpol_policy_open_from_file_old(const char *path, qpol_policy_t ** policy, qpol_callback_fn_t fn, void *varg)
+{
+	return qpol_policy_open_from_file(path, policy, fn, varg, 0);
 }
 
-/* forward declarations see policy_extend.c */
-struct qpol_extended_image;
-extern void qpol_extended_image_destroy(struct qpol_extended_image **ext);
+/**
+ * @brief Internal version of qpol_policy_open_from_memory() version 1.2 or earlier
+ * @deprecated use the 1.3 version.
+ * @see qpol_policy_open_from_memory()
+ */
+int qpol_policy_open_from_memory_old(qpol_policy_t ** policy, const char *filedata, size_t size, qpol_callback_fn_t fn, void *varg)
+{
+	return qpol_policy_open_from_memory_opt(policy, filedata, size, fn, varg, 0);
+}
 
 void qpol_policy_destroy(qpol_policy_t ** policy)
 {
@@ -853,6 +934,11 @@ void qpol_policy_destroy(qpol_policy_t ** policy)
 				qpol_module_destroy(&((*policy)->modules[i]));
 			}
 			free((*policy)->modules);
+		}
+		if ((*policy)->file_data_type == QPOL_POLICY_FILE_DATA_TYPE_MEM) {
+			free((*policy)->file_data);
+		} else if ((*policy)->file_data_type == QPOL_POLICY_FILE_DATA_TYPE_MMAP) {
+			munmap((*policy)->file_data, (*policy)->file_data_sz);
 		}
 		free(*policy);
 		*policy = NULL;
@@ -933,89 +1019,6 @@ int qpol_policy_append_module(qpol_policy_t * policy, qpol_module_t * module)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_rebuild(qpol_policy_t * policy)
-{
-	sepol_policydb_t *old_p = NULL;
-	sepol_policydb_t **modules = NULL;
-	qpol_module_t *base = NULL;
-	size_t num_modules = 0;
-	int error = 0, i;
-
-	if (!policy) {
-		ERR(NULL, "%s", strerror(EINVAL));
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	/* fail if not a modular policy */
-	if (policy->type != QPOL_POLICY_MODULE_BINARY) {
-		ERR(policy, "%s", strerror(ENOTSUP));
-		errno = ENOTSUP;
-		return STATUS_ERR;
-	}
-
-	if (!policy->modified)
-		return STATUS_SUCCESS;
-
-	/* cache old policy in case of failure */
-	old_p = policy->p;
-	policy->p = NULL;
-
-	/* allocate enough space for all modules then fill with list of enabled ones only */
-	if (!(modules = calloc(policy->num_modules, sizeof(sepol_policydb_t *)))) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	/* first module is base and cannot be disabled */
-	for (i = 1; i < policy->num_modules; i++) {
-		if ((policy->modules[i])->enabled) {
-			modules[num_modules++] = (policy->modules[i])->p;
-		}
-	}
-	/* have to reopen the base since link alters it */
-	if (qpol_module_create_from_file((policy->modules[0])->path, &base)) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
-	/* take the policy from base and use as new base into which to link */
-	policy->p = base->p;
-	base->p = NULL;
-	qpol_module_destroy(&base);
-	if (sepol_link_modules(policy->sh, policy->p, modules, num_modules, 0)) {
-		error = EIO;
-		goto err;
-	}
-	free(modules);
-
-	if (qpol_expand_module(policy)) {
-		error = errno;
-		goto err;
-	}
-
-	if (infer_policy_version(policy)) {
-		error = errno;
-		goto err;
-	}
-	qpol_extended_image_destroy(&policy->ext);
-	if (qpol_policy_extend(policy)) {
-		error = errno;
-		goto err;
-	}
-
-	sepol_policydb_free(old_p);
-
-	return STATUS_SUCCESS;
-
-      err:
-	free(modules);
-
-	policy->p = old_p;
-	errno = error;
-	return STATUS_ERR;
-}
-
 typedef struct mod_state
 {
 	qpol_module_t **list;
@@ -1023,7 +1026,7 @@ typedef struct mod_state
 	size_t end;
 } mod_state_t;
 
-static int mod_state_end(qpol_iterator_t * iter)
+static int mod_state_end(const qpol_iterator_t * iter)
 {
 	mod_state_t *ms;
 
@@ -1035,7 +1038,7 @@ static int mod_state_end(qpol_iterator_t * iter)
 	return (ms->cur >= ms->end);
 }
 
-static void *mod_state_get_cur(qpol_iterator_t * iter)
+static void *mod_state_get_cur(const qpol_iterator_t * iter)
 {
 	mod_state_t *ms;
 
@@ -1065,7 +1068,7 @@ static int mod_state_next(qpol_iterator_t * iter)
 	return STATUS_SUCCESS;
 }
 
-static size_t mod_state_size(qpol_iterator_t * iter)
+static size_t mod_state_size(const qpol_iterator_t * iter)
 {
 	mod_state_t *ms;
 
@@ -1077,7 +1080,7 @@ static size_t mod_state_size(qpol_iterator_t * iter)
 	return ms->end;
 }
 
-int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_module_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	mod_state_t *ms = NULL;
 	int error = 0;
@@ -1109,7 +1112,7 @@ int qpol_policy_get_module_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-static int is_mls_policy(qpol_policy_t * policy)
+static int is_mls_policy(const qpol_policy_t * policy)
 {
 	policydb_t *db = NULL;
 
@@ -1132,7 +1135,7 @@ int qpol_policy_is_mls_enabled(qpol_policy_t * policy)
 	return is_mls_policy(policy);
 }
 
-int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version)
+int qpol_policy_get_policy_version(const qpol_policy_t * policy, unsigned int *version)
 {
 	policydb_t *db;
 
@@ -1152,7 +1155,7 @@ int qpol_policy_get_policy_version(qpol_policy_t * policy, unsigned int *version
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_type(qpol_policy_t * policy, int *type)
+int qpol_policy_get_type(const qpol_policy_t * policy, int *type)
 {
 	if (!policy || !type) {
 		ERR(policy, "%s", strerror(EINVAL));
@@ -1165,7 +1168,7 @@ int qpol_policy_get_type(qpol_policy_t * policy, int *type)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
+int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e cap)
 {
 	unsigned int version = 0;
 
@@ -1179,63 +1182,63 @@ int qpol_policy_has_capability(qpol_policy_t * policy, qpol_capability_e cap)
 
 	switch (cap) {
 	case QPOL_CAP_ATTRIB_NAMES:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_SYN_RULES:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_LINE_NUMBERS:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_CONDITIONALS:
-		{
-			if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (version >= 16 || policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_MLS:
-		{
-			return is_mls_policy(policy);
-		}
+	{
+		return is_mls_policy(policy);
+	}
 	case QPOL_CAP_MODULES:
-		{
-			if (policy->type == QPOL_POLICY_MODULE_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_RULES_LOADED:
-		{
-			if (policy->rules_loaded)
-				return 1;
-			break;
-		}
+	{
+		if (!(policy->options & QPOL_POLICY_OPTION_NO_RULES))
+			return 1;
+		break;
+	}
 	case QPOL_CAP_SOURCE:
-		{
-			if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
-				return 1;
-			break;
-		}
+	{
+		if (policy->type == QPOL_POLICY_KERNEL_SOURCE)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_NEVERALLOW:
-		{
-			if (policy->type != QPOL_POLICY_KERNEL_BINARY)
-				return 1;
-			break;
-		}
+	{
+		if (!(policy->options & QPOL_POLICY_OPTION_NO_NEVERALLOWS) && policy->type != QPOL_POLICY_KERNEL_BINARY)
+			return 1;
+		break;
+	}
 	default:
-		{
-			ERR(policy, "%s", "Unknown capability");
-			errno = EDOM;
-			break;
-		}
+	{
+		ERR(policy, "%s", "Unknown capability");
+		errno = EDOM;
+		break;
+	}
 	}
 	return 0;
 }

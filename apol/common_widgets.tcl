@@ -13,9 +13,6 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-# TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidget 1.7+
-
 namespace eval Apol_Widget {
     variable menuPopup {}
     variable infoPopup {}
@@ -57,17 +54,10 @@ proc Apol_Widget::setListboxCallbacks {path callback_list} {
     # add double-click on an item to immediately do something
     bind $lb <Double-Button-1> [eval list Apol_Widget::_listbox_double_click $lb [lindex $callback_list 0 1]]
 
-    # enable right-clicks on listbox to popup a menu; that menu has a lets
+    # enable right-clicks on listbox to popup a menu; that menu lets
     # the user see more info
-
-    # first create a global popup menu widget if one does not already exist
-    variable menuPopup
-    if {![winfo exists $menuPopup]} {
-        set menuPopup [menu .apol_widget_menu_popup]
-    }
-
     set lb [getScrolledListbox $path]
-    bind $lb <Button-3> [list ApolTop::popup_listbox_Menu %W %x %y $menuPopup $callback_list $lb]
+    bind $lb <Button-3> [list Apol_Widget::_listbox_popup %W %x %y $callback_list $lb]
 }
 
 proc Apol_Widget::getScrolledListbox {path} {
@@ -113,8 +103,8 @@ proc Apol_Widget::makeTypeCombobox {path args} {
 }
 
 proc Apol_Widget::resetTypeComboboxToPolicy {path} {
-    $path.tb configure -values $Apol_Types::typelist
-    $path.ab configure -values $Apol_Types::attriblist
+    $path.tb configure -values [Apol_Types::getTypes]
+    $path.ab configure -values [Apol_Types::getAttributes]
 }
 
 proc Apol_Widget::clearTypeCombobox {path} {
@@ -127,19 +117,22 @@ proc Apol_Widget::clearTypeCombobox {path} {
     _attrib_enabled $path
 }
 
-proc Apol_Widget::getTypeComboboxValue {path} {
-    string trim $Apol_Widget::vars($path:type)
-}
-
+# Return the currently selected type.  If an attribute is acting as a
+# filter, the return value will instead be a 2-ple list of the
+# selected type and the selected attribute.
 proc Apol_Widget::getTypeComboboxValueAndAttrib {path} {
     variable vars
     if {$vars($path:attribenable)} {
-        list $vars($path:type) $vars($path:attrib)
+        list [string trim $vars($path:type)] $vars($path:attrib)
     } else {
-        set vars($path:type)
+        string trim $vars($path:type)
     }
 }
 
+# Set the type and possibly attribute for a type combobox.  The first
+# element of $type is the type to set.  If $type has more than one
+# element, then the second element is the attribute upon which to
+# filter.
 proc Apol_Widget::setTypeComboboxValue {path type} {
     variable vars
     if {[llength $type] <= 1} {
@@ -173,11 +166,11 @@ proc Apol_Widget::setTypeComboboxState {path newState} {
 # Create a mega-widget used to select a single MLS level (a
 # sensitivity + 0 or more categories).
 #
-# catSize - number of categories to show in the box, by default
+# @param catSize Number of categories to show in the dropdown box.
 proc Apol_Widget::makeLevelSelector {path catSize args} {
     variable vars
     array unset vars $path:*
-    set vars($path:sens) ""
+    set vars($path:sens) {}
     set vars($path:cats) {}
 
     set f [frame $path]
@@ -201,31 +194,47 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
     return $f
 }
 
+# Return an apol_mls_level_t object that represents the level
+# selected.  The caller must delete it afterwards.
 proc Apol_Widget::getLevelSelectorLevel {path} {
     variable vars
-    if {[catch {apol_GetLevels $vars($path:sens)} l] || $l == {}} {
-        set sens $vars($path:sens)
+    set apol_level [new_apol_mls_level_t]
+    # convert sensitivity aliases to its real name, if necessary
+    set l [Apol_MLS::isSensInPolicy $vars($path:sens)]
+    if {[ApolTop::is_policy_open]} {
+        set p $::ApolTop::policy
     } else {
-        set sens [lindex $l 0 0]
+        set p NULL
+    }
+    if {$l == {}} {
+        $apol_level set_sens $p $vars($path:sens)
+    } else {
+        $apol_level set_sens $p $l
     }
     set sl [getScrolledListbox $path.cats]
     set cats {}
     foreach idx [$sl curselection] {
-        lappend cats [$sl get $idx]
+        $apol_level append_cats $p [$sl get $idx]
     }
-    list $sens $cats
+    return $apol_level
 }
 
+# Given an apol_mls_level_t object, set the level selector's display
+# to match the level.
 proc Apol_Widget::setLevelSelectorLevel {path level} {
     variable vars
-    set sens [lindex $level 0]
-    set cats [lindex $level 1]
+    if {$level == "NULL"} {
+        set sens {}
+    } else {
+        set sens [$level get_sens]
+    }
     set sens_list [$path.sens cget -values]
-    if {[lsearch -exact $sens_list $sens] != -1} {
+    if {$sens != {} && [lsearch -exact $sens_list $sens] != -1} {
         set vars($path:sens) $sens
         set cats_list $vars($path:cats)
         set first_idx -1
         set listbox [getScrolledListbox $path.cats]
+        set cats [str_vector_to_list [$level get_cats]]
         foreach cat $cats {
             if {[set idx [lsearch -exact $cats_list $cat]] != -1} {
                 $listbox selection set $idx
@@ -243,21 +252,35 @@ proc Apol_Widget::setLevelSelectorLevel {path level} {
 
 proc Apol_Widget::resetLevelSelectorToPolicy {path} {
     variable vars
-    set vars($path:sens) ""
-    if {[catch {apol_GetLevels {} 0} level_data]} {
+    set vars($path:sens) {}
+
+    if {![ApolTop::is_policy_open]} {
         $path.sens configure -values {}
     } else {
-        set vals {}
-        foreach l [lsort -integer -index 3 $level_data] {
-            lappend vals [lindex $l 0]
+        set level_data {}
+        set i [$::ApolTop::qpolicy get_level_iter]
+        while {![$i end]} {
+            set qpol_level_datum [qpol_level_from_void [$i get_item]]
+            if {![$qpol_level_datum get_isalias $::ApolTop::qpolicy]} {
+                set level_name [$qpol_level_datum get_name $::ApolTop::qpolicy]
+                set level_value [$qpol_level_datum get_value $::ApolTop::qpolicy]
+                lappend level_data [list $level_name $level_value]
+            }
+            $i next
         }
-        $path.sens configure -values $vals
+        $i -acquire
+        $i -delete
+        set level_names {}
+        foreach l [lsort -integer -index 1 $level_data] {
+            lappend level_names [lindex $l 0]
+        }
+        $path.sens configure -values $level_names
     }
 }
 
 proc Apol_Widget::clearLevelSelector {path} {
     variable vars
-    set vars($path:sens) ""
+    set vars($path:sens) {}
     $path.sens configure -values {}
     # the category box will be cleared because of the trace on $path:sens
 }
@@ -327,6 +350,7 @@ proc Apol_Widget::makeSearchResults {path args} {
     set sw [ScrolledWindow $path -scrollbar both -auto both]
     set tb [eval text $sw.tb $args -bg white -wrap none -state disabled -font $ApolTop::text_font]
     set vars($path:cursor) [$tb cget -cursor]
+    bind $tb <Button-3> [list Apol_Widget::_searchresults_popup %W %x %y]
     $tb tag configure linenum -foreground blue -underline 1
     $tb tag configure selected -foreground red -underline 1
     $tb tag configure enabled -foreground green -underline 1
@@ -344,6 +368,18 @@ proc Apol_Widget::clearSearchResults {path} {
     $path.tb configure -state disabled
 }
 
+proc Apol_Widget::copySearchResults {path} {
+    if {[$path tag ranges sel] != {}} {
+        set data [$path get sel.first sel.last]
+        clipboard clear
+        clipboard append -- $data
+    }
+}
+
+proc Apol_Widget::selectAllSearchResults {path} {
+    $path tag add sel 1.0 end
+}
+
 proc Apol_Widget::appendSearchResultHeader {path header} {
     $path.tb configure -state normal
     $path.tb insert 1.0 "$header\n"
@@ -356,58 +392,26 @@ proc Apol_Widget::appendSearchResultText {path text} {
     $path.tb configure -state disabled
 }
 
-# Append a list of values to the search results box.  Add $indent
-# number of spaces preceeding the line.  If $linenum is non-empty,
-# create a hyperlink from it to the policy.  If $cond_info is
-# non-empty, then mark this line as enabled or disabled.
-proc Apol_Widget::appendSearchResultLine {path indent cond_info line_type args} {
-    $path.tb configure -state normal
-    $path.tb insert end [string repeat " " $indent]
-    set text [join [concat $line_type $args]]
-    $path.tb insert end "[string trim $text];"
-    if {$cond_info != {}} {
-        if {[lindex $cond_info 0] == "enabled"} {
-            $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-        } else {
-            $path.tb insert end "  \[" {} "Disabled" disabled "\]"
-        }
-    }
-    $path.tb insert end "\n"
-    $path.tb configure -state disabled
-}
-
-# Append a list of avrules, as specified by their unique ids, to a
-# search results box.  Sort the rules by string representation.
-# Returns the number of rules that were appended, number of enabled
-# rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}} {
+# Append a vector of qpol_avrule_t or qpol_terule_t to a search
+# results box.  Sort the rules by string representation.  Returns the
+# number of rules that were appended, number of enabled rules, and
+# number of disabled rules.
+#
+# @param cast SWIG casting function, one of "new_qpol_avrule_t" or
+# "new_qpol_terule_t"
+proc Apol_Widget::appendSearchResultRules {path indent rule_list cast} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    set rules {}
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Sorting [llength $rule_list] semantic av rule(s)..."
-        update idletasks
-    }
-    set rules [lsort -command apol_RenderAVRuleComp [lsort -unique $rule_list]]
-    if {$varname != {}} {
-        set progressvar "Rendering [llength $rules] semantic av rule(s)..."
-        update idletasks
-    }
 
     set num_enabled 0
     set num_disabled 0
-    foreach r $rules {
+
+    for {set i 0} {$i < [$rule_list get_size]} {incr i} {
+        set rule [$cast [$rule_list get_element $i]]
         $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class perms cond_info} [apol_RenderAVRule $r] {break}
-        set text [list "$rule_type $source_set $target_set" {}]
-        if {[llength $perms] > 1} {
-            set perms "\{$perms\}"
-        }
-        lappend text " : $class $perms;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
+        $path.tb insert end [apol_tcl_rule_render $::ApolTop::policy $rule]
+        if {[$rule get_cond $::ApolTop::qpolicy] != "NULL"} {
+            if {[$rule get_is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
                 incr num_enabled
             } else {
@@ -418,21 +422,18 @@ proc Apol_Widget::appendSearchResultAVRules {path indent rule_list {varname {}}}
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
+    list [$rule_list get_size] $num_enabled $num_disabled
 }
 
-# Append a list of syntactic avrules, as specified by their unique
-# ids, to a search results box.  The rules will be sorted by line
-# number.  Returns the number of rules that were appended, number of
-# enabled rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} {
+# Append a vector of qpol_syn_avrule_t or qpol_syn_terule_t to a
+# search results box.  Returns the number of rules that were appended,
+# number of enabled rules, and number of disabled rules.
+#
+# @param cast SWIG casting function, one of "new_qpol_syn_avrule_t" or
+# "new_qpol_syn_terule_t"
+proc Apol_Widget::appendSearchResultSynRules {path indent rule_list cast} {
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Rendering [llength $rules] syntactic av rule(s)..."
-        update idletasks
-    }
 
     set num_enabled 0
     set num_disabled 0
@@ -441,30 +442,19 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
     } else {
         set do_linenums 0
     }
-    foreach r $rules {
+
+    for {set i 0} {$i < [$rule_list get_size]} {incr i} {
+        set syn_rule [$cast [$rule_list get_element $i]]
         $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderSynAVRule $r] {break}
         if {$do_linenums} {
-            set text [list \[ {} \
-                          $line_num linenum \
-                          "\] " {} \
-                          $rule_type {}]
-        } else {
-            set text [list $rule_type {}]
+            $path.tb insert end \
+                "\[" {} \
+                [$syn_rule get_lineno $::ApolTop::qpolicy] linenum \
+                "\] " {}
         }
-        set source_set [_render_typeset $source_set]
-        set target_set [_render_typeset $target_set]
-        if {[llength $class] > 1} {
-            set class "\{$class\}"
-        }
-        lappend text " $source_set $target_set" {}
-        if {[llength $perms] > 1} {
-            set perms "\{$perms\}"
-        }
-        lappend text " : $class $perms;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
+        $path.tb insert end [apol_tcl_rule_render $::ApolTop::policy $syn_rule]
+        if {[$syn_rule get_cond $::ApolTop::qpolicy] != "NULL"} {
+            if {[$syn_rule get_is_enabled $::ApolTop::qpolicy]} {
                 $path.tb insert end "  \[" {} "Enabled" enabled "\]"
                 incr num_enabled
             } else {
@@ -475,116 +465,7 @@ proc Apol_Widget::appendSearchResultSynAVRules {path indent rules {varname {}}} 
         $path.tb insert end "\n"
     }
     $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
-}
-
-# Append a list of terules, as specified by their unique ids, to a
-# search results box.  Sort the rules by string representation.
-# Returns the number of rules that were appended, number of enabled
-# rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultTERules {path indent rule_list {varname {}}} {
-    set curstate [$path.tb cget -state]
-    $path.tb configure -state normal
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Sorting [llength $rule_list] semantic type rule(s)..."
-        update idletasks
-    }
-    set rules [lsort -command apol_RenderTERuleComp [lsort -unique $rule_list]]
-    if {$varname != {}} {
-        set progressvar "Rendering [llength $rules] semantic type rule(s)..."
-        update idletasks
-    }
-
-    set num_enabled 0
-    set num_disabled 0
-    foreach r $rules {
-        $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class default_type cond_info} [apol_RenderTERule $r] {break}
-        set text [list "$rule_type $source_set $target_set" {}]
-        lappend text " : $class $default_type;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
-                $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-                incr num_enabled
-            } else {
-                $path.tb insert end "  \[" {} "Disabled" disabled "\]"
-                incr num_disabled
-            }
-        }
-        $path.tb insert end "\n"
-    }
-    $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
-}
-
-# Append a list of syntactic terules, as specified by their unique
-# ids, to a search results box.  The rules will be sorted by line
-# number.  Returns the number of rules that were appended, number of
-# enabled rules, and number of disabled rules.
-proc Apol_Widget::appendSearchResultSynTERules {path indent rules {varname {}}} {
-    set curstate [$path.tb cget -state]
-    $path.tb configure -state normal
-    if {$varname != {}} {
-        upvar $varname progressvar
-        set progressvar "Rendering [llength $rules] syntactic type rule(s)..."
-        update idletasks
-    }
-    set num_enabled 0
-    set num_disabled 0
-    if {[ApolTop::is_capable "line numbers"]} {
-        set do_linenums 1
-    } else {
-        set do_linenums 0
-    }
-    foreach r $rules {
-        $path.tb insert end [string repeat " " $indent]
-        foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderSynTERule $r] {break}
-        if {$do_linenums} {
-            set text [list \[ {} \
-                          $line_num linenum \
-                          "\] " {} \
-                          $rule_type {}]
-        } else {
-            set text [list $rule_type {}]
-        }
-        set source_set [_render_typeset $source_set]
-        set target_set [_render_typeset $target_set]
-        if {[llength $class] > 1} {
-            set class "\{$class\}"
-        }
-        lappend text " $source_set $target_set" {}
-        lappend text " : $class $default_type;" {}
-        eval $path.tb insert end $text
-        if {$cond_info != {}} {
-            if {[lindex $cond_info 0] == "enabled"} {
-                $path.tb insert end "  \[" {} "Enabled" enabled "\]"
-                incr num_enabled
-            } else {
-                $path.tb insert end "  \[" {} "Disabled" disabled "\]"
-                incr num_disabled
-            }
-        }
-        $path.tb insert end "\n"
-    }
-    $path.tb configure -state $curstate
-    list [llength $rules] $num_enabled $num_disabled
-}
-
-proc Apol_Widget::gotoLineSearchResults {path line_num} {
-    if {![string is integer -strict $line_num]} {
-        tk_messageBox -icon error -type ok -title "Invalid line number" \
-            -message "$line_num is not a valid line number."
-        return
-    }
-    set textbox $path.tb
-    # Remove any selection tags.
-    $textbox tag remove sel 0.0 end
-    $textbox mark set insert ${line_num}.0
-    $textbox see ${line_num}.0
-    $textbox tag add sel $line_num.0 $line_num.end
-    focus $textbox
+    list [$rule_list get_size] $num_enabled $num_disabled
 }
 
 proc Apol_Widget::showPopupText {title info} {
@@ -676,6 +557,22 @@ proc Apol_Widget::_listbox_double_click {listbox callback_func args} {
     eval $callback_func $args [$listbox get active]
 }
 
+proc Apol_Widget::_listbox_popup {w x y callbacks lb} {
+    focus $lb
+    set selected_item [$lb get active]
+    if {$selected_item == {}} {
+        return
+    }
+
+    # create a global popup menu widget if one does not already exist
+    variable menuPopup
+    if {![winfo exists $menuPopup]} {
+        set menuPopup [menu .apol_widget_menu_popup -tearoff 0]
+    }
+
+    ApolTop::popup $w $x $y $menuPopup $callbacks $selected_item
+}
+
 proc Apol_Widget::_attrib_enabled {path} {
     variable vars
     if {$vars($path:attribenable)} {
@@ -700,20 +597,30 @@ proc Apol_Widget::_attrib_validate {path} {
 
 proc Apol_Widget::_filter_type_combobox {path attribvalue} {
     variable vars
-    if {$attribvalue != ""} {
-        set typesList [lsort [lindex [apol_GetAttribs $attribvalue] 0 1]]
+    if {$attribvalue != {}} {
+        set typesList {}
+        if {[Apol_Types::isAttributeInPolicy $attribvalue]} {
+            set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attribvalue]
+            set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
+            foreach t [iter_to_list $i] {
+                set t [qpol_type_from_void $t]
+                lappend typesList [$t get_name $::ApolTop::qpolicy]
+            }
+            $i -acquire
+            $i -delete
+        }
         if {$typesList == {}} {
             # unknown attribute, so don't change type combobox
             return
         }
     } else {
-        set typesList $Apol_Types::typelist
+        set typesList [Apol_Types::getTypes]
         # during policy load this list should already have been sorted
     }
     if {[lsearch -exact $typesList $vars($path:type)] == -1} {
-        set vars($path:type) ""
+        set vars($path:type) {}
     }
-    $path.tb configure -values $typesList
+    $path.tb configure -values [lsort $typesList]
 }
 
 proc Apol_Widget::_sens_changed {path name1 name2 op} {
@@ -721,8 +628,18 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
     # get a list of categories associated with this sensitivity
     [getScrolledListbox $path.cats] selection clear 0 end
     set vars($path:cats) {}
-    if {![catch {apol_GetLevels $vars($path:sens)} level_data]} {
-        set vars($path:cats) [concat $vars($path:cats) [lindex $level_data 0 2]]
+    set sens [Apol_MLS::isSensInPolicy $vars($path:sens)]
+    if {$sens != {}} {
+        # the given level exists within the given policy
+        set qpol_level_datum [new_qpol_level_t $::ApolTop::qpolicy $sens]
+        set i [$qpol_level_datum get_cat_iter $::ApolTop::qpolicy]
+        while {![$i end]} {
+            set qpol_cat_datum [qpol_cat_from_vector [$i get_item]]
+            lappend vars($path:cats) [$qpol_cat_datum get_name $::ApolTop::qpolicy]
+            $i next
+        }
+        $i -acquire
+        $i -delete
     }
 }
 
@@ -734,13 +651,28 @@ proc Apol_Widget::_toggle_regexp_check_button {path name1 name2 op} {
     }
 }
 
+proc Apol_Widget::_searchresults_popup {path x y} {
+    if {[ApolTop::is_policy_open]} {
+        focus $path
+        # create a global popup menu widget if one does not already exist
+        variable menuPopup
+        if {![winfo exists $menuPopup]} {
+            set menuPopup [menu .apol_widget_menu_popup -tearoff 0]
+        }
+        set callbacks {
+            {"Copy" Apol_Widget::copySearchResults}
+            {"Select All" Apol_Widget::selectAllSearchResults}
+        }
+        ApolTop::popup $path $x $y $menuPopup $callbacks $path
+    }
+}
+
 proc Apol_Widget::_hyperlink {path x y} {
     set tb $path.tb
     set range [$tb tag prevrange linenum "@$x,$y + 1 char"]
     $tb tag add selected [lindex $range 0] [lindex $range 1]
     set line_num [$tb get [lindex $range 0] [lindex $range 1]]
-    $ApolTop::notebook raise $ApolTop::policy_conf_tab
-    Apol_PolicyConf::goto_line $line_num
+    ApolTop::showPolicySourceLineNumber $line_num
 }
 
 proc Apol_Widget::_render_typeset {typeset} {

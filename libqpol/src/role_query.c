@@ -35,7 +35,7 @@
 #include <qpol/type_query.h>
 #include "qpol_internal.h"
 
-int qpol_policy_get_role_by_name(qpol_policy_t * policy, const char *name, qpol_role_t ** datum)
+int qpol_policy_get_role_by_name(const qpol_policy_t * policy, const char *name, const qpol_role_t ** datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -61,7 +61,7 @@ int qpol_policy_get_role_by_name(qpol_policy_t * policy, const char *name, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_role_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
+int qpol_policy_get_role_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -99,7 +99,7 @@ int qpol_policy_get_role_iter(qpol_policy_t * policy, qpol_iterator_t ** iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_value(qpol_policy_t * policy, qpol_role_t * datum, uint32_t * value)
+int qpol_role_get_value(const qpol_policy_t * policy, const qpol_role_t * datum, uint32_t * value)
 {
 	role_datum_t *internal_datum = NULL;
 
@@ -117,7 +117,7 @@ int qpol_role_get_value(qpol_policy_t * policy, qpol_role_t * datum, uint32_t * 
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_dominate_iter(qpol_policy_t * policy, qpol_role_t * datum, qpol_iterator_t ** dominates)
+int qpol_role_get_dominate_iter(const qpol_policy_t * policy, const qpol_role_t * datum, qpol_iterator_t ** dominates)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -157,7 +157,7 @@ int qpol_role_get_dominate_iter(qpol_policy_t * policy, qpol_role_t * datum, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_type_iter(qpol_policy_t * policy, qpol_role_t * datum, qpol_iterator_t ** types)
+int qpol_role_get_type_iter(const qpol_policy_t * policy, const qpol_role_t * datum, qpol_iterator_t ** types)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -216,7 +216,7 @@ int qpol_role_get_type_iter(qpol_policy_t * policy, qpol_role_t * datum, qpol_it
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_name(qpol_policy_t * policy, qpol_role_t * datum, char **name)
+int qpol_role_get_name(const qpol_policy_t * policy, const qpol_role_t * datum, const char **name)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;

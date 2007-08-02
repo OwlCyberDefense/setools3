@@ -23,6 +23,7 @@
  */
 
 #include <apol/vector.h>
+#include "vector-internal.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>

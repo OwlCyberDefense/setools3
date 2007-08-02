@@ -1,17 +1,21 @@
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = dist-bzip2
 
-if COPY_BWIDGET
-  MAYBE_BWIDGET = packages
+if BUILD_APOL
+  MAYBE_APOL = apol
 endif
 
 if BUILD_GUI
-  MAYBE_GUI = libapol-tcl apol awish seaudit
+  MAYBE_GUI = seaudit
 endif
+# sediffx is also built conditionally, from sediffx/Makefile.am
 
-SUBDIRS = libqpol libapol libpoldiff libsefs libseaudit secmds sechecker sediff man $(MAYBE_GUI) $(MAYBE_BWIDGET)
+SUBDIRS = libqpol libapol libsefs libpoldiff libseaudit secmds sechecker sediff man packages $(MAYBE_APOL) $(MAYBE_GUI)
 
-INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
+#old indent opts
+#INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
+C_INDENT_OPTS   = -npro -nbad -bap -nbbb -nbbo -nbc -br -bli0 -bls -c40 -cbi0 -cd40 -cdw  -ce -ci8 -cli0 -cp40 -ncs -d0 -nbfda -di1 -nfc1 -nfca -i8 -ip0 -l132 -lp -nlps -npcs -pi0 -nprs -npsl -saf -sai -sbi0 -sob -ss -ts8 -ut
+CXX_INDENT_OPTS = -npro -nbad -bap -nbbb -nbbo -nbc -bl -bli0 -bls -c40 -cbi0 -cd40 -cdw -nce -ci8 -cli0 -cp40 -ncs -d0 -nbfda -di1 -nfc1 -nfca -i8 -ip0 -l132 -lp -nlps -npcs -pi0 -nprs -npsl -saf -sai -sbi0 -sob -ss -ts8 -ut
 
 EXTRA_DIST = VERSION KNOWN-BUGS COPYING.LGPL COPYING.GPL
 
@@ -21,11 +25,11 @@ libqpol:
 libapol:
 	$(MAKE) -C $(top_srcdir)/libapol
 
-libapol-tcl:
-	$(MAKE) -C $(top_srcdir)/libapol-tcl
-
 libpoldiff:
 	$(MAKE) -C $(top_srcdir)/libpoldiff
+
+libpolsearch:
+	$(MAKE) -C $(top_srcdir)/libpolsearch
 
 libsefs:
 	$(MAKE) -C $(top_srcdir)/libsefs
@@ -33,7 +37,7 @@ libsefs:
 libseaudit:
 	$(MAKE) -C $(top_srcdir)/libseaudit
 
-apol: libqpol libapol libsefs libapol-tcl
+apol: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/apol
 
 secmds: libqpol libapol libsefs
@@ -51,23 +55,18 @@ sediffx: libqpol libapol libpoldiff
 sechecker: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/sechecker
 
-awish: libqpol libapol libsefs libapol-tcl
-	$(MAKE) -C $(top_srcdir)/awish
-
 help:
-	@echo "Make targets for setools:"
-	@echo "   all:          build everything, but don't install"
+	@echo "Make targets for SETools:"
+	@echo "   all:          build everything, but do not install"
 	@echo "   install:      install everything"
-	@echo "   uninstall:    remove setools from your system"
+	@echo "   uninstall:    remove SETools from your system"
 	@echo ""
 	@echo "   apol:         build policy analysis tool"
-	@echo "   secmds:       build setools command line tools"
+	@echo "   secmds:       build command line tools"
 	@echo "   seaudit:      build audit log analysis tools"
 	@echo "   sediff:       build semantic policy diff command line tool"
-	@echo "   sediffx:      build semantic policy diff GUI tool"
+	@echo "   sediffx:      build semantic policy diff graphical tool"
 	@echo "   sechecker:    build policy checking tool"
-	@echo "   awish:        build Tcl/Tk wish interpreter with SE Linux tools extensions"
-	@echo "                 (useful for debugging problems with Tcl/Tk scripts)"
 	@echo ""
 	@echo "   install-logwatch:   install LogWatch config files for seaudit-report"
 	@echo "                       (requires LogWatch and root privileges)"
@@ -78,8 +77,8 @@ help:
 install-logwatch:
 	$(MAKE) -C $(top_srcdir)/seaudit install-logwatch
 
-.PHONY: libqpol libapol libapol-tcl libpoldiff libsefs libseaudit \
-	apol secmds seaudit sediff sediffx sechecker awish \
+.PHONY: libqpol libapol libpoldiff libsefs libseaudit \
+	apol secmds seaudit sediff sediffx sechecker \
 	install-logwatch help \
 	seinfo sesearch indexcon findcon replcon searchcon
 
@@ -105,4 +104,7 @@ distclean-local:
 	-rm -r config.tcl
 
 indent:
-	find $(top_src_dir) -name '*.[ch]' ! -wholename '*sqlite*' -type f -exec indent $(INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -name '*.[ch]' -type f -exec indent $(C_INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -regex '.*\.\(cc\|hh\)' -type f -exec indent $(CXX_INDENT_OPTS) '{}' \;
+	find $(top_src_dir) -name '*.cc' -type f -exec sed -i 's/const \?const/const/g' '{}' \;
+	find $(top_src_dir) -name '*.hh' -type f -exec sed -i 's/virtual ~ /virtual ~/g' '{}' \;

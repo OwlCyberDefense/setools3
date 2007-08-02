@@ -311,7 +311,8 @@ static void toplevel_enable_log_items(toplevel_t * top, gboolean sens)
 	static const char *items[] = {
 		"NewView", "OpenView", "SaveView", "SaveViewAs", "ModifyView",
 		"ExportAll", "ExportSelected", "ViewMessage",
-		"CreateReport", "MonitorLog", "ModifyViewButton", "MonitorLogButton",
+		"CreateReport", "MonitorLog", "ClearView",
+		"ModifyViewButton", "MonitorLogButton", "ClearViewButton",
 		NULL
 	};
 	size_t i;
@@ -688,7 +689,9 @@ static gpointer toplevel_open_policy_runner(gpointer data)
 {
 	struct policy_run_datum *run = (struct policy_run_datum *)data;
 	progress_update(run->top->progress, "Opening policy.");
-	run->policy = apol_policy_create_from_policy_path(run->path, 0, progress_apol_handle_func, run->top->progress);
+	run->policy =
+		apol_policy_create_from_policy_path(run->path, QPOL_POLICY_OPTION_NO_NEVERALLOWS, progress_apol_handle_func,
+						    run->top->progress);
 	if (run->policy == NULL) {
 		run->result = -1;
 		progress_abort(run->top->progress, NULL);
@@ -755,8 +758,8 @@ void toplevel_update_status_bar(toplevel_t * top)
 		message_view_t *view = toplevel_get_current_view(top);
 		size_t num_messages = seaudit_get_num_log_messages(top->s);
 		size_t num_view_messages;
-		struct tm *first = seaudit_get_log_first(top->s);
-		struct tm *last = seaudit_get_log_last(top->s);
+		const struct tm *first = seaudit_get_log_first(top->s);
+		const struct tm *last = seaudit_get_log_last(top->s);
 		assert(view != NULL);
 		num_view_messages = message_view_get_num_log_messages(view);
 		char *s, t1[256], t2[256];
@@ -790,7 +793,7 @@ void toplevel_update_tabs(toplevel_t * top)
 		GtkWidget *label = g_object_get_data(G_OBJECT(tab), "label");
 		message_view_t *v = g_object_get_data(G_OBJECT(tab), "view-object");
 		seaudit_model_t *model = message_view_get_model(v);
-		char *name = seaudit_model_get_name(model);
+		const char *name = seaudit_model_get_name(model);
 		gtk_label_set_text(GTK_LABEL(label), name);
 		i--;
 	}
@@ -1054,6 +1057,14 @@ void toplevel_on_monitor_log_activate(gpointer user_data, GtkMenuItem * widget)
 	toplevel_monitor_log(top);
 }
 
+void toplevel_on_clear_view_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	message_view_t *view = toplevel_get_current_view(top);
+	assert(view != NULL);
+	message_view_clear(view);
+}
+
 void toplevel_on_help_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
@@ -1100,10 +1111,24 @@ void toplevel_on_help_activate(gpointer user_data, GtkMenuItem * widget __attrib
 void toplevel_on_about_seaudit_activate(gpointer user_data, GtkMenuItem * widget __attribute__ ((unused)))
 {
 	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+#ifdef GTK_2_8
 	gtk_show_about_dialog(top->w,
 			      "comments", "Audit Log Analysis Tool for Security Enhanced Linux",
 			      "copyright", COPYRIGHT_INFO,
 			      "name", "seaudit", "version", VERSION, "website", "http://oss.tresys.com/projects/setools", NULL);
+#else
+	GtkWidget *w = gtk_message_dialog_new(top->w,
+					      GTK_DIALOG_DESTROY_WITH_PARENT,
+					      GTK_MESSAGE_INFO,
+					      GTK_BUTTONS_CLOSE,
+					      "%s %s\n%s\n%s\n%s",
+					      "seaudit", VERSION,
+					      "Audit Log Analysis Tool for Security Enhanced Linux",
+					      COPYRIGHT_INFO,
+					      "http://oss.tresys.com/projects/setools");
+	gtk_dialog_run(GTK_DIALOG(w));
+	gtk_widget_destroy(w);
+#endif
 }
 
 void toplevel_on_find_terules_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
@@ -1131,4 +1156,13 @@ void toplevel_on_monitor_log_click(gpointer user_data, GtkWidget * widget __attr
 	assert(w != NULL);
 	old_state = gtk_check_menu_item_get_active(w);
 	gtk_check_menu_item_set_active(w, !old_state);
+}
+
+void toplevel_on_clear_view_click(gpointer user_data, GtkWidget * widget __attribute__ ((unused)), GdkEvent * event
+				  __attribute__ ((unused)))
+{
+	toplevel_t *top = g_object_get_data(G_OBJECT(user_data), "toplevel");
+	message_view_t *view = toplevel_get_current_view(top);
+	assert(view != NULL);
+	message_view_clear(view);
 }

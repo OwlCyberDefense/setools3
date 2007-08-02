@@ -24,7 +24,10 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 #include "remap_types_dialog.h"
+#include "utilgui.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -69,8 +72,8 @@ static gboolean show_only_unmapped = TRUE;
  */
 static void remap_types_highlight_entries(struct remap_types *rt)
 {
-	gchar *orig_text = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
-	gchar *mod_text = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
+	const gchar *orig_text = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
+	const gchar *mod_text = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
 	int num_orig_matches = 0, num_mod_matches = 0;
 	gboolean iter_valid;
 	GtkTreeIter iter;
@@ -255,8 +258,8 @@ static void remap_types_on_add_click(GtkButton * button __attribute__ ((unused))
 	struct remap_types *rt = (struct remap_types *)user_data;
 	apol_vector_t *orig = NULL, *mod = NULL;
 	apol_vector_t *old_orig = NULL, *old_mod = NULL;
-	gchar *orig_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
-	gchar *mod_type = gtk_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
+	const gchar *orig_type = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_ORIG]));
+	const gchar *mod_type = util_combo_box_get_active_text(GTK_COMBO_BOX(rt->combo[SEDIFFX_POLICY_MOD]));
 
 	if ((orig = apol_str_split(orig_type, " ")) == NULL || (mod = apol_str_split(mod_type, " ")) == NULL) {
 		toplevel_ERR(rt->top, "%s", strerror(errno));
@@ -495,10 +498,10 @@ static gboolean remap_types_types_filter_visible(GtkTreeModel * model, GtkTreeIt
  */
 static int remap_types_qpol_type_cmp(const void *a, const void *b, void *data)
 {
-	qpol_type_t *x = (qpol_type_t *) a;
-	qpol_type_t *y = (qpol_type_t *) b;
+	const qpol_type_t *x = a;
+	const qpol_type_t *y = b;
 	qpol_policy_t *q = (qpol_policy_t *) data;
-	char *s, *t;
+	const char *s, *t;
 	qpol_type_get_name(q, x, &s);
 	qpol_type_get_name(q, y, &t);
 	return strcmp(s, t);
@@ -511,8 +514,8 @@ int remap_types_update(apol_policy_t * orig_policy, apol_policy_t * mod_policy)
 	apol_vector_t *v = NULL;
 	sediffx_policy_e which;
 	size_t i;
-	qpol_type_t *t;
-	char *type_name;
+	const qpol_type_t *t;
+	const char *type_name;
 	GtkTreeIter iter;
 	int error = 0, retval = -1;
 

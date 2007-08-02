@@ -47,7 +47,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-	extern int qpol_policy_get_bool_by_name(qpol_policy_t * policy, const char *name, qpol_bool_t ** datum);
+	extern int qpol_policy_get_bool_by_name(const qpol_policy_t * policy, const char *name, qpol_bool_t ** datum);
 
 /**
  *  Get an iterator for conditional booleans in the policy.
@@ -59,7 +59,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-	extern int qpol_policy_get_bool_iter(qpol_policy_t * policy, qpol_iterator_t ** iter);
+	extern int qpol_policy_get_bool_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
 
 /**
  *  Get the integer value associated with a boolean. Values range from 1 to
@@ -70,7 +70,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-	extern int qpol_bool_get_value(qpol_policy_t * policy, qpol_bool_t * datum, uint32_t * value);
+	extern int qpol_bool_get_value(const qpol_policy_t * policy, const qpol_bool_t * datum, uint32_t * value);
 
 /**
  *  Get the state of a boolean.
@@ -81,7 +81,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *state will set to 0 (false).
  */
-	extern int qpol_bool_get_state(qpol_policy_t * policy, qpol_bool_t * datum, int *state);
+	extern int qpol_bool_get_state(const qpol_policy_t * policy, const qpol_bool_t * datum, int *state);
 
 /**
  *  Set the state of a boolean and update the state of all conditionals
@@ -118,7 +118,7 @@ extern "C"
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-	extern int qpol_bool_get_name(qpol_policy_t * policy, qpol_bool_t * datum, char **name);
+	extern int qpol_bool_get_name(const qpol_policy_t * policy, const qpol_bool_t * datum, const char **name);
 
 #ifdef	__cplusplus
 }

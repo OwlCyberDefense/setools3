@@ -57,8 +57,8 @@ extern int unreachable_doms_register(sechk_lib_t * lib);
 extern int imp_range_trans_register(sechk_lib_t * lib);
 /* TODO: additional externs go here ... */
 
-size_t sechk_register_list_get_num_modules();
-const sechk_module_name_reg_t *sechk_register_list_get_modules();
-size_t sechk_register_list_get_num_profiles();
-const sechk_profile_name_reg_t *sechk_register_list_get_profiles();
+size_t sechk_register_list_get_num_modules(void);
+const sechk_module_name_reg_t *sechk_register_list_get_modules(void);
+size_t sechk_register_list_get_num_profiles(void);
+const sechk_profile_name_reg_t *sechk_register_list_get_profiles(void);
 #endif				       /* SECHK_REGISTER_LIST_H */
