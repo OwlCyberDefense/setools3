@@ -337,6 +337,7 @@ static void dta_reflexive(void)
 	retval = apol_domain_trans_analysis_do(p, d, &v);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	CU_ASSERT(v != NULL && apol_vector_get_size(v) == 0);
+	apol_vector_destroy(&v);
 
 	retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
