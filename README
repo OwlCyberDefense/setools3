@@ -408,7 +408,7 @@ maintain compatibility beginning with SETools version 3.0.
 These libraries have SWIG wrappers that are built if
 --enable-swig-java, --enable-swig-python, and/or --enable-swig-tcl are
 given during configuration time.  The generated Java wrappers will be
-in placed $PREFIX/lib/setools; symlinks to jar files will be in
+in placed $PREFIX/lib; symlinks to jar files will be in
 $PREFIX/share/java.  Python wrappers will be installed to Python's
 site-packages directory.  Tcl wrappers are built as Tcl packages
 (e.g., `package require apol') and placed in $PREFIX/lib/setools.

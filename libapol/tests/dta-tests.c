@@ -228,8 +228,7 @@ static void dta_reverse(void)
 	apol_policy_reset_domain_trans_table(p);
 	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
 	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
-	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
-	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	int retval;
 	retval = apol_domain_trans_analysis_set_start_type(p, d, "sand_t");
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
@@ -269,8 +268,7 @@ static void dta_reverse_regexp(void)
 	apol_policy_reset_domain_trans_table(p);
 	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
 	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
-	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
-	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	int retval;
 	retval = apol_domain_trans_analysis_set_start_type(p, d, "sand_t");
 	CU_ASSERT_EQUAL_FATAL(retval, 0);
 	retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
@@ -325,6 +323,44 @@ static void dta_reverse_regexp(void)
 	apol_vector_destroy(&v);
 }
 
+static void dta_reflexive(void)
+{
+	apol_policy_reset_domain_trans_table(p);
+	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
+	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
+	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	retval = apol_domain_trans_analysis_set_start_type(p, d, "sand_t");
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
+	apol_vector_t *v = NULL;
+	retval = apol_domain_trans_analysis_do(p, d, &v);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT(v != NULL && apol_vector_get_size(v) == 0);
+
+	retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_REVERSE);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+
+	retval = apol_domain_trans_analysis_do(p, d, &v);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT(v != NULL && apol_vector_get_size(v) > 0);
+	size_t i;
+	qpol_policy_t *q = apol_policy_get_qpol(p);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		const apol_domain_trans_result_t *dtr = (const apol_domain_trans_result_t *)apol_vector_get_element(v, i);
+
+		const qpol_type_t *qt = apol_domain_trans_result_get_start_type(dtr);
+		CU_ASSERT_PTR_NOT_NULL(qt);
+		const char *name;
+		retval = qpol_type_get_name(q, qt, &name);
+		CU_ASSERT_EQUAL_FATAL(retval, 0);
+		CU_ASSERT_STRING_NOT_EQUAL(name, "sand_t");
+	}
+	apol_vector_destroy(&v);
+
+	apol_domain_trans_analysis_destroy(&d);
+}
+
 CU_TestInfo dta_tests[] = {
 	{"dta forward", dta_forward}
 	,
@@ -335,6 +371,8 @@ CU_TestInfo dta_tests[] = {
 	{"dta reverse", dta_reverse}
 	,
 	{"dta reverse + regexp", dta_reverse_regexp}
+	,
+	{"dta reflexive", dta_reflexive}
 	,
 	CU_TEST_INFO_NULL
 };
