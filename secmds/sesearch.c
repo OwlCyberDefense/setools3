@@ -1075,8 +1075,7 @@ int main(int argc, char **argv)
 			qpol_class_get_name(apol_policy_get_qpol(policy), class, &class_name);
 			apol_vector_append(cmd_opts.class_vector, (void *)class_name);
 		}
-		if (!apol_vector_get_size(qpol_matching_classes))
-		{
+		if (!apol_vector_get_size(qpol_matching_classes)) {
 			apol_vector_destroy(&qpol_matching_classes);
 			apol_class_query_destroy(&regex_match_query);
 			ERR(policy, "No classes match expression %s", cmd_opts.class_name);

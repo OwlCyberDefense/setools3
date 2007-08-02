@@ -313,6 +313,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
 			result = apol_domain_trans_table_verify_trans(policy, start, ep, end);
 			if (!result) {
+				//test for common role with valid user
 				apol_role_get_by_query(policy, NULL, &role_vector);
 				for (k = 0; (k < apol_vector_get_size(role_vector)) && !ok; k++) {
 					const qpol_role_t *role;
@@ -320,7 +321,7 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 
 					role = apol_vector_get_element(role_vector, k);
 					qpol_role_get_name(q, role, &role_name);
-					if (apol_role_has_type(policy, role, start) || apol_role_has_type(policy, role, end)) {
+					if (apol_role_has_type(policy, role, start) && apol_role_has_type(policy, role, end)) {
 						apol_user_query_set_role(policy, user_query, role_name);
 						apol_user_get_by_query(policy, user_query, &user_vector);
 						if (apol_vector_get_size(user_vector) > 0) {
