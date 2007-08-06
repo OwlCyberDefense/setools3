@@ -35,6 +35,7 @@ Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 sqlite >= 3.2.0 libxml2 libstdc++.so.6
 Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libseaudit = %{libseaudit_ver} libsefs = %{libsefs_ver} 
 BuildRequires: flex, bison, pkgconfig
+BuildRequires: glibc-devel libstdc++-devel
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
 BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
 BuildRequires: tcl-devel >= 8.4.9
@@ -233,9 +234,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libseaudit.so.%{libseaudit_ver}
 %{_libdir}/libseaudit.so.4
 %{_libdir}/libseaudit.so
-%defattr(-, root, root)
-%{setoolsdir}/seaudit-report.conf
-%{setoolsdir}/seaudit-report.css
 
 %files libs-python
 %defattr(-,root,root)
@@ -434,6 +432,8 @@ rm -rf ${RPM_BUILD_ROOT}
 %{setoolsdir}/sechecker-profiles/sechecker.dtd
 %{setoolsdir}/sechecker_help.txt
 %{setoolsdir}/seaudit-report-service
+%{setoolsdir}/seaudit-report.conf
+%{setoolsdir}/seaudit-report.css
 %{_mandir}/man1/findcon.1.gz
 %{_mandir}/man1/indexcon.1.gz
 %{_mandir}/man1/replcon.1.gz

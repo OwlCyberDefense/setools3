@@ -1,3 +1,15 @@
+2007-08-06  J. Tang  <jtang@tresys.com>
+
+	* configure.ac: Tk is checked only if --enable-swig-tcl and
+	--enable-gui are given.  Also, if tclconfig.sh is not found, then
+	abort configuration.
+
+	* apol/top.tcl: Fixed error where reading from an older .apol file
+	(from SETools < 3.2) would cause a startup problem.
+
+	* libapol/include/apol/domain-trans-analysis.h: Upon invalid
+	transition, empty vectors are returned rather than NULL pointers.
+
 2007-08-02  J. Mowery  <jmowery@tresys.com>
 
 	* Split the flags for sesearch to allow searching each type

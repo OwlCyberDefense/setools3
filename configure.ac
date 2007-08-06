@@ -231,6 +231,9 @@ if test "x${enable_tclswig}" = xyes; then
    fi
    TEA_INIT(3.5)
    TEA_PATH_TCLCONFIG
+   if test x"${ac_cv_c_tclconfig}" = x ; then
+     AC_MSG_ERROR([No Tcl install found.])
+   fi
    TEA_LOAD_TCLCONFIG
    AC_MSG_CHECKING([for Tcl 8.4 or greater])
    if test \( "${TCL_MAJOR_VERSION}" -gt 8 \) -o \( "${TCL_MAJOR_VERSION}" -eq 8 -a "${TCL_MINOR_VERSION}" -ge 4 \); then
@@ -238,16 +241,7 @@ if test "x${enable_tclswig}" = xyes; then
    else
       AC_MSG_ERROR([setools requires Tcl 8.4 or greater])
    fi
-   TEA_PATH_TKCONFIG
-   TEA_LOAD_TKCONFIG
-   AC_MSG_CHECKING([for Tk 8.4 or greater])
-   if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
-      AC_MSG_RESULT(yes)
-   else
-      AC_MSG_ERROR([setools requires Tk 8.4 or greater])
-   fi
    TEA_PUBLIC_TCL_HEADERS
-   TEA_PUBLIC_TK_HEADERS
    TEA_PROG_TCLSH
    SWIG_TCL_OPT=-tcl
    SWIG_TCL_CFLAGS="${TCL_INCLUDES} -DSWIGTCL=1"
@@ -271,6 +265,21 @@ if test "x${build_gui}" = "xyes"; then
 else
     AC_MSG_RESULT(only command line tools)
     build_apol=no
+fi
+
+# check for Tk if both --enable-swig-tcl and --enable-gui are given
+if test ${build_apol} = "yes"; then
+   TEA_PATH_TKCONFIG
+   if test x"${ac_cv_c_tkconfig}" = x ; then
+     AC_MSG_ERROR([No Tk install found.])
+   fi
+   TEA_LOAD_TKCONFIG
+   AC_MSG_CHECKING([for Tk 8.4 or greater])
+   if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
+      AC_MSG_RESULT(yes)
+   else
+      AC_MSG_ERROR([setools requires Tk 8.4 or greater])
+   fi
 fi
 
 if test "x${enable_debug}" = xyes; then
@@ -317,7 +326,7 @@ EOF
             AC_MSG_ERROR([failed.  Try using --disable-bwidget-check flag if compiling in a non-graphical environment.])
             ;;
        17)
-            AC_MSG_RESULT([1.7])
+            AC_MSG_RESULT([1.7; will patch apol for compatibility])
             copy_bwidget=no
             bwidget_ver=1.7
             ;;
