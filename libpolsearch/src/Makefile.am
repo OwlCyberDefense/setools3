@@ -12,7 +12,9 @@ libpolsearch_a_SOURCES = \
 	parameter.cc \
 	polsearch.cc \
 	polsearch_internal.hh \
+	proof.cc \
 	query.cc \
+	result.cc \
 	test.cc \
 	util.cc
 	criterion_internal.hh \

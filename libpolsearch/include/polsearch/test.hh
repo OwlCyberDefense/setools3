@@ -82,7 +82,20 @@ class polsearch_test
 	 */
 	 polsearch_criterion & addCriterion(polsearch_op_e opr, bool neg = false) throw(std::invalid_argument);
 
-	 std::vector < polsearch_result * >run(apol_policy_t * policy, sefs_fclist * fclist,
+	 /**
+	  * Run the test. Get all candidates for each criterion specified and check for any
+	  * that are satisfied. For each element of \a Xcandidates that satisfies the criteria,
+	  * there will be one result entry in the returned result vector.
+	  * @param policy The policy from which the elements of \a Xcandidates come.
+	  * @param fclist The file_context list to use.
+	  * @param Xcandidates The vector of potential candidates for this test. If the
+	  * query containing this test is set to match all, this vector will be pruned to
+	  * only those candidates satisfying all criteria for this test.
+	  * @return A vector containing one result entry for each element in \a Xcandidates
+	  * that satisfies all criteria for the test.
+	  * @exception std::runtime_error Unable to complete the test.
+	  */
+	 const std::vector < polsearch_result >run(apol_policy_t * policy, sefs_fclist * fclist,
 					       std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
 
 	friend polsearch_test & polsearch_query::addTest(polsearch_test_cond_e);
@@ -101,5 +114,16 @@ class polsearch_test
 	polsearch_test_cond_e _test_cond;	/*!< The condition tested. */
 	 std::vector < polsearch_criterion > _criteria;	/*!< The criteria to check. */
 };
+
+/**
+ * Callback for processing one file_context entry at a time to avoid
+ * potentially large vectors from becoming necessary for large filesystems.
+ * @param fclist The file_contexts list from which \a entry comes.
+ * @param entry The entry to test.
+ * @param data An instance of struct fcdata with all necessary values to
+ * check criteria and append a proof as necessary.
+ * @return 0 if \a entry was processed successfully, and < 0 on error.
+ */
+int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void *data);
 
 #endif				       /* POLSEARCH_TEST_HH */

@@ -26,6 +26,8 @@
 #include <polsearch/polsearch.hh>
 #include "polsearch_internal.hh"
 
+#include <sefs/entry.hh>
+
 #include <apol/policy-query.h>
 
 #include <stdexcept>
@@ -33,6 +35,7 @@
 #include <string>
 #include <cerrno>
 #include <cassert>
+#include <cstdlib>
 
 using std::invalid_argument;
 using std::bad_alloc;
@@ -530,4 +533,112 @@ std::vector < std::string > mkvector(const apol_vector_t * rhs)
 		v.push_back(string(static_cast < char *>(apol_vector_get_element(rhs, i))));
 	}
 	return v;
+}
+
+void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_alloc)
+{
+	switch (elem_type)
+	{
+		case POLSEARCH_ELEMENT_FC_ENTRY:
+		{
+			return new sefs_entry(static_cast < sefs_entry * >(elem));
+		}
+		case POLSEARCH_ELEMENT_MLS_RANGE:
+		{
+			apol_mls_range_t *rng = apol_mls_range_create_from_mls_range(static_cast < apol_mls_range_t * >(elem));
+			if (!rng)
+				throw bad_alloc();
+			return rng;
+		}
+		case POLSEARCH_ELEMENT_STRING:
+		case POLSEARCH_ELEMENT_PERMISSION:
+		{
+			char *tmp = strdup(static_cast < char *>(elem));
+			if (!tmp)
+				throw bad_alloc();
+			return tmp;
+		}
+		case POLSEARCH_ELEMENT_BOOL_STATE:
+		case POLSEARCH_ELEMENT_TYPE:
+		case POLSEARCH_ELEMENT_ATTRIBUTE:
+		case POLSEARCH_ELEMENT_ROLE:
+		case POLSEARCH_ELEMENT_USER:
+		case POLSEARCH_ELEMENT_CLASS:
+		case POLSEARCH_ELEMENT_COMMON:
+		case POLSEARCH_ELEMENT_CATEGORY:
+		case POLSEARCH_ELEMENT_LEVEL:
+		case POLSEARCH_ELEMENT_BOOL:
+		case POLSEARCH_ELEMENT_AVRULE:
+		case POLSEARCH_ELEMENT_TERULE:
+		case POLSEARCH_ELEMENT_ROLE_ALLOW:
+		case POLSEARCH_ELEMENT_ROLE_TRANS:
+		case POLSEARCH_ELEMENT_RANGE_TRANS:
+		case POLSEARCH_ELEMENT_NONE:
+		default:
+		{
+		//these don't get copied
+			return elem;
+		}
+	}
+}
+
+static void wrap_sefs_entry_free(void *x)
+{
+	delete (static_cast<sefs_entry*>(x));
+}
+
+static void wrap_apol_mls_level_free(void *x)
+{
+	apol_mls_level_t *m = static_cast<apol_mls_level_t*>(x);
+	apol_mls_level_destroy(&m);
+}
+
+static void wrap_apol_mls_range_free(void *x)
+{
+	apol_mls_range_t *m = static_cast<apol_mls_range_t*>(x);
+	apol_mls_range_destroy(&m);
+}
+
+polsearch_proof_element_free_fn get_element_free_fn(polsearch_element_e elem_type)
+{
+	switch(elem_type)
+	{
+	case POLSEARCH_ELEMENT_FC_ENTRY:    /*!< sefs_entry_t */
+	{
+		return wrap_sefs_entry_free;
+	}
+	case POLSEARCH_ELEMENT_MLS_LEVEL:   /*!< apol_mls_level_t */
+	{
+		return wrap_apol_mls_level_free;
+	}
+	case POLSEARCH_ELEMENT_MLS_RANGE:   /*!< apol_mls_range_t */
+	{
+		return wrap_apol_mls_range_free;
+	}
+	case POLSEARCH_ELEMENT_STRING:      /*!< char * */
+	{
+		return free;
+	}
+	case POLSEARCH_ELEMENT_TYPE:	       /*!< qpol_type_t */
+	case POLSEARCH_ELEMENT_ATTRIBUTE:   /*!< qpol_type_t */
+	case POLSEARCH_ELEMENT_ROLE:	       /*!< qpol_role_t */
+	case POLSEARCH_ELEMENT_USER:	       /*!< qpol_user_t */
+	case POLSEARCH_ELEMENT_CLASS:       /*!< qpol_class_t */
+	case POLSEARCH_ELEMENT_COMMON:      /*!< qpol_common_t */
+	case POLSEARCH_ELEMENT_PERMISSION:  /*!< char * */
+	case POLSEARCH_ELEMENT_CATEGORY:    /*!< qpol_cat_t */
+	case POLSEARCH_ELEMENT_LEVEL:       /*!< qpol_level_t */
+	case POLSEARCH_ELEMENT_BOOL:	       /*!< qpol_bool_t */
+	case POLSEARCH_ELEMENT_AVRULE:      /*!< qpol_avrule_t */
+	case POLSEARCH_ELEMENT_TERULE:      /*!< qpol_terule_t */
+	case POLSEARCH_ELEMENT_ROLE_ALLOW:  /*!< qpol_role_allow_t */
+	case POLSEARCH_ELEMENT_ROLE_TRANS:  /*!< qpol_role_trans_t */
+	case POLSEARCH_ELEMENT_RANGE_TRANS: /*!< qpol_range_trans_t */
+	case POLSEARCH_ELEMENT_BOOL_STATE:   /*!< bool */
+	case POLSEARCH_ELEMENT_NONE:    /*!< only used for error conditions */
+	default:
+	{
+		return NULL;
+	}
+	}
 }

@@ -23,6 +23,12 @@ libpoldiff_pyswig_soname=_poldiff.so.1
 libpoldiff_jswig_soname=libjpoldiff.so.1
 libpoldiff_tswig_soname=libtpoldiff.so.1
 
+libpolsearch_version=1.0
+libpolsearch_soname=libpolsearch.so.1
+libpolsearch_pyswig_soname=_polsearch.so.1
+libpolsearch_jswig_soname=libjpolsearch.so.1
+libpolsearch_tswig_soname=libtpolsearch.so.1
+
 libsefs_version=4.0
 libsefs_soname=libsefs.so.4
 libsefs_pyswig_soname=_sefs.so.4
@@ -97,12 +103,14 @@ else
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.so'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.so'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.so'
+        POLSEARCH_LIB_FLAG='$(top_builddir)/libpolsearch/src/libpolsearch.so'
         SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.so'
     else
         QPOL_LIB_FLAG='$(top_builddir)/libqpol/src/libqpol.so'
         APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a'
         SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a'
         POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a'
+        POLSEARCH_LIB_FLAG='$(top_builddir)/libpolsearch/src/libpolsearch.a'
         SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a'
     fi
     AC_MSG_RESULT(disabled)
@@ -127,6 +135,7 @@ AC_SUBST(QPOL_LIB_FLAG)
 AC_SUBST(APOL_LIB_FLAG)
 AC_SUBST(SEFS_LIB_FLAG)
 AC_SUBST(POLDIFF_LIB_FLAG)
+AC_SUBST(POLSEARCH_LIB_FLAG)
 AC_SUBST(SEAUDIT_LIB_FLAG)
 
 AC_MSG_CHECKING([for how to link against libraries])
@@ -678,6 +687,11 @@ AC_SUBST(libpoldiff_soname)
 AC_SUBST(libpoldiff_pyswig_soname)
 AC_SUBST(libpoldiff_jswig_soname)
 AC_SUBST(libpoldiff_tswig_soname)
+AC_SUBST(libpolsearch_version)
+AC_SUBST(libpolsearch_soname)
+AC_SUBST(libpolsearch_pyswig_soname)
+AC_SUBST(libpolsearch_jswig_soname)
+AC_SUBST(libpolsearch_tswig_soname)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
 AC_SUBST(libsefs_pyswig_soname)
@@ -696,6 +710,7 @@ AC_SUBST(profile_install_dir)
 AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
 AC_DEFINE_UNQUOTED(LIBQPOL_VERSION_STRING, "${libqpol_version}", [libqpol version])
 AC_DEFINE_UNQUOTED(LIBPOLDIFF_VERSION_STRING, "${libpoldiff_version}", [libpoldiff version])
+AC_DEFINE_UNQUOTED(LIBPOLSEARCH_VERSION_STRING, "${libpolsearch_version}", [libpolpolsearch version])
 AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs version])
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
 AC_DEFINE_UNQUOTED(TEST_POLICIES, "${test_policies}", [location of testing policies])
@@ -766,6 +781,8 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF libapol/swig/tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile libpoldiff/tests/Makefile \
                  libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF libpoldiff/swig/tcl/Makefile \
+                 libpolsearch/Makefile libpolsearch/src/Makefile libpolsearch/include/Makefile libpolsearch/include/polsearch/Makefile \
+                 libpolsearch/swig/Makefile libpolsearch/swig/python/Makefile libpolsearch/swig/java/Makefile libpolsearch/swig/java/MANIFEST.MF libpolsearch/swig/tcl/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
                  libsefs/swig/Makefile libsefs/swig/python/Makefile libsefs/swig/java/Makefile libsefs/swig/tcl/Makefile libsefs/swig/java/MANIFEST.MF \
                  libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile libseaudit/tests/Makefile \

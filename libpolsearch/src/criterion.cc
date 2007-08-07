@@ -63,7 +63,7 @@ polsearch_criterion::polsearch_criterion(const polsearch_criterion & rhs)
 	_negated = rhs._negated;
 	_test = rhs._test;
 	if (rhs._param)
-		_param = NULL;	       //TODO copy safely
+		_param = _param->clone();
 	else
 		_param = NULL;
 }
@@ -173,13 +173,63 @@ static vector < string > &operator+=(vector < string > &lhs, const vector < stri
 	return lhs;
 }
 
+/**
+ * Given a qpol_type_t expand into a list of all names that can be matched.
+ * For a type, this means its primary and all aliases; for an attribute,
+ * this means the attribute name and the primary name and aliases for all
+ * types to which it expands.
+ * @param policy The policy from which the type comes.
+ * @param type The qpol type to expand.
+ * @return A vector of all type names to match.
+ * @exception std::bad_alloc Out of memory.
+ */
+static vector < string > expand_semantic_type(const apol_policy_t * policy, const qpol_type_t *type) throw(std::bad_alloc)
+{
+	vector<string> names;
+	unsigned char isattr;
+	const qpol_policy_t *qp = apol_policy_get_qpol(policy);
+
+	qpol_type_get_isattr(qp, type, &isattr);
+	if (isattr)
+	{
+		names += get_all_names(type, POLSEARCH_ELEMENT_ATTRIBUTE, policy);
+		qpol_iterator_t *iter = NULL;
+		if (qpol_type_get_type_iter(qp, type, &iter))
+			throw bad_alloc();
+		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter))
+		{
+			void *itype = NULL;
+			qpol_iterator_get_item(iter, &itype);
+			names += get_all_names(itype, POLSEARCH_ELEMENT_TYPE, policy);
+		}
+		qpol_iterator_destroy(&iter);
+	}
+	else
+	{
+		names = get_all_names(type, POLSEARCH_ELEMENT_TYPE, policy);
+	}
+
+	return names;
+}
+
+/**
+ * Determine the correct version of the parameter match function to call
+ * and initialize its input appropriately.
+ * @param policy The policy from which \a candidate comes.
+ * @param candidate The policy to compare.
+ * @param candidate_type The type of policy element repesented by \a candidate.
+ * @param opr The comparison operator for the criterion.
+ * @param input Union of possible match input to initialize.
+ * @return Value indicating which version of the match function to call.
+ * @exception std::runtime_error Conflicting candidate type and operator.
+ * @exception std::bad_alloc Out of memory.
+ */
 enum match_type determine_match_type(const apol_policy_t * policy, const void *candidate, polsearch_element_e candidate_type,
 				     polsearch_op_e opr, union match_input &input) throw(std::runtime_error, std::bad_alloc)
 {
 	qpol_policy_t *qp = apol_policy_get_qpol(policy);
 	qpol_iterator_t *iter = NULL;
 
-	//TODO determine match type and fill in input
 	switch (opr)
 	{
 	case POLSEARCH_OP_IS:
@@ -229,15 +279,84 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 	}
 	case POLSEARCH_OP_INCLUDE:
 	{
-		//TODO
+		if (candidate_type == POLSEARCH_ELEMENT_TYPE || candidate_type == POLSEARCH_ELEMENT_ATTRIBUTE ||
+		    candidate_type == POLSEARCH_ELEMENT_ROLE || candidate_type == POLSEARCH_ELEMENT_USER ||
+		    candidate_type == POLSEARCH_ELEMENT_COMMON || candidate_type == POLSEARCH_ELEMENT_CATEGORY)
+		{
+			input.list = new vector<string>(get_all_names(candidate, candidate_type, policy));
+			return MATCH_LIST;
+		}
+		else if (candidate_type == POLSEARCH_ELEMENT_PERMISSION)
+		{
+			input.str = new string(static_cast <const char *>(candidate));
+			return MATCH_STRING;
+		}
+		else
+		{
+			throw runtime_error("Incompatible comparison.");
+		}
 	}
 	case POLSEARCH_OP_AS_SOURCE:
 	{
-		//TODO
+		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE || candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
+		{
+			const qpol_type_t* src = NULL;
+			if (candidate_type == POLSEARCH_ELEMENT_AVRULE)
+				qpol_avrule_get_source_type(qp, static_cast < const qpol_avrule_t * >(candidate), &src);
+			if (candidate_type == POLSEARCH_ELEMENT_TERULE)
+				qpol_terule_get_source_type(qp, static_cast < const qpol_terule_t * >(candidate), &src);
+			if (candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
+				qpol_range_trans_get_source_type(qp, static_cast < const qpol_range_trans_t * >(candidate), &src);
+			input.list = new vector<string>(expand_semantic_type(policy, src));
+			return MATCH_LIST;
+		}
+		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW || candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
+		{
+			const qpol_role_t* src = NULL;
+			if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW)
+				qpol_role_allow_get_source_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &src);
+			if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
+				qpol_role_trans_get_source_role(qp, static_cast < const qpol_role_trans_t * >(candidate), &src);
+			const char *name;
+			qpol_role_get_name(qp, src, &name);
+			input.str = new string(name);
+			return MATCH_STRING;
+		}
+		else
+		{
+			throw runtime_error("Incompatible comparison.");
+		}
 	}
 	case POLSEARCH_OP_AS_TARGET:
 	{
-		//TODO
+		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE ||
+		    candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS || candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
+		{
+			const qpol_type_t* tgt = NULL;
+			if (candidate_type == POLSEARCH_ELEMENT_AVRULE)
+				qpol_avrule_get_target_type(qp, static_cast < const qpol_avrule_t * >(candidate), &tgt);
+			if (candidate_type == POLSEARCH_ELEMENT_TERULE)
+				qpol_terule_get_target_type(qp, static_cast < const qpol_terule_t * >(candidate), &tgt);
+			if (candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
+				qpol_range_trans_get_target_type(qp, static_cast < const qpol_range_trans_t * >(candidate), &tgt);
+			if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
+				qpol_role_trans_get_target_type(qp, static_cast < const qpol_role_trans_t * >(candidate), &tgt);
+			input.list = new vector<string>(expand_semantic_type(policy, tgt));
+			return MATCH_LIST;
+		}
+		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW)
+		{
+			const qpol_role_t* tgt = NULL;
+			qpol_role_allow_get_target_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &tgt);
+			const char *name;
+			qpol_role_get_name(qp, tgt, &name);
+			input.str = new string(name);
+			return MATCH_STRING;
+		}
+		else
+		{
+			throw runtime_error("Incompatible comparison.");
+		}
 	}
 	case POLSEARCH_OP_AS_CLASS:
 	{
@@ -293,24 +412,114 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 			const qpol_type_t *type;
 			qpol_terule_get_default_type(qp, static_cast < const qpol_terule_t * >(candidate), &type);
 			input.list = new vector < string > (get_all_names(type, POLSEARCH_ELEMENT_TYPE, policy));
+			return MATCH_LIST;
+		}
+		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
+		{
+			const qpol_role_t* dflt = NULL;
+			qpol_role_trans_get_default_role(qp, static_cast < const qpol_role_trans_t * >(candidate), &dflt);
+			const char *name;
+			qpol_role_get_name(qp, dflt, &name);
+			input.str = new string(name);
+			return MATCH_STRING;
 		}
 		else
 		{
 			throw runtime_error("Incompatible comparison");
 		}
-		return MATCH_LIST;
 	}
 	case POLSEARCH_OP_AS_SRC_TGT:
 	{
-		//TODO
+		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE || candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS) {
+			const qpol_type_t * src = NULL;
+			const qpol_type_t * tgt = NULL;
+			if (candidate_type == POLSEARCH_ELEMENT_AVRULE)
+			{
+				qpol_avrule_get_source_type(qp, static_cast < const qpol_avrule_t * >(candidate), &src);
+				qpol_avrule_get_target_type(qp, static_cast < const qpol_avrule_t * >(candidate), &tgt);
+			}
+			else if (candidate_type == POLSEARCH_ELEMENT_TERULE)
+			{
+				qpol_terule_get_source_type(qp, static_cast < const qpol_terule_t * >(candidate), &src);
+				qpol_terule_get_target_type(qp, static_cast < const qpol_terule_t * >(candidate), &tgt);
+			}
+			else if (candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
+			{}
+			input.list = new vector<string>(expand_semantic_type(policy, src));
+			*input.list += expand_semantic_type(policy, tgt);
+			return MATCH_LIST;
+		}
+		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW)
+		{
+			const qpol_role_t * src = NULL;
+			const qpol_role_t * tgt = NULL;
+			const char * sname;
+			const char * tname;
+			qpol_role_allow_get_source_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &src);
+			qpol_role_allow_get_target_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &tgt);
+			qpol_role_get_name(qp, src, &sname);
+			qpol_role_get_name(qp, tgt, &tname);
+			input.list = new vector<string>();
+			(*input.list).push_back(string(sname));
+			(*input.list).push_back(string(tname));
+			return MATCH_LIST;
+		}
+		else
+		{
+			throw runtime_error("Incompatible comparison");
+		}
 	}
 	case POLSEARCH_OP_AS_SRC_TGT_DFLT:
 	{
-		//TODO
+		const qpol_type_t * src = NULL;
+		const qpol_type_t * tgt = NULL;
+		const qpol_type_t * dflt = NULL;
+		if (candidate_type == POLSEARCH_ELEMENT_TERULE)
+		{
+			qpol_terule_get_source_type(qp, static_cast < const qpol_terule_t * >(candidate), &src);
+			qpol_terule_get_target_type(qp, static_cast < const qpol_terule_t * >(candidate), &tgt);
+			qpol_terule_get_default_type(qp, static_cast < const qpol_terule_t * >(candidate), &dflt);
+			input.list = new vector<string>(expand_semantic_type(policy, src));
+			*input.list += expand_semantic_type(policy, tgt);
+			*input.list += get_all_names(dflt, POLSEARCH_ELEMENT_TYPE, policy);
+			return MATCH_LIST;
+		}
+		else
+		{
+			throw runtime_error("Incompatible comparison");
+		}
 	}
 	case POLSEARCH_OP_AS_SRC_DFLT:
 	{
-		//TODO
+		if (candidate_type == POLSEARCH_ELEMENT_TERULE)
+		{
+			const qpol_type_t * src = NULL;
+			const qpol_type_t * dflt = NULL;
+			qpol_terule_get_source_type(qp, static_cast < const qpol_terule_t * >(candidate), &src);
+			qpol_terule_get_default_type(qp, static_cast < const qpol_terule_t * >(candidate), &dflt);
+			input.list = new vector<string>(expand_semantic_type(policy, src));
+			*input.list += get_all_names(dflt, POLSEARCH_ELEMENT_TYPE, policy);
+			return MATCH_LIST;
+		}
+		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
+		{
+			const qpol_role_t * src = NULL;
+			const qpol_role_t * dflt = NULL;
+			const char * sname;
+			const char * dname;
+			qpol_role_trans_get_source_role(qp, static_cast < const qpol_role_trans_t * >(candidate), &src);
+			qpol_role_trans_get_default_role(qp, static_cast < const qpol_role_trans_t * >(candidate), &dflt);
+			qpol_role_get_name(qp, src, &sname);
+			qpol_role_get_name(qp, dflt, &dname);
+			input.list = new vector<string>();
+			(*input.list).push_back(string(sname));
+			(*input.list).push_back(string(dname));
+			return MATCH_LIST;
+		}
+		else
+		{
+			throw runtime_error("Incompatible comparison");
+		}
 	}
 	case POLSEARCH_OP_IN_COND:
 	{

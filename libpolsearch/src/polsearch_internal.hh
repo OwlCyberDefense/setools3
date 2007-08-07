@@ -107,4 +107,21 @@ std::vector < std::string > get_all_names(const void *element, polsearch_element
  */
 std::vector < std::string > mkvector(const apol_vector_t * rhs);
 
+/**
+ * Copy an arbirtary element.
+ * @param elem_type The type of element.
+ * @param elem The element to copy.
+ * @return A newly allocated copy of \a elem.
+ */
+void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_alloc);
+
+/**
+ * Get the function to free an element for use when adding proof entries or
+ * dealing with qpol objects.
+ * @param elem_type The type of element for which to get the free function.
+ * @return Function pointer to the free function to call to free an element
+ * of type \a elem_type or NULL if no function needs to be called.
+ */
+polsearch_proof_element_free_fn get_element_free_fn(polsearch_element_e elem_type);
+
 #endif				       /* POLSEARCH_INTERNAL_HH */

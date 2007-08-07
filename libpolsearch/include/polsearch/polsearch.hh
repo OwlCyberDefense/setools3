@@ -124,6 +124,12 @@ typedef enum polsearch_param_type
 	POLSEARCH_PARAM_TYPE_RANGE     /*!< parameter is an apol_mls_range_t * */
 } polsearch_param_type_e;
 
+/**
+ * Free callback for proof elements.
+ * @param elem The element to free.
+ */
+typedef void (*polsearch_proof_element_free_fn) (void *elem);
+
 //forward declaration of classes
 class polsearch_query;
 class polsearch_symbol_query;
