@@ -40,7 +40,7 @@ using std::vector;
 using std::string;
 
 polsearch_proof::polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, const apol_policy_t * p,
-											sefs_fclist * fclist, polsearch_proof_element_free_fn free_fn)
+				 sefs_fclist * fclist, polsearch_proof_element_free_fn free_fn)
 {
 	_test_cond = test;
 	_element_type = elem_type;
@@ -90,4 +90,3 @@ polsearch_test_cond_e polsearch_proof::testCond() const
 {
 	return _test_cond;
 }
-

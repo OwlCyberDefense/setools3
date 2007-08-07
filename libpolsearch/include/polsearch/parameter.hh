@@ -53,7 +53,7 @@ class polsearch_parameter
 	//! Copy constructor.
 	polsearch_parameter(const polsearch_parameter & rhs);
 	//! Destructor.
-	virtual ~polsearch_parameter();
+	 virtual ~polsearch_parameter();
 
 	/**
 	 * Determine if a boolean state matches the parameter.
@@ -135,8 +135,9 @@ class polsearch_parameter
 	/**
 	 * Get a deep copy of the derived parameter class.
 	 * @return A newly allocated parameter that is a deep copy of \a this.
+	 * @exception std::bad_alloc Out of memory.
 	 */
-	virtual polsearch_parameter *clone() const = 0;
+	virtual polsearch_parameter *clone() const throw(std::bad_alloc) = 0;
 };
 
 #endif				       /* POLSEARCH_PARAMETER_HH */

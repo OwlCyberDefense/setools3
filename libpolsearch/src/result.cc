@@ -74,7 +74,7 @@ const void *polsearch_result::element() const
 	return _element;
 }
 
-const vector<polsearch_proof>& polsearch_result::proof() const
+const vector < polsearch_proof > &polsearch_result::proof() const
 {
 	return _proof;
 }
@@ -86,7 +86,7 @@ string polsearch_result::toString() const
 	return tmp;
 }
 
-void polsearch_result::merge(const polsearch_result& rhs) throw(std::invalid_argument)
+void polsearch_result::merge(const polsearch_result & rhs) throw(std::invalid_argument)
 {
 	if (_element != rhs._element)
 		throw invalid_argument("Results cannot be merged: different elements.");
@@ -96,13 +96,14 @@ void polsearch_result::merge(const polsearch_result& rhs) throw(std::invalid_arg
 	}
 }
 
-polsearch_proof &polsearch_result::addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, polsearch_proof_element_free_fn free_fn)
+polsearch_proof & polsearch_result::addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem,
+					     polsearch_proof_element_free_fn free_fn)
 {
 	_proof.push_back(polsearch_proof(test, elem_type, elem, _policy, _fclist, free_fn));
 	return *(_proof.end());
 }
 
-polsearch_proof &polsearch_result::addProof(const polsearch_proof& proof_entry)
+polsearch_proof & polsearch_result::addProof(const polsearch_proof & proof_entry)
 {
 	_proof.push_back(polsearch_proof(proof_entry));
 	return *(_proof.end());

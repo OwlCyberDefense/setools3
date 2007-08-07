@@ -46,7 +46,7 @@
  */
 class polsearch_proof
 {
-	public:
+      public:
 	/**
 	 * Copy a proof.
 	 * @param pp The proof to copy.
@@ -59,7 +59,7 @@ class polsearch_proof
 	 * Return a string representing the proof.
 	 * @return A string representing the proof.
 	 */
-	std::string toString() const;
+	 std::string toString() const;
 	/**
 	 * Get the type of element stored in the proof.
 	 * @return The type of element stored in the proof.
@@ -76,10 +76,11 @@ class polsearch_proof
 	 */
 	polsearch_test_cond_e testCond() const;
 
-	friend polsearch_proof & polsearch_result::addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, polsearch_proof_element_free_fn free_fn);
+	friend polsearch_proof & polsearch_result::addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem,
+							    polsearch_proof_element_free_fn free_fn);
 	friend int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void *data);
 
-	protected:
+      protected:
 	/**
 	 * Create a new poof entry.
 	 * @param test The test condition proved by this entry.
@@ -90,10 +91,11 @@ class polsearch_proof
 	 * @param free_fn Callback to be envoked if \a elem should be freed.
 	 * If NULL, do not free \a elem when this proof is destroyed.
 	 */
-	polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, const apol_policy_t * p, sefs_fclist * fclist, polsearch_proof_element_free_fn free_fn = NULL);
+	 polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, const apol_policy_t * p,
+			 sefs_fclist * fclist, polsearch_proof_element_free_fn free_fn = NULL);
 
-	private:
-	polsearch_test_cond_e _test_cond;	/*!< Test condition matched by the element */
+      private:
+	 polsearch_test_cond_e _test_cond;	/*!< Test condition matched by the element */
 	polsearch_element_e _element_type;	/*!< The type of element to display as proof (may not be same type as tested element). */
 	void *_element;		       /*!< The element to display as proof. */
 	const apol_policy_t *_policy;  /*!< The policy associated with \a _element. */
@@ -101,4 +103,4 @@ class polsearch_proof
 	polsearch_proof_element_free_fn _free_fn;	/*!< Function to be called to free \a _element if needed. */
 };
 
-#endif /* POLSEARCH_PROOF_HH */
+#endif				       /* POLSEARCH_PROOF_HH */

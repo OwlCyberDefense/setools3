@@ -183,9 +183,9 @@ static vector < string > &operator+=(vector < string > &lhs, const vector < stri
  * @return A vector of all type names to match.
  * @exception std::bad_alloc Out of memory.
  */
-static vector < string > expand_semantic_type(const apol_policy_t * policy, const qpol_type_t *type) throw(std::bad_alloc)
+static vector < string > expand_semantic_type(const apol_policy_t * policy, const qpol_type_t * type) throw(std::bad_alloc)
 {
-	vector<string> names;
+	vector < string > names;
 	unsigned char isattr;
 	const qpol_policy_t *qp = apol_policy_get_qpol(policy);
 
@@ -283,12 +283,12 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 		    candidate_type == POLSEARCH_ELEMENT_ROLE || candidate_type == POLSEARCH_ELEMENT_USER ||
 		    candidate_type == POLSEARCH_ELEMENT_COMMON || candidate_type == POLSEARCH_ELEMENT_CATEGORY)
 		{
-			input.list = new vector<string>(get_all_names(candidate, candidate_type, policy));
+			input.list = new vector < string > (get_all_names(candidate, candidate_type, policy));
 			return MATCH_LIST;
 		}
 		else if (candidate_type == POLSEARCH_ELEMENT_PERMISSION)
 		{
-			input.str = new string(static_cast <const char *>(candidate));
+			input.str = new string(static_cast < const char *>(candidate));
 			return MATCH_STRING;
 		}
 		else
@@ -298,21 +298,22 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 	}
 	case POLSEARCH_OP_AS_SOURCE:
 	{
-		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE || candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
+		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE ||
+		    candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
 		{
-			const qpol_type_t* src = NULL;
+			const qpol_type_t *src = NULL;
 			if (candidate_type == POLSEARCH_ELEMENT_AVRULE)
 				qpol_avrule_get_source_type(qp, static_cast < const qpol_avrule_t * >(candidate), &src);
 			if (candidate_type == POLSEARCH_ELEMENT_TERULE)
 				qpol_terule_get_source_type(qp, static_cast < const qpol_terule_t * >(candidate), &src);
 			if (candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
 				qpol_range_trans_get_source_type(qp, static_cast < const qpol_range_trans_t * >(candidate), &src);
-			input.list = new vector<string>(expand_semantic_type(policy, src));
+			input.list = new vector < string > (expand_semantic_type(policy, src));
 			return MATCH_LIST;
 		}
 		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW || candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
 		{
-			const qpol_role_t* src = NULL;
+			const qpol_role_t *src = NULL;
 			if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW)
 				qpol_role_allow_get_source_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &src);
 			if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
@@ -332,7 +333,7 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE ||
 		    candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS || candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
 		{
-			const qpol_type_t* tgt = NULL;
+			const qpol_type_t *tgt = NULL;
 			if (candidate_type == POLSEARCH_ELEMENT_AVRULE)
 				qpol_avrule_get_target_type(qp, static_cast < const qpol_avrule_t * >(candidate), &tgt);
 			if (candidate_type == POLSEARCH_ELEMENT_TERULE)
@@ -341,12 +342,12 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 				qpol_range_trans_get_target_type(qp, static_cast < const qpol_range_trans_t * >(candidate), &tgt);
 			if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
 				qpol_role_trans_get_target_type(qp, static_cast < const qpol_role_trans_t * >(candidate), &tgt);
-			input.list = new vector<string>(expand_semantic_type(policy, tgt));
+			input.list = new vector < string > (expand_semantic_type(policy, tgt));
 			return MATCH_LIST;
 		}
 		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW)
 		{
-			const qpol_role_t* tgt = NULL;
+			const qpol_role_t *tgt = NULL;
 			qpol_role_allow_get_target_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &tgt);
 			const char *name;
 			qpol_role_get_name(qp, tgt, &name);
@@ -416,7 +417,7 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 		}
 		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
 		{
-			const qpol_role_t* dflt = NULL;
+			const qpol_role_t *dflt = NULL;
 			qpol_role_trans_get_default_role(qp, static_cast < const qpol_role_trans_t * >(candidate), &dflt);
 			const char *name;
 			qpol_role_get_name(qp, dflt, &name);
@@ -430,9 +431,11 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 	}
 	case POLSEARCH_OP_AS_SRC_TGT:
 	{
-		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE || candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS) {
-			const qpol_type_t * src = NULL;
-			const qpol_type_t * tgt = NULL;
+		if (candidate_type == POLSEARCH_ELEMENT_AVRULE || candidate_type == POLSEARCH_ELEMENT_TERULE ||
+		    candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
+		{
+			const qpol_type_t *src = NULL;
+			const qpol_type_t *tgt = NULL;
 			if (candidate_type == POLSEARCH_ELEMENT_AVRULE)
 			{
 				qpol_avrule_get_source_type(qp, static_cast < const qpol_avrule_t * >(candidate), &src);
@@ -444,22 +447,23 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 				qpol_terule_get_target_type(qp, static_cast < const qpol_terule_t * >(candidate), &tgt);
 			}
 			else if (candidate_type == POLSEARCH_ELEMENT_RANGE_TRANS)
-			{}
-			input.list = new vector<string>(expand_semantic_type(policy, src));
+			{
+			}
+			input.list = new vector < string > (expand_semantic_type(policy, src));
 			*input.list += expand_semantic_type(policy, tgt);
 			return MATCH_LIST;
 		}
 		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_ALLOW)
 		{
-			const qpol_role_t * src = NULL;
-			const qpol_role_t * tgt = NULL;
-			const char * sname;
-			const char * tname;
+			const qpol_role_t *src = NULL;
+			const qpol_role_t *tgt = NULL;
+			const char *sname;
+			const char *tname;
 			qpol_role_allow_get_source_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &src);
 			qpol_role_allow_get_target_role(qp, static_cast < const qpol_role_allow_t * >(candidate), &tgt);
 			qpol_role_get_name(qp, src, &sname);
 			qpol_role_get_name(qp, tgt, &tname);
-			input.list = new vector<string>();
+			input.list = new vector < string > ();
 			(*input.list).push_back(string(sname));
 			(*input.list).push_back(string(tname));
 			return MATCH_LIST;
@@ -471,15 +475,15 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 	}
 	case POLSEARCH_OP_AS_SRC_TGT_DFLT:
 	{
-		const qpol_type_t * src = NULL;
-		const qpol_type_t * tgt = NULL;
-		const qpol_type_t * dflt = NULL;
+		const qpol_type_t *src = NULL;
+		const qpol_type_t *tgt = NULL;
+		const qpol_type_t *dflt = NULL;
 		if (candidate_type == POLSEARCH_ELEMENT_TERULE)
 		{
 			qpol_terule_get_source_type(qp, static_cast < const qpol_terule_t * >(candidate), &src);
 			qpol_terule_get_target_type(qp, static_cast < const qpol_terule_t * >(candidate), &tgt);
 			qpol_terule_get_default_type(qp, static_cast < const qpol_terule_t * >(candidate), &dflt);
-			input.list = new vector<string>(expand_semantic_type(policy, src));
+			input.list = new vector < string > (expand_semantic_type(policy, src));
 			*input.list += expand_semantic_type(policy, tgt);
 			*input.list += get_all_names(dflt, POLSEARCH_ELEMENT_TYPE, policy);
 			return MATCH_LIST;
@@ -493,25 +497,25 @@ enum match_type determine_match_type(const apol_policy_t * policy, const void *c
 	{
 		if (candidate_type == POLSEARCH_ELEMENT_TERULE)
 		{
-			const qpol_type_t * src = NULL;
-			const qpol_type_t * dflt = NULL;
+			const qpol_type_t *src = NULL;
+			const qpol_type_t *dflt = NULL;
 			qpol_terule_get_source_type(qp, static_cast < const qpol_terule_t * >(candidate), &src);
 			qpol_terule_get_default_type(qp, static_cast < const qpol_terule_t * >(candidate), &dflt);
-			input.list = new vector<string>(expand_semantic_type(policy, src));
+			input.list = new vector < string > (expand_semantic_type(policy, src));
 			*input.list += get_all_names(dflt, POLSEARCH_ELEMENT_TYPE, policy);
 			return MATCH_LIST;
 		}
 		else if (candidate_type == POLSEARCH_ELEMENT_ROLE_TRANS)
 		{
-			const qpol_role_t * src = NULL;
-			const qpol_role_t * dflt = NULL;
-			const char * sname;
-			const char * dname;
+			const qpol_role_t *src = NULL;
+			const qpol_role_t *dflt = NULL;
+			const char *sname;
+			const char *dname;
 			qpol_role_trans_get_source_role(qp, static_cast < const qpol_role_trans_t * >(candidate), &src);
 			qpol_role_trans_get_default_role(qp, static_cast < const qpol_role_trans_t * >(candidate), &dflt);
 			qpol_role_get_name(qp, src, &sname);
 			qpol_role_get_name(qp, dflt, &dname);
-			input.list = new vector<string>();
+			input.list = new vector < string > ();
 			(*input.list).push_back(string(sname));
 			(*input.list).push_back(string(dname));
 			return MATCH_LIST;

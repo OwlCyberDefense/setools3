@@ -95,8 +95,8 @@ class polsearch_query
 	 * the query.
 	 * @exception std::runtime_error Error running tests.
 	 */
-	virtual std::vector < polsearch_result >run(const apol_policy_t * policy, sefs_fclist * fclist =
-						      NULL) const throw(std::runtime_error) = 0;
+	virtual std::vector < polsearch_result > run(const apol_policy_t * policy, sefs_fclist * fclist =
+						     NULL) const throw(std::runtime_error) = 0;
 
 	/**
 	 * Get a string repersenting the query.

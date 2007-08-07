@@ -1,11 +1,15 @@
 polsearchdir = $(includedir)/polsearch
 
 polsearch_HEADERS = \
+	bool_parameter.hh \
 	criterion.hh \
+	level_parameter.hh \
+	number_parameter.hh \
 	parameter.hh \
 	polsearch.hh \
 	proof.hh \
 	query.hh \
+	range_parameter.hh \
 	result.hh \
 	test.hh \
 	util.hh

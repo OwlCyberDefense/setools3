@@ -91,33 +91,32 @@ polsearch_criterion & polsearch_test::addCriterion(polsearch_op_e opr, bool neg)
 //! A holding structure for the file_contexts processing callback.
 struct fcdata
 {
-	const vector<polsearch_criterion> *criteria; //! The list of criteria to check for each entry.
+	const vector < polsearch_criterion > *criteria;	//! The list of criteria to check for each entry.
 	const apol_policy_t *policy;   //! The policy to use for symbols.
-	vector<string> *Xnames;   //! The list of possible names for the symbol X.
-	vector<polsearch_proof> *cur_proof;      //! The vector to which to append proof entries.
+	vector < string > *Xnames;     //! The list of possible names for the symbol X.
+	vector < polsearch_proof > *cur_proof;	//! The vector to which to append proof entries.
 };
 
 int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void *data)
 {
 	struct fcdata *datum = static_cast < struct fcdata *>(data);
 
-	for (vector<polsearch_criterion>::const_iterator i = datum->criteria->begin(); i != datum->criteria->end(); ++i)
+	for (vector < polsearch_criterion >::const_iterator i = datum->criteria->begin(); i != datum->criteria->end(); ++i)
 	{
-		vector<const void*> test_candidates;
+		vector < const void *>test_candidates;
 		test_candidates.push_back(static_cast < const void *>(entry));
 		(*i).check(datum->policy, test_candidates, *(datum->Xnames));
 		if (test_candidates.size())
 		{
 			sefs_entry *entry_copy = new sefs_entry(entry);
 			polsearch_proof *new_proof = new polsearch_proof(POLSEARCH_TEST_FCENTRY, POLSEARCH_ELEMENT_FC_ENTRY,
-					static_cast < void *>(entry_copy), datum->policy,
-					fclist, get_element_free_fn(POLSEARCH_ELEMENT_FC_ENTRY));
+									 static_cast < void *>(entry_copy), datum->policy,
+									 fclist, get_element_free_fn(POLSEARCH_ELEMENT_FC_ENTRY));
 			datum->cur_proof->push_back(*new_proof);
 		}
 	}
 	return 0;
 }
-
 
 /**
  * Get all candidates for a given test.
@@ -130,7 +129,7 @@ int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void *data)
  * @exception std::bad_alloc Out of memory.
  */
 static vector < const void *>get_test_candidates(const apol_policy_t * policy, const void *element, polsearch_element_e elem_type,
-					    polsearch_test_cond_e test_cond) throw(std::runtime_error, std::bad_alloc)
+						 polsearch_test_cond_e test_cond) throw(std::runtime_error, std::bad_alloc)
 {
 	polsearch_element_e candidate_type = determine_candidate_type(test_cond);
 	vector < const void *>ret_v;
@@ -417,8 +416,9 @@ static vector < const void *>get_test_candidates(const apol_policy_t * policy, c
 	return ret_v;
 }
 
-const std::vector < polsearch_result >polsearch_test::run(apol_policy_t * policy, sefs_fclist * fclist,
-						      std::vector < const void *>&Xcandidates) const throw(std::runtime_error)
+const std::vector < polsearch_result > polsearch_test::run(apol_policy_t * policy, sefs_fclist * fclist,
+							   std::vector <
+							   const void *>&Xcandidates) const throw(std::runtime_error)
 {
 	if (_criteria.empty())
 		throw runtime_error("No criteria to test.");
@@ -428,7 +428,7 @@ const std::vector < polsearch_result >polsearch_test::run(apol_policy_t * policy
 		    (_query->elementType(), _test_cond, _criteria[i].op(), _criteria[i].param()->paramType()))
 			throw runtime_error("Attempt to test invalid criteria");
 
-	vector < polsearch_result >result_v;
+	vector < polsearch_result > result_v;
 	polsearch_element_e candidate_type = determine_candidate_type(_test_cond);
 
 	for (size_t i = 0; i < Xcandidates.size(); i++)
@@ -436,7 +436,7 @@ const std::vector < polsearch_result >polsearch_test::run(apol_policy_t * policy
 		vector < string > Xnames = get_all_names(Xcandidates[i], candidate_type, policy);
 		if (_test_cond == POLSEARCH_TEST_FCENTRY)
 		{
-			vector<polsearch_proof> *cur_proof = new vector<polsearch_proof>();
+			vector < polsearch_proof > *cur_proof = new vector < polsearch_proof > ();
 			sefs_query *query = new sefs_query();
 			struct fcdata datum = { &_criteria, policy, &Xnames, cur_proof };
 			if (fclist->runQueryMap(query, fcentry_callback, static_cast < void *>(&datum)))
@@ -444,7 +444,7 @@ const std::vector < polsearch_result >polsearch_test::run(apol_policy_t * policy
 			if (!cur_proof->empty())
 			{
 				polsearch_result cur(_query->elementType(), Xcandidates[i], policy, fclist);
-				for (vector<polsearch_proof>::const_iterator i = cur_proof->begin(); i !=cur_proof->end(); i++)
+				for (vector < polsearch_proof >::const_iterator i = cur_proof->begin(); i != cur_proof->end(); i++)
 				{
 					cur.addProof(*i);
 				}
@@ -475,7 +475,8 @@ const std::vector < polsearch_result >polsearch_test::run(apol_policy_t * policy
 				for (size_t j = 0; j < test_candidates.size(); j++)
 				{
 					//create proof and append to result; const cast due to some qpol objects' need to be freed
-					res.addProof(_test_cond, candidate_type, const_cast<void*>(test_candidates[i]), get_element_free_fn(candidate_type));
+					res.addProof(_test_cond, candidate_type, const_cast < void *>(test_candidates[i]),
+						     get_element_free_fn(candidate_type));
 				}
 				//append result to result_v
 				result_v.push_back(res);

@@ -968,10 +968,10 @@ int main(int argc, char **argv)
 		case 'T':	       /* type_transition */
 			cmd_opts.type_trans = true;
 			break;
-		case RULE_TYPE_MEMBER:	       /* type_member */
+		case RULE_TYPE_MEMBER:	/* type_member */
 			cmd_opts.type_member = true;
 			break;
-		case RULE_TYPE_CHANGE:	       /* type_change */
+		case RULE_TYPE_CHANGE:	/* type_change */
 			cmd_opts.type_change = true;
 			break;
 		case RULE_ROLE_ALLOW:
@@ -1008,7 +1008,8 @@ int main(int argc, char **argv)
 	}
 
 	if (!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.auditallow || cmd_opts.dontaudit || cmd_opts.role_allow ||
-	      cmd_opts.type_trans || cmd_opts.type_member || cmd_opts.type_change || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
+	      cmd_opts.type_trans || cmd_opts.type_member || cmd_opts.type_change || cmd_opts.rtrans || cmd_opts.role_trans ||
+	      cmd_opts.all)) {
 		usage(argv[0], 1);
 		fprintf(stderr, "One of --all, --allow, --neverallow, --auditallow, --dontaudit,\n"
 			"--range_trans, --type_trans, --type_member, --type_change, --role_allow,\n"

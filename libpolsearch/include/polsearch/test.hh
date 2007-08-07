@@ -95,8 +95,8 @@ class polsearch_test
 	  * that satisfies all criteria for the test.
 	  * @exception std::runtime_error Unable to complete the test.
 	  */
-	 const std::vector < polsearch_result >run(apol_policy_t * policy, sefs_fclist * fclist,
-					       std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
+	const std::vector < polsearch_result > run(apol_policy_t * policy, sefs_fclist * fclist,
+						   std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
 
 	friend polsearch_test & polsearch_query::addTest(polsearch_test_cond_e);
       protected:

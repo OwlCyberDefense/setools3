@@ -8,12 +8,16 @@ AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpolsearch_a_SOURCES = \
+	bool_parameter.cc \
 	criterion.cc \
+	level_parameter.cc \
+	number_parameter.cc \
 	parameter.cc \
 	polsearch.cc \
 	polsearch_internal.hh \
 	proof.cc \
 	query.cc \
+	range_parameter.hh \
 	result.cc \
 	test.cc \
 	util.cc

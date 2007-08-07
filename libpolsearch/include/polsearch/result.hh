@@ -42,7 +42,7 @@
  */
 class polsearch_result
 {
-	public:
+      public:
 	/**
 	 * Copy a result entry.
 	 * @param rhs The result to copy.
@@ -69,17 +69,19 @@ class polsearch_result
 	 * Get the proof that this element matches the query.
 	 * @return Vector of proof (polsearch_proof).
 	 */
-	const std::vector<polsearch_proof>& proof() const;
+	const std::vector < polsearch_proof > &proof() const;
 	/**
 	 * Return a string representing the result (but not all of its proof entries).
 	 * @return A string representing the result.
 	 * @see polsearch_proof::toString() to get the string representation of each
 	 * proof entry.
 	 */
-	std::string toString() const;
+	 std::string toString() const;
 
-	friend const std::vector < polsearch_result >polsearch_test::run(apol_policy_t * policy, sefs_fclist * fclist,
-			std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
+	friend const std::vector < polsearch_result > polsearch_test::run(apol_policy_t * policy, sefs_fclist * fclist,
+									  std::vector <
+									  const void *>&Xcandidates) const throw(std::
+														 runtime_error);
 
 	/**
 	 * Add a new proof entry for this result.
@@ -89,7 +91,8 @@ class polsearch_result
 	 * @param free_fn If non-null, function to call to free all memory used by \a elem.
 	 * @return A reference to the newly added proof entry.
 	 */
-	polsearch_proof &addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, polsearch_proof_element_free_fn free_fn);
+	 polsearch_proof & addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem,
+				    polsearch_proof_element_free_fn free_fn);
 
 	/**
 	 * Merge the proof entries from another result for the same element.
@@ -99,9 +102,9 @@ class polsearch_result
 	 * @post All proof entries from \a rhs are appended to current list of proof entries.
 	 * @exception std::invalid_argument Attempt to merge results for different elements.
 	 */
-	void merge(const polsearch_result &rhs) throw(std::invalid_argument);
+	void merge(const polsearch_result & rhs) throw(std::invalid_argument);
 
-	protected:
+      protected:
 	/**
 	 * Create a result entry.
 	 * @param elem_type Type of element found.
@@ -109,22 +112,21 @@ class polsearch_result
 	 * @param p The policy associated with \a elem.
 	 * @param fclist The file_contexts list associated with \a elem.
 	 */
-	polsearch_result(polsearch_element_e elem_type, const void *elem, const apol_policy_t * p, sefs_fclist * fclist = NULL);
+	 polsearch_result(polsearch_element_e elem_type, const void *elem, const apol_policy_t * p, sefs_fclist * fclist = NULL);
 
 	/**
 	 * Add a copy of a proof entry to this result.
 	 * @param proof_entry The entry to copy and append.
 	 * @return A reference to the proof entry appended.
 	 */
-	polsearch_proof&addProof(const polsearch_proof& proof_entry);
+	 polsearch_proof & addProof(const polsearch_proof & proof_entry);
 
-	private:
-	polsearch_element_e _element_type;	/*!< The type of element. */
+      private:
+	 polsearch_element_e _element_type;	/*!< The type of element. */
 	const void *_element;	       /*!< The element matched. This object is not owned by the result. */
-	std::vector<polsearch_proof> _proof;	       /*!< List of proof that \a _element matched the query. */
+	 std::vector < polsearch_proof > _proof;	/*!< List of proof that \a _element matched the query. */
 	const apol_policy_t *_policy;  /*!< The policy associated with \a _element. */
 	sefs_fclist *_fclist;	       /*!< The fclist associated with \a _element. */
 };
 
-
-#endif /* POLSEARCH_RESULT_HH */
+#endif				       /* POLSEARCH_RESULT_HH */
