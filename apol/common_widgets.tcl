@@ -29,7 +29,7 @@ namespace eval Apol_Widget {
 # assumes that the listbox has been alphabetized.)
 proc Apol_Widget::makeScrolledListbox {path args} {
     set sw [ScrolledWindow $path -scrollbar both -auto both]
-    set lb [eval listbox $sw.lb $args -bg white -highlightthickness 0]
+    set lb [eval listbox $sw.lb $args -bg [Apol_Prefs::getPref active_bg] -highlightthickness 0]
     $sw setwidget $lb
 
     update
@@ -85,7 +85,7 @@ proc Apol_Widget::makeTypeCombobox {path args} {
     set f [frame $path]
     set type_box [eval ComboBox $f.tb -helptext {{Type or select a type}} \
                       -textvariable Apol_Widget::vars($path:type) \
-                      -entrybg white -width 20 -autopost 1 $args]
+                      -entrybg [Apol_Prefs::getPref active_bg] -width 20 -autopost 1 $args]
     pack $type_box -side top -expand 1 -fill x
 
     set attrib_width [expr {[$type_box cget -width] - 4}]
@@ -93,7 +93,7 @@ proc Apol_Widget::makeTypeCombobox {path args} {
                            -anchor w -text "Filter by attribute"\
                            -variable Apol_Widget::vars($path:attribenable) \
                            -command [list Apol_Widget::_attrib_enabled $path]]
-    set attrib_box [ComboBox $f.ab -autopost 1 -entrybg white -width $attrib_width \
+    set attrib_box [ComboBox $f.ab -autopost 1 -entrybg [Apol_Prefs::getPref active_bg] -width $attrib_width \
                         -textvariable Apol_Widget::vars($path:attrib)]
     trace add variable Apol_Widget::vars($path:attrib) write [list Apol_Widget::_attrib_changed $path]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
@@ -176,7 +176,7 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
     set f [frame $path]
     set sens_box [eval ComboBox $f.sens $args \
                       -textvariable Apol_Widget::vars($path:sens) \
-                      -entrybg white -width 16 -autopost 1]
+                      -entrybg [Apol_Prefs::getPref active_bg] -width 16 -autopost 1]
     trace add variable Apol_Widget::vars($path:sens) write [list Apol_Widget::_sens_changed $path]
     pack $sens_box -side top -expand 0 -fill x
 
@@ -308,7 +308,7 @@ proc Apol_Widget::makeRegexpEntry {path args} {
                 -variable Apol_Widget::vars($path:enable_regexp)]
     set regexp [eval entry $f.entry $args \
                     -textvariable Apol_Widget::vars($path:regexp) \
-                    -width 32 -state disabled -bg $ApolTop::default_bg_color]
+                    -width 32 -state disabled -bg [Apol_Prefs::getPref disable_bg]]
     trace add variable Apol_Widget::vars($path:enable_regexp) write \
         [list Apol_Widget::_toggle_regexp_check_button $regexp]
     pack $cb -side top -anchor nw
@@ -348,7 +348,7 @@ proc Apol_Widget::makeSearchResults {path args} {
     variable vars
     array unset vars $path:*
     set sw [ScrolledWindow $path -scrollbar both -auto both]
-    set tb [eval text $sw.tb $args -bg white -wrap none -state disabled -font $ApolTop::text_font]
+    set tb [eval text $sw.tb $args -bg [Apol_Prefs::getPref active_bg] -wrap none -state disabled -font [Apol_Prefs::getPref text_font]]
     set vars($path:cursor) [$tb cget -cursor]
     bind $tb <Button-3> [list Apol_Widget::_searchresults_popup %W %x %y]
     $tb tag configure linenum -foreground blue -underline 1
@@ -502,8 +502,8 @@ proc Apol_Widget::showPopupParagraph {title info} {
         $infoPopup2 add -text "Close" -command [list destroy $infoPopup2]
         set sw [ScrolledWindow [$infoPopup2 getframe].sw -auto both -scrollbar both]
         $sw configure -relief sunken
-        set text [text [$sw getframe].text -font $ApolTop::text_font \
-                      -wrap none -width 75 -height 25 -bg white]
+        set text [text [$sw getframe].text -font [Apol_Prefs::getPref text_font] \
+                      -wrap none -width 75 -height 25 -bg [Apol_Prefs::getPref active_bg]]
         $sw setwidget $text
         update
         grid propagate $sw 0
@@ -645,9 +645,9 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
 
 proc Apol_Widget::_toggle_regexp_check_button {path name1 name2 op} {
     if {$Apol_Widget::vars($name2)} {
-        $path configure -state normal -bg white
+        $path configure -state normal -bg [Apol_Prefs::getPref active_bg]
     } else {
-        $path configure -state disabled -bg $ApolTop::default_bg_color
+        $path configure -state disabled -bg [Apol_Prefs::getPref disable_bg]
     }
 }
 

@@ -179,7 +179,7 @@ proc Apol_FSContexts::_genfscon_create {p_f} {
     set fs [frame $p_f.fs]
     set fs_cb [checkbutton $fs.fs_enable -text "Filesystem" \
                    -variable Apol_FSContexts::vals(genfscon:fs_enable)]
-    set widgets(genfscon:fs) [ComboBox $fs.fs -entrybg white -width 12 -state disabled \
+    set widgets(genfscon:fs) [ComboBox $fs.fs -entrybg [Apol_Prefs::getPref active_bg] -width 12 -state disabled \
                                   -textvariable Apol_FSContexts::vals(genfscon:fs) -autopost 1]
     trace add variable Apol_FSContexts::vals(genfscon:fs_enable) write \
         [list Apol_FSContexts::_toggleCheckbutton $widgets(genfscon:fs)]
@@ -189,7 +189,7 @@ proc Apol_FSContexts::_genfscon_create {p_f} {
     set p [frame $p_f.p]
     set p_cb [checkbutton $p.p_enable -text "Path" \
                    -variable Apol_FSContexts::vals(genfscon:path_enable)]
-    set widgets(genfscon:path) [entry $p.path -bg white -width 24 \
+    set widgets(genfscon:path) [entry $p.path -bg [Apol_Prefs::getPref active_bg] -width 24 \
                                     -state disabled \
                                     -textvariable Apol_FSContexts::vals(genfscon:path)]
     trace add variable Apol_FSContexts::vals(genfscon:path_enable) write \
@@ -337,7 +337,7 @@ proc Apol_FSContexts::_fsuse_create {p_f} {
     set t [frame $p_f.t]
     set type_cb [checkbutton $t.type_enable -text "Statement type" \
                    -variable Apol_FSContexts::vals(fsuse:type_enable)]
-    set widgets(fsuse:type) [ComboBox $t.type -entrybg white -width 12 -state disabled \
+    set widgets(fsuse:type) [ComboBox $t.type -entrybg [Apol_Prefs::getPref active_bg] -width 12 -state disabled \
                                   -textvariable Apol_FSContexts::vals(fsuse:type) -autopost 1]
     trace add variable Apol_FSContexts::vals(fsuse:type_enable) write \
         [list Apol_FSContexts::_toggleCheckbutton $widgets(fsuse:type)]
@@ -347,7 +347,7 @@ proc Apol_FSContexts::_fsuse_create {p_f} {
     set fs [frame $p_f.fs]
     set fs_cb [checkbutton $fs.fs_enable -text "Filesystem" \
                    -variable Apol_FSContexts::vals(fsuse:fs_enable)]
-    set widgets(fsuse:fs) [ComboBox $fs.fs -entrybg white -width 12 -state disabled \
+    set widgets(fsuse:fs) [ComboBox $fs.fs -entrybg [Apol_Prefs::getPref active_bg] -width 12 -state disabled \
                                   -textvariable Apol_FSContexts::vals(fsuse:fs) -autopost 1]
     trace add variable Apol_FSContexts::vals(fsuse:fs_enable) write \
         [list Apol_FSContexts::_toggleCheckbutton $widgets(fsuse:fs)]

@@ -24,6 +24,6 @@ exec tclsh "$0" ${1+"$@"}
 # Question/comments to: setools@tresys.com
 #
 # This tool is designed to analyze SELinux policies.  See the
-# assoicated help file for more information.
+# associated help file for more information.
 #
 ##############################################################

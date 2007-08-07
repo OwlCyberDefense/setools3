@@ -338,7 +338,7 @@ proc Apol_Analysis_transflow::_createAdvancedDialog {} {
     set attrib_enable [checkbutton $attrib.ae -anchor w \
                            -text "Filter by attribute" \
                            -variable Apol_Analysis_transflow::vals(intermed:attribenable)]
-    set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg white -width 16 \
+    set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg [Apol_Prefs::getPref active_bg] -width 16 \
                         -values $Apol_Types::attriblist \
                         -textvariable Apol_Analysis_transflow::vals(intermed:attrib)]
     $attrib_enable configure -command \
@@ -386,7 +386,7 @@ proc Apol_Analysis_transflow::_createClassFilter {f} {
     set cb [checkbutton $f.cb -text "Exclude permissions with weights below:" \
                 -variable Apol_Analysis_transflow::vals(classes:threshold_enable)]
     set weight [spinbox $f.threshold -from 1 -to 10 -increment 1 \
-                    -width 2 -bg white -justify right \
+                    -width 2 -bg [Apol_Prefs::getPref active_bg] -justify right \
                     -textvariable Apol_Analysis_transflow::vals(classes:threshold)]
     # remove any old traces on the threshold checkbutton befored adding new one
     trace remove variable Apol_Analysis_transflow::vals(classes:threshold_enable) write \
@@ -717,7 +717,7 @@ proc Apol_Analysis_transflow::_createResultsDisplay {} {
     pack $tree_tf -side left -expand 0 -fill y -padx 2 -pady 2
     set sw [ScrolledWindow [$tree_tf getframe].sw -auto both]
     set tree [Tree [$sw getframe].tree -width 24 -redraw 1 -borderwidth 0 \
-                  -highlightthickness 0 -showlines 1 -padx 0 -bg white]
+                  -highlightthickness 0 -showlines 1 -padx 0 -bg [Apol_Prefs::getPref active_bg]]
     $sw setwidget $tree
     pack $sw -expand 1 -fill both
 
@@ -973,16 +973,16 @@ proc Apol_Analysis_transflow::_findMore {res tree} {
     pack $l1 $l2 $time_f $path_f -anchor w -padx 8 -pady 4
 
     set t1 [label $time_f.t1 -text "Time limit: "]
-    set e1 [entry $time_f.e1 -textvariable Apol_Analysis_transflow::vals(find_more:hours) -width 5 -justify right -bg white]
+    set e1 [entry $time_f.e1 -textvariable Apol_Analysis_transflow::vals(find_more:hours) -width 5 -justify right -bg [Apol_Prefs::getPref active_bg]]
     set t2 [label $time_f.t2 -text "Hour(s)  "]
-    set e2 [entry $time_f.e2 -textvariable Apol_Analysis_transflow::vals(find_more:minutes) -width 5 -justify right -bg white]
+    set e2 [entry $time_f.e2 -textvariable Apol_Analysis_transflow::vals(find_more:minutes) -width 5 -justify right -bg [Apol_Prefs::getPref active_bg]]
     set t3 [label $time_f.t3 -text "Minute(s)  "]
-    set e3 [entry $time_f.e3 -textvariable Apol_Analysis_transflow::vals(find_more:seconds) -width 5 -justify right -bg white]
+    set e3 [entry $time_f.e3 -textvariable Apol_Analysis_transflow::vals(find_more:seconds) -width 5 -justify right -bg [Apol_Prefs::getPref active_bg]]
     set t4 [label $time_f.t4 -text "Second(s)  "]
     pack $t1 $e1 $t2 $e2 $t3 $e3 $t4 -side left
 
     set t1 [label $path_f.t1 -text "Limit by these number of flows: "]
-    set e1 [entry $path_f.e1 -textvariable Apol_Analysis_transflow::vals(find_more:limit) -width 5 -justify right -bg white]
+    set e1 [entry $path_f.e1 -textvariable Apol_Analysis_transflow::vals(find_more:limit) -width 5 -justify right -bg [Apol_Prefs::getPref active_bg]]
     pack $t1 $e1 -side left
 
     set retval [$d draw]

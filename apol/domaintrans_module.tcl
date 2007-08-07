@@ -349,7 +349,7 @@ proc Apol_Analysis_domaintrans::_createAccessTargets {f} {
     set attrib_enable [checkbutton $attrib.ae -anchor w \
                            -text "Filter by attribute" \
                            -variable Apol_Analysis_domaintrans::vals(targets:attribenable)]
-    set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg white -width 16 \
+    set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg [Apol_Prefs::getPref active_bg] -width 16 \
                         -values $Apol_Types::attriblist \
                         -textvariable Apol_Analysis_domaintrans::vals(targets:attrib)]
     $attrib_enable configure -command \
@@ -691,7 +691,7 @@ proc Apol_Analysis_domaintrans::_createResultsDisplay {} {
     pack $tree_tf -side left -expand 0 -fill y -padx 2 -pady 2
     set sw [ScrolledWindow [$tree_tf getframe].sw -auto both]
     set tree [Tree [$sw getframe].tree -width 24 -redraw 1 -borderwidth 0 \
-                  -highlightthickness 0 -showlines 1 -padx 0 -bg white]
+                  -highlightthickness 0 -showlines 1 -padx 0 -bg [Apol_Prefs::getPref active_bg]]
     $sw setwidget $tree
     pack $sw -expand 1 -fill both
 

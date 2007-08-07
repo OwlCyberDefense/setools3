@@ -71,7 +71,7 @@ proc Apol_Cond_Rules::create {tab_name nb} {
     set widgets(combo_box) [ComboBox $bool_frame.combo_box \
                                 -textvariable Apol_Cond_Rules::vals(name) \
                                 -helptext "Type or select a boolean variable" \
-                                -state disabled -entrybg white -autopost 1]
+                                -state disabled -entrybg [Apol_Prefs::getPref active_bg] -autopost 1]
     set widgets(regexp) [checkbutton $bool_frame.regexp \
                              -text "Search using regular expression" \
                              -state disabled \

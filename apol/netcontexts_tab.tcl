@@ -201,7 +201,7 @@ proc Apol_NetContexts::_portcon_create {p_f} {
     frame $p_f.proto
     set proto_cb [checkbutton $p_f.proto.proto_enable -text "Protocol" \
                       -variable Apol_NetContexts::vals(portcon:proto_enable)]
-    set widgets(portcon:proto) [ComboBox $p_f.proto.proto -entrybg white -width 8 -state disabled \
+    set widgets(portcon:proto) [ComboBox $p_f.proto.proto -entrybg [Apol_Prefs::getPref active_bg] -width 8 -state disabled \
                                     -textvariable Apol_NetContexts::vals(portcon:proto) -autopost 1]
     trace add variable Apol_NetContexts::vals(portcon:proto_enable) write \
         [list Apol_NetContexts::_toggleCheckbutton $widgets(portcon:proto)]
@@ -212,7 +212,7 @@ proc Apol_NetContexts::_portcon_create {p_f} {
     set low [frame $p_f.port.l]
     set port_cb [checkbutton $low.port_enable -text "Single Port" \
                      -variable Apol_NetContexts::vals(portcon:port_enable)]
-    set widgets(portcon:port) [spinbox $low.port -bg white -width 8 \
+    set widgets(portcon:port) [spinbox $low.port -bg [Apol_Prefs::getPref active_bg] -width 8 \
                                    -justify right -state disabled \
                                    -from 0 -to 65535 \
                                    -validate all -vcmd [list Apol_NetContexts::_portcon_limitPort %W %V %P port] \
@@ -221,7 +221,7 @@ proc Apol_NetContexts::_portcon_create {p_f} {
     set hiport_cb [checkbutton $high.hiport_enable -text "High Port" \
                        -state disabled \
                        -variable Apol_NetContexts::vals(portcon:hiport_enable)]
-    set widgets(portcon:hiport) [spinbox $high.hiport -bg white -width 8 \
+    set widgets(portcon:hiport) [spinbox $high.hiport -bg [Apol_Prefs::getPref active_bg] -width 8 \
                                      -justify right -state disabled \
                                      -from 0 -to 65535 \
                                      -validate all -vcmd [list Apol_NetContexts::_portcon_limitPort %W %V %P hiport] \
@@ -468,7 +468,7 @@ proc Apol_NetContexts::_netifcon_create {p_f} {
     frame $p_f.dev
     set dev_cb [checkbutton $p_f.dev.dev_enable -text "Device" \
                     -variable Apol_NetContexts::vals(netifcon:dev_enable)]
-    set widgets(netifcon:dev) [ComboBox $p_f.dev.dev -entrybg white -width 8 -state disabled \
+    set widgets(netifcon:dev) [ComboBox $p_f.dev.dev -entrybg [Apol_Prefs::getPref active_bg] -width 8 -state disabled \
                                    -textvariable Apol_NetContexts::vals(netifcon:dev) -autopost 1]
     trace add variable Apol_NetContexts::vals(netifcon:dev_enable) write \
         [list Apol_NetContexts::_toggleCheckbutton $widgets(netifcon:dev)]
@@ -638,7 +638,7 @@ proc Apol_NetContexts::_nodecon_ipv4Create {fv4} {
                           -variable Apol_NetContexts::vals(nodecon:ipv4_addr_enable)]
     set widgets(nodecon:v4addrf2) [frame $v4addrf.a]
     for {set i 0} {$i < 4} {incr i} {
-        set e [entry $widgets(nodecon:v4addrf2).e$i -bg white -justify center -width 4 \
+        set e [entry $widgets(nodecon:v4addrf2).e$i -bg [Apol_Prefs::getPref active_bg] -justify center -width 4 \
                    -state disabled \
                    -validate all -vcmd [list Apol_NetContexts::_nodecon_limitAddr %W %V %P ipv4_addr$i] \
                    -textvariable Apol_NetContexts::vals(nodecon:ipv4_addr$i)]
@@ -657,7 +657,7 @@ proc Apol_NetContexts::_nodecon_ipv4Create {fv4} {
                           -variable Apol_NetContexts::vals(nodecon:ipv4_mask_enable)]
     set widgets(nodecon:v4maskf2) [frame $v4maskf.m]
     for {set i 0} {$i < 4} {incr i} {
-        set e [entry $widgets(nodecon:v4maskf2).e$i -bg white -justify center -width 4 \
+        set e [entry $widgets(nodecon:v4maskf2).e$i -bg [Apol_Prefs::getPref active_bg] -justify center -width 4 \
                    -state disabled \
                    -validate all -vcmd [list Apol_NetContexts::_nodecon_limitAddr %W %V %P ipv4_mask$i] \
                    -textvariable Apol_NetContexts::vals(nodecon:ipv4_mask$i)]
@@ -678,7 +678,7 @@ proc Apol_NetContexts::_nodecon_ipv6Create {fv6} {
     set v6addrf [frame $fv6.addr]
     set ipv4_addr_cb [checkbutton $v6addrf.enable -text "IP address" \
                           -variable Apol_NetContexts::vals(nodecon:ipv6_addr_enable)]
-    set e [entry $v6addrf.addr -bg white -width 28 -state disabled \
+    set e [entry $v6addrf.addr -bg [Apol_Prefs::getPref active_bg] -width 28 -state disabled \
                -textvariable Apol_NetContexts::vals(nodecon:ipv6_addr)]
     trace add variable Apol_NetContexts::vals(nodecon:ipv6_addr_enable) write \
         [list Apol_NetContexts::_toggleCheckbutton $e]
@@ -688,7 +688,7 @@ proc Apol_NetContexts::_nodecon_ipv6Create {fv6} {
     set v6maskf [frame $fv6.mask]
     set ipv6_mask_cb [checkbutton $v6maskf.enable -text "Mask" \
                           -variable Apol_NetContexts::vals(nodecon:ipv6_mask_enable)]
-    set e [entry $v6maskf.addr -bg white -width 28 -state disabled \
+    set e [entry $v6maskf.addr -bg [Apol_Prefs::getPref active_bg] -width 28 -state disabled \
                -textvariable Apol_NetContexts::vals(nodecon:ipv6_mask)]
     trace add variable Apol_NetContexts::vals(nodecon:ipv6_mask_enable) write \
         [list Apol_NetContexts::_toggleCheckbutton $e]

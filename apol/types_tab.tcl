@@ -235,7 +235,7 @@ proc Apol_Types::_popupTypeInfo {which ta} {
         $notebook itemconfigure ta_info_tab -text "Types"
     }
     set sw [ScrolledWindow [$notebook getframe ta_info_tab].sw -scrollbar both -auto both]
-    set text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg white]
+    set text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg [Apol_Prefs::getPref active_bg]]
     $sw setwidget $text
     pack $sw -expand 1 -fill both
     $text insert 0.0 $info_ta
@@ -248,7 +248,7 @@ proc Apol_Types::_popupTypeInfo {which ta} {
         pack $l -anchor nw
     }
     set sw [ScrolledWindow [$notebook getframe fc_info_tab].sw -scrollbar both -auto both]
-    set fc_text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg white]
+    set fc_text [text [$sw getframe].text -wrap none -font {helvetica 10} -bg [Apol_Prefs::getPref active_bg]]
     $sw setwidget $fc_text
     pack $sw -expand 1 -fill both
 

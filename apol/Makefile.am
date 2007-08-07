@@ -44,6 +44,7 @@ EXTRA_DIST = \
 	open_policy_dialog.tcl \
 	perms_map.tcl \
 	policyconf.tcl \
+	prefs.tcl \
 	progress_dialog.tcl \
 	range_dialog.tcl \
 	range_selector.tcl \

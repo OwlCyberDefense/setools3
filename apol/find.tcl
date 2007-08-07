@@ -46,7 +46,7 @@ proc Apol_Find::_create_dialog {} {
     pack $bottom_frame -expand 0 -fill both -padx 10 -pady 5
 
     set entry_label [label $top_frame.l -text "Find:" -anchor e]
-    variable entry [entry $top_frame.e -bg white \
+    variable entry [entry $top_frame.e -bg [Apol_Prefs::getPref active_bg] \
                         -textvariable Apol_Find::search_string -width 16]
     pack $entry_label -side left -expand 0 -padx 10
     pack $entry -side left -expand 1 -fill x

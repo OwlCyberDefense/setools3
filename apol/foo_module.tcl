@@ -42,7 +42,7 @@ proc Apol_Analysis_foo::create {options_frame} {
     variable vals
     set vals(entry_string) {}
     set l [label $options_frame.l -text "Enter Text:"]
-    set e [entry $options_frame.e -textvariable Apol_Analysis_foo::vals(entry_string) -width 25 -background white]
+    set e [entry $options_frame.e -textvariable Apol_Analysis_foo::vals(entry_string) -width 25 -background [Apol_Prefs::getPref active_bg]]
     pack $l $e -side left -anchor w
 }
 
@@ -76,7 +76,7 @@ proc Apol_Analysis_foo::newAnalysis {} {
         return "You must enter text in the entry box."
     }
     set f [Apol_Analysis::createResultTab "Foo" [array get vals]]
-    set results_box [text $f.results -bg white]
+    set results_box [text $f.results -bg [Apol_Prefs::getPref active_bg]]
     pack $results_box -expand yes -fill both
     $results_box insert 0.0 "new analysis: $vals(entry_string)"
     return

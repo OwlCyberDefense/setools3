@@ -91,7 +91,7 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     pack $widgets(main_label) -anchor w
     frame $primary_f.f
     pack $primary_f.f -expand 1 -fill x
-    set e [entry $primary_f.f.e -width 32 -bg white \
+    set e [entry $primary_f.f.e -width 32 -bg [Apol_Prefs::getPref active_bg] \
                -textvariable Apol_Open_Policy_Dialog::vars(primary_file) \
                -validate key \
                -vcmd [list Apol_Open_Policy_Dialog::_validateEntryKey %P]]
@@ -130,7 +130,7 @@ proc Apol_Open_Policy_Dialog::_create_dialog {parent} {
     set widgets(scrollbar) $sb
     foreach lb $widgets(listboxes) {
         $lb configure -yscrollcommand Apol_Open_Policy_Dialog::multiyview \
-                -relief groove -bg white -exportselection 0
+                -relief groove -bg [Apol_Prefs::getPref active_bg] -exportselection 0
         bind $lb <<ListboxSelect>> \
             [list Apol_Open_Policy_Dialog::multiselect $lb]
     }
@@ -166,7 +166,7 @@ proc Apol_Open_Policy_Dialog::togglePathType {labels disabled_bg name1 name2 op}
     variable widgets
     if {$vars(path_type) == "modular"} {
         set state normal
-        set bg white
+        set bg [Apol_Prefs::getPref active_bg]
         $widgets(main_label) configure -text "Base Filename:"
     } else {
         set state disabled

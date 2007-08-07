@@ -188,7 +188,7 @@ proc Apol_Perms_Map::_createEditDialog {} {
 
     set label_box [frame [$dialog getframe].l]
     pack $label_box -side bottom -anchor center
-    set widgets(l1) [label $label_box.l1 -fg red -text ""]
+    set widgets(l1) [label $label_box.l1 -fg [Apol_Prefs::getPref highlight_fg] -text ""]
     set widgets(l2) [label $label_box.l2 -text ""]
     pack $widgets(l1) $widgets(l2) -side left
     # delay setting the labels' text until [_refresh_edit_dialog], to
@@ -235,7 +235,7 @@ proc Apol_Perms_Map::_refreshEditDialog {} {
         set opts(c:$class) $perm_list
         lappend opts(classes) "$class$suffix"
         if {$suffix != {}} {
-            $widgets(classes).lb itemconfigure $class_index -foreground red
+            $widgets(classes).lb itemconfigure $class_index -foreground [Apol_Prefs::getPref highlight_bg]
         }
         incr class_index
     }
@@ -295,7 +295,7 @@ proc Apol_Perms_Map::_refreshPermEdit {} {
             -variable Apol_Perms_Map::opts(p:${class}:${perm}:map)
         set l2 [label $perms.$perm:l2 -text "Weight:" -anchor e]
         set weight [spinbox $perms.$perm:weight -from 1 -to 10 -increment 1 \
-                        -width 2 -bg white \
+                        -width 2 -bg [Apol_Prefs::getPref active_bg] \
                         -command [list Apol_Perms_Map::_togglePermMap $class $perm 1] \
                         -textvariable Apol_Perms_Map::opts(p:${class}:${perm}:weight)]
         grid $l $menubutton $l2 $weight -padx 2 -sticky w -pady 4

@@ -39,7 +39,7 @@ proc Apol_Goto::_create_dialog {} {
         -default 0 -cancel 1 -modal none -homogeneous 1
     set top_frame [$dialog getframe]
     set entry_label [label $top_frame.l -text "Goto Line:" -anchor e]
-    variable entry [entry $top_frame.e -bg white \
+    variable entry [entry $top_frame.e -bg [Apol_Prefs::getPref active_bg] \
                         -textvariable Apol_Goto::line_num -width 10]
     pack $entry_label -side left -padx 5 -pady 5
     pack $entry -side left -padx 5 -pady 5 -expand 1 -fill x

@@ -22,7 +22,7 @@ proc Apol_PolicyConf::create {tab_name nb} {
 
     set frame [$nb insert end $tab_name -text "Policy Source"]
     set sw [ScrolledWindow $frame.sw -auto none]
-    set textbox [text [$sw getframe].text -bg white -wrap none]
+    set textbox [text [$sw getframe].text -bg [Apol_Prefs::getPref active_bg] -wrap none]
     $sw setwidget $textbox
     bind $textbox <Button-3> [list Apol_Widget::_searchresults_popup %W %x %y]
     pack $sw -expand yes -fill both
