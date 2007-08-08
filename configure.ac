@@ -794,7 +794,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  sediff/Makefile \
                  man/Makefile \
                  packages/Makefile packages/rpm/Makefile \
-                 packages/libqpol.pc packages/libapol.pc packages/libpoldiff.pc packages/libseaudit.pc packages/libsefs.pc])
+                 packages/libqpol.pc packages/libapol.pc packages/libpoldiff.pc packages/libseaudit.pc packages/libsefs.pc packages/libpolsearch.pc])
 
 AC_OUTPUT
 

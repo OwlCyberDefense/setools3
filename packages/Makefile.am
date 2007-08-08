@@ -10,10 +10,12 @@ else
   copy_bwidget = no
 endif
 
-pkgconfig_DATA = libqpol.pc libapol.pc libpoldiff.pc libseaudit.pc libsefs.pc
+pkgconfig_DATA = libqpol.pc libapol.pc libpoldiff.pc libseaudit.pc libsefs.pc libpolsearch.pc
 pkgconfigdir = @libdir@/pkgconfig
 
 BUILT_SOURCES = $(pkgconfig_DATA)
+
+$(pkgconfig_DATA): $(top_builddir)/config.status
 
 install-data-local:
 	if test $(copy_bwidget) = "yes"; then \
