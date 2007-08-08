@@ -10,6 +10,7 @@ polsearch_HEADERS = \
 	proof.hh \
 	query.hh \
 	range_parameter.hh \
+	regex_parameter.hh \
 	result.hh \
 	test.hh \
 	util.hh

@@ -17,7 +17,8 @@ libpolsearch_a_SOURCES = \
 	polsearch_internal.hh \
 	proof.cc \
 	query.cc \
-	range_parameter.hh \
+	range_parameter.cc \
+	regex_parameter.cc \
 	result.cc \
 	test.cc \
 	util.cc

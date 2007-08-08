@@ -23,9 +23,6 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_RANGE_PARAMETER_HH
-#define POLSEARCH_RANGE_PARAMETER_HH
-
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -33,10 +30,13 @@
 #include <stdint.h>
 
 #include <polsearch/polsearch.hh>
+#include <polsearch/range_parameter.hh>
 #include <polsearch/parameter.hh>
 
 #include <apol/policy.h>
 #include <apol/policy-query.h>
+
+using std::bad_alloc;
 
 polsearch_range_parameter::polsearch_range_parameter(const apol_mls_range_t * rng) throw(std::bad_alloc)
 {
