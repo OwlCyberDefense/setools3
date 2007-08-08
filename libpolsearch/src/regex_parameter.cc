@@ -43,15 +43,18 @@ using std::bad_alloc;
 using std::vector;
 using std::string;
 
-polsearch_regex_parameter::polsearch_regex_parameter(std::string expr, int cflags) throw(std::invalid_argument, std::bad_alloc)
+polsearch_regex_parameter::polsearch_regex_parameter(std::string expr, bool icase) throw(std::invalid_argument, std::bad_alloc)
 {
 	_expression = expr;
-	_flags = cflags;
-	_compiled = static_cast<regex_t*>(malloc(sizeof(*_compiled)));
+	_ignore_case = icase;
+	int flags = (REG_EXTENDED | REG_NOSUB);
+	if (icase)
+		flags |= REG_ICASE;
+	_compiled = static_cast < regex_t * >(malloc(sizeof(*_compiled)));
 	if (!_compiled)
 		throw bad_alloc();
-	char errbuf[1024] = {'\0'};
-	int regretv = regcomp(_compiled, _expression.c_str(), _flags);
+	char errbuf[1024] = { '\0' };
+	int regretv = regcomp(_compiled, _expression.c_str(), flags);
 	if (regretv)
 	{
 		regerror(regretv, _compiled, errbuf, 1024);
@@ -63,12 +66,15 @@ polsearch_regex_parameter::polsearch_regex_parameter(std::string expr, int cflag
 polsearch_regex_parameter::polsearch_regex_parameter(const polsearch_regex_parameter & rhs) throw(std::bad_alloc)
 {
 	_expression = rhs._expression;
-	_flags = rhs._flags;
-	_compiled = static_cast<regex_t*>(malloc(sizeof(*_compiled)));
+	_ignore_case = rhs._ignore_case;
+	int flags = (REG_EXTENDED | REG_NOSUB);
+	if (_ignore_case)
+		flags |= REG_ICASE;
+	_compiled = static_cast < regex_t * >(malloc(sizeof(*_compiled)));
 	if (!_compiled)
 		throw bad_alloc();
-	char errbuf[1024] = {'\0'};
-	int regretv = regcomp(_compiled, _expression.c_str(), _flags);
+	char errbuf[1024] = { '\0' };
+	int regretv = regcomp(_compiled, _expression.c_str(), flags);
 	if (regretv)
 	{
 		regerror(regretv, _compiled, errbuf, 1024);
@@ -84,21 +90,24 @@ polsearch_regex_parameter::~polsearch_regex_parameter()
 	free(_compiled);
 }
 
-const std::string& polsearch_regex_parameter::expression() const
+const std::string & polsearch_regex_parameter::expression() const
 {
 	return _expression;
 }
 
-std::string& polsearch_regex_parameter::expression(const std::string& expr) throw(std::invalid_argument, std::bad_alloc)
+std::string & polsearch_regex_parameter::expression(const std::string & expr)throw(std::invalid_argument, std::bad_alloc)
 {
 	if (_compiled)
 		regfree(_compiled);
 	_expression = expr;
-	_compiled = static_cast<regex_t*>(malloc(sizeof(*_compiled)));
+	int flags = (REG_EXTENDED | REG_NOSUB);
+	if (_ignore_case)
+		flags |= REG_ICASE;
+	_compiled = static_cast < regex_t * >(malloc(sizeof(*_compiled)));
 	if (!_compiled)
 		throw bad_alloc();
-	char errbuf[1024] = {'\0'};
-	int regretv = regcomp(_compiled, _expression.c_str(), _flags);
+	char errbuf[1024] = { '\0' };
+	int regretv = regcomp(_compiled, _expression.c_str(), flags);
 	if (regretv)
 	{
 		regerror(regretv, _compiled, errbuf, 1024);
@@ -109,36 +118,34 @@ std::string& polsearch_regex_parameter::expression(const std::string& expr) thro
 	return _expression;
 }
 
-int polsearch_regex_parameter::flags() const
+bool polsearch_regex_parameter::ignoreCase() const
 {
-	return _flags;
+	return _ignore_case;
 }
 
-int polsearch_regex_parameter::flags(int cflags) throw(std::invalid_argument, std::bad_alloc)
+bool polsearch_regex_parameter::ignoreCase(bool icase) throw(std::bad_alloc)
 {
 	if (_compiled)
 		regfree(_compiled);
-	_flags = cflags;
-	_compiled = static_cast<regex_t*>(malloc(sizeof(*_compiled)));
+	_ignore_case = icase;
+	int flags = (REG_EXTENDED | REG_NOSUB);
+	if (_ignore_case)
+		flags |= REG_ICASE;
+	_compiled = static_cast < regex_t * >(malloc(sizeof(*_compiled)));
 	if (!_compiled)
 		throw bad_alloc();
-	char errbuf[1024] = {'\0'};
-	int regretv = regcomp(_compiled, _expression.c_str(), _flags);
-	if (regretv)
-	{
-		regerror(regretv, _compiled, errbuf, 1024);
-		free(_compiled);
-		throw invalid_argument(errbuf);
-	}
+	char errbuf[1024] = { '\0' };
+	regcomp(_compiled, _expression.c_str(), flags);
 
-	return _flags;
+	return _ignore_case;
 }
 
-bool polsearch_regex_parameter::match(const std::string & str, const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
+bool polsearch_regex_parameter::match(const std::string & str,
+				      const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
 {
 	if (str == "X")
 	{
-		for (vector<string>::const_iterator i = Xnames.begin(); i != Xnames.end(); i++)
+		for (vector < string >::const_iterator i = Xnames.begin(); i != Xnames.end(); i++)
 			if (!regexec(_compiled, i->c_str(), 0, NULL, 0))
 				return true;
 	}
@@ -150,9 +157,10 @@ bool polsearch_regex_parameter::match(const std::string & str, const std::vector
 	return false;
 }
 
-bool polsearch_regex_parameter::match(const std::vector < std::string > &test_list, const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
+bool polsearch_regex_parameter::match(const std::vector < std::string > &test_list,
+				      const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
 {
-	for(vector<string>::const_iterator i = test_list.begin(); i != test_list.end(); i++)
+	for (vector < string >::const_iterator i = test_list.begin(); i != test_list.end(); i++)
 	{
 		if (match(*i, Xnames))
 			return true;

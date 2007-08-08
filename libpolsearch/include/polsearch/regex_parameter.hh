@@ -41,25 +41,25 @@
 
 class polsearch_regex_parameter:public polsearch_parameter
 {
-	public:
+      public:
 	/**
 	 * Create a regular expression parameter.
 	 * @param expr The regular expression to which to compare when calling \a match().
-	 * @param cflags The flags to pass to regcomp() when compiling the expression.
-	 * @exception std::invalid_argument Invalid regular expression or flags.
+	 * @param icase If \a true, ignore case when matching the expression.
+	 * @exception std::invalid_argument Invalid regular expression.
 	 * @exception std::bad_alloc Out of memory.
 	 */
-		polsearch_regex_parameter(std::string expr, int cflags) throw(std::invalid_argument, std::bad_alloc);
+	polsearch_regex_parameter(std::string expr, bool icase = false) throw(std::invalid_argument, std::bad_alloc);
 	//! Copy constructor.
-		polsearch_regex_parameter(const polsearch_regex_parameter & rhs) throw(std::bad_alloc);
+	polsearch_regex_parameter(const polsearch_regex_parameter & rhs) throw(std::bad_alloc);
 	//! Destructor.
-	virtual ~polsearch_regex_parameter();
+	 virtual ~polsearch_regex_parameter();
 
 	/**
 	 * Get the expression to match when calling \a match().
 	 * @return The expression matched.
 	 */
-	const std::string& expression() const;
+	const std::string & expression() const;
 	/**
 	 * Set the expression to match when calling \a match().
 	 * @param expr The regular expression to set.
@@ -67,21 +67,21 @@ class polsearch_regex_parameter:public polsearch_parameter
 	 * @exception std::invalid_argument Invalid regular expression.
 	 * @exception std::bad_alloc Out of memory.
 	 */
-	std::string& expression(const std::string& expr) throw(std::invalid_argument, std::bad_alloc);;
+	 std::string & expression(const std::string & expr) throw(std::invalid_argument, std::bad_alloc);;
 
 	/**
-	 * Get the flags to pass to regcomp() when compiling the expression.
-	 * @return The set of flags used.
+	 * Determine if case is ignored when matching the regular expression.
+	 * @return If case is ignored, return \a true; otherwise, return \a false.
 	 */
-	int flags() const;
+	bool ignoreCase() const;
 	/**
-	 * Set the flags to pass to regcomp() when compiling the expression.
-	 * @param cflags The flags to pass to regcomp() when compiling the expression.
-	 * @return The set of flags set.
-	 * @exception std::invalid_argument Invalid flags.
+	 * Set the regular expression matching to match or ignore case.
+	 * @param icase If \a true, ignore case when matching the expression;
+	 * if \a false, matching is case sensitive.
+	 * @return If case is ignored, return \a true; otherwise, return \a false.
 	 * @exception std::bad_alloc Out of memory.
 	 */
-	int flags(int cflags) throw(std::invalid_argument, std::bad_alloc);;
+	bool ignoreCase(bool icase) throw(std::bad_alloc);;
 
 	/**
 	 * Determine if a string matches the parameter.
@@ -103,7 +103,8 @@ class polsearch_regex_parameter:public polsearch_parameter
 	 * @exception std::invalid_argument This comparison is not valid for the
 	 * given parameter's data.
 	 */
-	virtual bool match(const std::vector < std::string > &test_list, const std::vector < std::string > &Xnames) const throw(std::invalid_argument);
+	virtual bool match(const std::vector < std::string > &test_list,
+			   const std::vector < std::string > &Xnames) const throw(std::invalid_argument);
 	/**
 	 * Get the type of parameter.
 	 * @return Always returns POLSEARCH_PARAM_TYPE_REGEX.
@@ -121,10 +122,10 @@ class polsearch_regex_parameter:public polsearch_parameter
 	 */
 	virtual polsearch_parameter *clone() const throw(std::bad_alloc);
 
-	private:
-		std::string _expression; //!< The expression to match.
-		int _flags; //!< The flags to pass to regcomp() when compiling \a _expression.
-		regex_t * _compiled; //!< The compiled regular expression.
+      private:
+	 std::string _expression;      //!< The expression to match.
+	bool _ignore_case;	       //!< If \a true, \a _expression is case insensitive.
+	regex_t *_compiled;	       //!< The compiled regular expression.
 };
 
-#endif /* POLSEARCH_REGEX_PARAMETER_HH */
+#endif				       /* POLSEARCH_REGEX_PARAMETER_HH */

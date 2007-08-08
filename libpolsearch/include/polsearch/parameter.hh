@@ -48,12 +48,8 @@
 class polsearch_parameter
 {
       public:
-	//! Default constructor.
-	polsearch_parameter();
-	//! Copy constructor.
-	polsearch_parameter(const polsearch_parameter & rhs);
 	//! Destructor.
-	 virtual ~polsearch_parameter();
+	virtual ~polsearch_parameter();
 
 	/**
 	 * Determine if a boolean state matches the parameter.
@@ -138,6 +134,12 @@ class polsearch_parameter
 	 * @exception std::bad_alloc Out of memory.
 	 */
 	virtual polsearch_parameter *clone() const throw(std::bad_alloc) = 0;
+
+      protected:
+	//! Default constructor.
+	 polsearch_parameter();
+	//! Copy constructor.
+	 polsearch_parameter(const polsearch_parameter & rhs);
 };
 
 #endif				       /* POLSEARCH_PARAMETER_HH */
