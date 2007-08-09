@@ -88,6 +88,45 @@ polsearch_criterion & polsearch_test::addCriterion(polsearch_op_e opr, bool neg)
 	return _criteria.back();
 }
 
+bool polsearch_test::isContinueable()
+{
+	switch (_test_cond)
+	{
+	case POLSEARCH_TEST_AVRULE:   /*!< there is an av rule */
+	case POLSEARCH_TEST_TERULE:   /*!< there is a type rule */
+	case POLSEARCH_TEST_ROLEALLOW:	/*!< there is a role allow rule */
+	case POLSEARCH_TEST_ROLETRANS:	/*!< there is a role_transition rule */
+	case POLSEARCH_TEST_RANGETRANS:	/*!< there is a range_transition rule */
+	case POLSEARCH_TEST_FCENTRY:  /*!< there is a file_contexts entry */
+		return true;
+	case POLSEARCH_TEST_NAME:     /*!< primary name of the symbol */
+	case POLSEARCH_TEST_ALIAS:    /*!< alias(es) of the symbol */
+	case POLSEARCH_TEST_ATTRIBUTES:	/*!< assigned attributes */
+	case POLSEARCH_TEST_ROLES:    /*!< assigned roles (or assigned to roles) */
+	case POLSEARCH_TEST_TYPES:    /*!< assigned types */
+	case POLSEARCH_TEST_USERS:    /*!< assigned to users */
+	case POLSEARCH_TEST_DEFAULT_LEVEL:	/*!< its default level */
+	case POLSEARCH_TEST_RANGE:    /*!< assigned range */
+	case POLSEARCH_TEST_COMMON:   /*!< inherited common */
+	case POLSEARCH_TEST_PERMISSIONS:	/*!< assigned permissions */
+	case POLSEARCH_TEST_CATEGORIES:	/*!< assigned categories */
+	case POLSEARCH_TEST_STATE:    /*!< boolean default state */
+	case POLSEARCH_TEST_NONE:     /*!< only used for error conditions */
+	default:
+		return false;
+	}
+}
+
+std::vector < polsearch_op_e > polsearch_test::getValidOperators()
+{
+	vector < polsearch_op_e > v;
+	for (int i = POLSEARCH_OP_NONE; i <= POLSEARCH_OP_AS_TYPE; i++)
+		if (validate_operator(_query->elementType(), _test_cond, static_cast < polsearch_op_e > (i)))
+			v.push_back(static_cast < polsearch_op_e > (i));
+
+	return v;
+}
+
 //! A holding structure for the file_contexts processing callback.
 struct fcdata
 {

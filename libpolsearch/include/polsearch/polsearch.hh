@@ -132,6 +132,7 @@ typedef void (*polsearch_proof_element_free_fn) (void *elem);
 
 //forward declaration of classes
 class polsearch_query;
+class polsearch_bool_query;
 class polsearch_symbol_query;
 class polsearch_test;
 class polsearch_criterion;

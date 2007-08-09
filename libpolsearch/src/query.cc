@@ -27,6 +27,7 @@
 #include <polsearch/polsearch.hh>
 #include <polsearch/criterion.hh>
 #include <polsearch/test.hh>
+#include "polsearch_internal.hh"
 
 #include <sefs/fclist.hh>
 
@@ -37,6 +38,7 @@
 #include <string>
 
 using std::invalid_argument;
+using std::vector;
 
 polsearch_query::polsearch_query(polsearch_match_e m) throw(std::invalid_argument)
 {
@@ -68,4 +70,14 @@ polsearch_match_e polsearch_query::match(polsearch_match_e m) throw(std::invalid
 		throw invalid_argument("Invalid matching behavior requested.");
 
 	return _match = m;
+}
+
+std::vector < polsearch_test_cond_e > polsearch_query::getValidTests()
+{
+	vector < polsearch_test_cond_e > v;
+	for (int i = POLSEARCH_TEST_NONE; i <= POLSEARCH_TEST_STATE; i++)
+		if (validate_test_condition(elementType(), static_cast < polsearch_test_cond_e > (i)))
+			v.push_back(static_cast < polsearch_test_cond_e > (i));
+
+	return v;
 }

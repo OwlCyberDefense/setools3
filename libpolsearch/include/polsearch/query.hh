@@ -42,20 +42,8 @@
 class polsearch_query
 {
       public:
-	/**
-	 * Base class constructor.
-	 * @param m Set the matching behavior of the query, must be
-	 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
-	 * @exception std::invalid_argument Invalid matching behavior requested.
-	 */
-	polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::invalid_argument);
-	/**
-	 * Base class copy constructor
-	 * @param rhs The query to copy.
-	 */
-	polsearch_query(const polsearch_query & rhs);
 	//! Destructor.
-	 virtual ~polsearch_query();
+	virtual ~polsearch_query();
 
 	/**
 	 * Get the matching behavior of the query.
@@ -70,11 +58,11 @@ class polsearch_query
 	 */
 	polsearch_match_e match(polsearch_match_e m) throw(std::invalid_argument);
 	/**
-	 * Get a list of the valid types of tests to perform for the symbol
+	 * Get a list of the valid types of tests to perform for the element
 	 * type specified by the query.
 	 * @return A vector containing all valid tests for the specified element type.
 	 */
-	virtual std::vector < polsearch_test_cond_e > getValidTests() const = 0;
+	 std::vector < polsearch_test_cond_e > getValidTests();
 
 	/**
 	 * Add a test to the query.
@@ -111,6 +99,19 @@ class polsearch_query
 	virtual polsearch_element_e elementType() const = 0;
 
       protected:
+	/**
+	 * Base class constructor.
+	 * @param m Set the matching behavior of the query, must be
+	 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
+	 * @exception std::invalid_argument Invalid matching behavior requested.
+	 */
+	 polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::invalid_argument);
+	/**
+	 * Base class copy constructor
+	 * @param rhs The query to copy.
+	 */
+	 polsearch_query(const polsearch_query & rhs);
+
 	 std::vector < polsearch_test > _tests;	/*!< The set of tests used by the query to determine which elements match. */
 
       private:

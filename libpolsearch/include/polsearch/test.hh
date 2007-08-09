@@ -28,6 +28,7 @@
 
 #include <polsearch/polsearch.hh>
 #include <polsearch/query.hh>
+#include <polsearch/bool_query.hh>
 
 #include <sefs/fclist.hh>
 
@@ -83,6 +84,20 @@ class polsearch_test
 	 polsearch_criterion & addCriterion(polsearch_op_e opr, bool neg = false) throw(std::invalid_argument);
 
 	 /**
+	  * Determine if the condition tested can have more than one criterion.
+	  * @return If multiple criteria are valid, return \a true; otherwise
+	  * return \a false.
+	  */
+	bool isContinueable();
+
+	 /**
+	  * Get a list of valid comparison operators for this test.
+	  * @return A vector of all valid operators for the current test condition
+	  * and the element type of the associated query.
+	  */
+	 std::vector < polsearch_op_e > getValidOperators();
+
+	 /**
 	  * Run the test. Get all candidates for each criterion specified and check for any
 	  * that are satisfied. For each element of \a Xcandidates that satisfies the criteria,
 	  * there will be one result entry in the returned result vector.
@@ -98,7 +113,7 @@ class polsearch_test
 	const std::vector < polsearch_result > run(apol_policy_t * policy, sefs_fclist * fclist,
 						   std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
 
-	friend polsearch_test & polsearch_query::addTest(polsearch_test_cond_e);
+	friend polsearch_test & polsearch_bool_query::addTest(polsearch_test_cond_e);
       protected:
 	/**
 	 * Create a test.
