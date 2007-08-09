@@ -653,6 +653,19 @@ if test ${have_cunit} = "yes"; then
   CUNIT_LIB_FLAG="-lcunit"
   AC_SUBST(CUNIT_LIB_FLAG)
 fi
+AC_MSG_CHECKING([for FUSE])
+pkg-config --exists fuse
+if test $? -ne 0; then
+   AC_MSG_WARN([FUSE not found; libsefs tests will not be built])
+   have_fuse="no"
+else
+   FUSE_CFLAGS=`pkg-config --cflags fuse`
+   FUSE_LIBS=`pkg-config --libs fuse`
+   AC_SUBST(FUSE_CFLAGS)
+   AC_SUBST(FUSE_LIBS)
+   have_fuse="yes"
+   AC_MSG_RESULT([yes])
+fi
 
 dnl set up variables here
 if test ${use_selinux} = "yes"; then
@@ -666,6 +679,7 @@ AM_CONDITIONAL(DO_SWIGIFY_TCL, test ${do_swigify_tcl} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 AM_CONDITIONAL(BUILD_APOL, test ${build_apol} = "yes")
 AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
+AM_CONDITIONAL(DO_FUSE, test ${have_fuse} = "yes")
 
 profile_install_dir='${setoolsdir}/sechecker-profiles'
 
@@ -783,7 +797,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF libpoldiff/swig/tcl/Makefile \
                  libpolsearch/Makefile libpolsearch/src/Makefile libpolsearch/include/Makefile libpolsearch/include/polsearch/Makefile \
                  libpolsearch/swig/Makefile libpolsearch/swig/python/Makefile libpolsearch/swig/java/Makefile libpolsearch/swig/java/MANIFEST.MF libpolsearch/swig/tcl/Makefile \
-                 libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile \
+                 libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile libsefs/tests/Makefile \
                  libsefs/swig/Makefile libsefs/swig/python/Makefile libsefs/swig/java/Makefile libsefs/swig/tcl/Makefile libsefs/swig/java/MANIFEST.MF \
                  libseaudit/Makefile libseaudit/src/Makefile libseaudit/include/Makefile libseaudit/include/seaudit/Makefile libseaudit/tests/Makefile \
                  libseaudit/swig/Makefile libseaudit/swig/python/Makefile libseaudit/swig/java/Makefile libseaudit/swig/java/MANIFEST.MF libseaudit/swig/tcl/Makefile \
