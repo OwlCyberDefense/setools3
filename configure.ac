@@ -653,19 +653,19 @@ if test ${have_cunit} = "yes"; then
   CUNIT_LIB_FLAG="-lcunit"
   AC_SUBST(CUNIT_LIB_FLAG)
 fi
-AC_MSG_CHECKING([for FUSE])
-pkg-config --exists fuse
-if test $? -ne 0; then
-   AC_MSG_WARN([FUSE not found; libsefs tests will not be built])
-   have_fuse="no"
-else
-   FUSE_CFLAGS=`pkg-config --cflags fuse`
-   FUSE_LIBS=`pkg-config --libs fuse`
-   AC_SUBST(FUSE_CFLAGS)
-   AC_SUBST(FUSE_LIBS)
-   have_fuse="yes"
-   AC_MSG_RESULT([yes])
-fi
+#AC_MSG_CHECKING([for FUSE])
+#pkg-config --exists fuse
+#if test $? -ne 0; then
+#   AC_MSG_WARN([FUSE not found; libsefs tests will not be built])
+#   have_fuse="no"
+#else
+#   FUSE_CFLAGS=`pkg-config --cflags fuse`
+#   FUSE_LIBS=`pkg-config --libs fuse`
+#   AC_SUBST(FUSE_CFLAGS)
+#   AC_SUBST(FUSE_LIBS)
+#   have_fuse="yes"
+#   AC_MSG_RESULT([yes])
+#fi
 
 dnl set up variables here
 if test ${use_selinux} = "yes"; then
@@ -679,7 +679,7 @@ AM_CONDITIONAL(DO_SWIGIFY_TCL, test ${do_swigify_tcl} = "yes")
 AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 AM_CONDITIONAL(BUILD_APOL, test ${build_apol} = "yes")
 AM_CONDITIONAL(BUILD_GUI, test ${build_gui} = "yes")
-AM_CONDITIONAL(DO_FUSE, test ${have_fuse} = "yes")
+#AM_CONDITIONAL(DO_FUSE, test ${have_fuse} = "yes")
 
 profile_install_dir='${setoolsdir}/sechecker-profiles'
 

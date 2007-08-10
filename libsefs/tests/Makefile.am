@@ -1,24 +1,17 @@
-if DO_FUSE
-  MAYBE_TESTS = libsefs-tests
-endif
-
-TESTS = $(MAYBE_TESTS)
-check_PROGRAMS = libsefs-tests # fuse_non_mls
+TESTS = libsefs-tests
+check_PROGRAMS = libsefs-tests
 
 libsefs_tests_SOURCES = \
+	fcfile-tests.cc fcfile-tests.hh \
 	libsefs-tests.cc
 
-#fuse_non_mls_SOURCES = \
-#	fuse_non_mls.c
+EXTRA_DIST = file_contexts.confed file_contexts.union file_contexts.broken
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
+AM_CXXFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@
 
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 LDADD = @SELINUX_LIB_FLAG@ @SEFS_LIB_FLAG@ @APOL_LIB_FLAG@ @QPOL_LIB_FLAG@ @CUNIT_LIB_FLAG@
 
-libsefs_tests_DEPENDENCIES = ../src/libsefs.so # fuse_non_mls
-
-#fuse_non_mls_CFLAGS = $(AM_CFLAGS) @FUSE_CFLAGS@
-#fuse_non_mls_LDADD = $(LDADD) @FUSE_LIBS@
+libsefs_tests_DEPENDENCIES = ../src/libsefs.so

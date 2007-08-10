@@ -1,0 +1,24 @@
+# Confederate placement as of morning of September 17, 1861.
+
+/			-d	maryland_u:location_r:state_t
+/sharpsburg		-d	sharpsburg_u:location_r:city_t
+/sharpsburg/lee		-l	lee_u:confed_r:general_t
+/sharpsburg/nicodemus	-d	sharpsburg_u:location_r:terrain_t
+/sharpsburg/nicodemus/jackson(/.*)?	--	jackson_u:confed_r:infantry_t
+/sharpsburg/nicodemus/stuart		--	stuart_u:confed_r:artillery_t
+/sharpsburg/west_woods	-d	sharpsburg_u:location_r:terrain_t
+/sharpsburg/west_woods/jackson(/.*)?	-c	jackson_u:confed_r:infantry_t
+/sharpsburg/west_woods/jones            -c      jones_u:confed_r:infantry_t
+/sharpsburg/west_woods/lee		-c	lee_u:confed_r:artillery_t
+/sharpsburg/dunker		<<none>>
+/sharpsburg/hill	-p	hill_u:confed_r:infantry_t
+/antietam		-d	sharpsburg_u:location_r:terrain_t
+/antietam/cemetary_hill	-d	sharpsburg_u:location_r:terrain_t
+/antietam/cemetary_hill/artillery_ridge	-d	sharpsburg_u:location_r:terrain_t
+/antietam/cemetary_hill/artillery_ridge/anderson(/.*)?	-s	anderson_u:confed_r:infantry_t
+/antietam/cemetary_hill/artillery_ridge/jones(/.*)?	-s	jones_u:confed_r:infantry_t
+/antietam/cemetary_hill/artillery_ridge/walker(/.*)?	-s	walker_u:confed_r:infantry_t
+/antietam/cemetary_hill/artillery_ridge/toombs(/.*)?	-s	toombs_u:confed_r:artillery_t
+
+/harpers_ferry			virginia_u:location_r:city_t
+/harpers_ferry/.*               hill_u:confed_r:infantry_t
