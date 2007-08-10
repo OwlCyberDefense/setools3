@@ -1,3 +1,12 @@
+/*
+ * The approach described below does not actually work.  Apparantly,
+ * SELinux will assign a context based upond the underlying policy
+ * (typically from a fs_use statement); the operating system will not
+ * invoke this file's fuse_getxattr() function at all.  Thus it is
+ * not possible to use FUSE to create a virtual filesystem with
+ * arbitrary file contexts.
+ */
+
 /**
  *  @file
  *
@@ -90,7 +99,7 @@ static int fuse_getxattr(const char *path, const char *attrib_name, char *buf, s
 	if (apol_bst_get_element(bst, &key, NULL, (void **)&e) < 0) {
 		return -ENOENT;
 	}
-	if (attrib_name != XATTR_NAME_SELINUX) {
+	if (strcmp(attrib_name, XATTR_NAME_SELINUX) != 0) {
 		return -ENOSYS;
 	}
 	strncpy(buf, e->context, buflen);
