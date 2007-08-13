@@ -28,7 +28,6 @@
 
 #include <polsearch/polsearch.hh>
 #include <polsearch/query.hh>
-#include <polsearch/bool_query.hh>
 
 #include <sefs/fclist.hh>
 
@@ -110,11 +109,18 @@ class polsearch_test
 	  * that satisfies all criteria for the test.
 	  * @exception std::runtime_error Unable to complete the test.
 	  */
-	const std::vector < polsearch_result > run(apol_policy_t * policy, sefs_fclist * fclist,
+	const std::vector < polsearch_result > run(const apol_policy_t * policy, sefs_fclist * fclist,
 						   std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
 
-	friend polsearch_test & polsearch_bool_query::addTest(polsearch_test_cond_e);
-      protected:
+	friend polsearch_test & polsearch_query::addTest(polsearch_test_cond_e);
+
+	/**
+	 * DO NOT CALL. This default constructor is defined for SWIG.
+	 * Tests should be created via polsearch_query::addTest().
+	 */
+	polsearch_test();
+
+	protected:
 	/**
 	 * Create a test.
 	 * @param query The query with which the test should be associated.

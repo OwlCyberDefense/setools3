@@ -42,6 +42,11 @@ using std::vector;
 using std::string;
 using std::bad_alloc;
 
+polsearch_test::polsearch_test()
+{
+	throw std::runtime_error("Cannot directly create tests.");
+}
+
 polsearch_test::polsearch_test(polsearch_query * query, polsearch_test_cond_e test_cond) throw(std::invalid_argument)
 {
 	if (!validate_test_condition(query->elementType(), test_cond))
@@ -455,7 +460,7 @@ static vector < const void *>get_test_candidates(const apol_policy_t * policy, c
 	return ret_v;
 }
 
-const std::vector < polsearch_result > polsearch_test::run(apol_policy_t * policy, sefs_fclist * fclist,
+const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t * policy, sefs_fclist * fclist,
 							   std::vector <
 							   const void *>&Xcandidates) const throw(std::runtime_error)
 {

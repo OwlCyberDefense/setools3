@@ -71,7 +71,7 @@ class polsearch_query
 	 * @exception std::invalid_argument Given condition is not valid for
 	 * the element type queried.
 	 */
-	virtual polsearch_test & addTest(polsearch_test_cond_e test_cond) throw(std::invalid_argument) = 0;
+	polsearch_test & addTest(polsearch_test_cond_e test_cond) throw(std::invalid_argument);
 
 	/**
 	 * Run the query.
@@ -81,10 +81,10 @@ class polsearch_query
 	 * if a test matches file_context entries.
 	 * @return A vector of results containing one entry per element that matches
 	 * the query.
+	 * @exception std::bad_alloc Out of memory.
 	 * @exception std::runtime_error Error running tests.
 	 */
-	virtual std::vector < polsearch_result > run(const apol_policy_t * policy, sefs_fclist * fclist =
-						     NULL) const throw(std::runtime_error) = 0;
+	std::vector < polsearch_result > run(const apol_policy_t * policy, sefs_fclist * fclist = NULL) const throw(std::bad_alloc, std::runtime_error);
 
 	/**
 	 * Get a string repersenting the query.
@@ -105,12 +105,22 @@ class polsearch_query
 	 * either POLSEARCH_MATCH_ALL or POLSEARCH_MATCH_ANY.
 	 * @exception std::invalid_argument Invalid matching behavior requested.
 	 */
-	 polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::invalid_argument);
+	polsearch_query(polsearch_match_e m = POLSEARCH_MATCH_ALL) throw(std::invalid_argument);
 	/**
 	 * Base class copy constructor
 	 * @param rhs The query to copy.
 	 */
-	 polsearch_query(const polsearch_query & rhs);
+	polsearch_query(const polsearch_query & rhs);
+
+	/**
+	 * Get all candidates of the appropriate element type
+	 * to pass to tests when calling \a polsearch_test::run().
+	 * @param policy The policy from which to get the elements.
+	 * @return A vector of all elements of the appropriate type.
+	 * @exception std::bad_alloc Out of memory.
+	 * @exception std::runtime_error Unable to get the elements from the policy.
+	 */
+	virtual std::vector<const void *>getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc, std::runtime_error) = 0;
 
 	 std::vector < polsearch_test > _tests;	/*!< The set of tests used by the query to determine which elements match. */
 

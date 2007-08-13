@@ -27,6 +27,8 @@
 #include <polsearch/polsearch.hh>
 #include <polsearch/criterion.hh>
 #include <polsearch/test.hh>
+#include <polsearch/result.hh>
+#include <polsearch/proof.hh>
 #include "polsearch_internal.hh"
 
 #include <sefs/fclist.hh>
@@ -80,4 +82,43 @@ std::vector < polsearch_test_cond_e > polsearch_query::getValidTests()
 			v.push_back(static_cast < polsearch_test_cond_e > (i));
 
 	return v;
+}
+
+polsearch_test & polsearch_query::addTest(polsearch_test_cond_e test_cond) throw(std::invalid_argument)
+{
+	_tests.push_back(polsearch_test(this, test_cond));
+	return *_tests.end();
+}
+
+std::vector < polsearch_result > polsearch_query::run(const apol_policy_t * policy,
+		sefs_fclist * fclist) const throw(std::bad_alloc, std::runtime_error)
+{
+	vector<polsearch_result> master_results;
+	vector<const void *> Xcandidates = getCandidates(policy);
+	for (vector<polsearch_test>::const_iterator i = _tests.begin(); i != _tests.end(); i++)
+	{
+		vector<polsearch_result> cur_test_results = i->run(policy, fclist, Xcandidates);
+		for (vector<polsearch_result>::iterator i = cur_test_results.begin(); i != cur_test_results.end(); i++)
+		{
+			polsearch_result *master_entry = NULL;
+			for (vector<polsearch_result>::iterator j = master_results.begin(); j != master_results.end(); j++)
+			{
+				if (j->element() == i->element())
+				{
+					master_entry = &(*j);
+					break;
+				}
+			}
+			if (master_entry)
+			{
+				master_entry->merge(*i);
+			}
+			else
+			{
+				master_results.push_back(polsearch_result(*i));
+			}
+		}
+	}
+
+	return master_results;
 }

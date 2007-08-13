@@ -39,6 +39,11 @@
 using std::vector;
 using std::string;
 
+polsearch_proof::polsearch_proof()
+{
+	throw std::runtime_error("Cannot directly create proof entries.");
+}
+
 polsearch_proof::polsearch_proof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem, const apol_policy_t * p,
 				 sefs_fclist * fclist, polsearch_proof_element_free_fn free_fn)
 {

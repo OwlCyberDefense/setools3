@@ -46,92 +46,98 @@ class polsearch_test;
 class polsearch_criterion
 {
       public:
-		/**
-		 * Copy a criterion.
-		 * @param rhs The criterion to copy.
-		 */
+	/**
+	 * Copy a criterion.
+	 * @param rhs The criterion to copy.
+	 */
 	polsearch_criterion(const polsearch_criterion & rhs);
 	//! Destructor.
 	~polsearch_criterion();
 
-		/**
-		 * Get the operator used.
-		 * @return The operator used.
-		 */
+	/**
+	 * Get the operator used.
+	 * @return The operator used.
+	 */
 	polsearch_op_e op() const;
-		/**
-		 * Set the operator to use.
-		 * @param opr The operator to set.
-		 * @return The operator set.
-		 */
+	/**
+	 * Set the operator to use.
+	 * @param opr The operator to set.
+	 * @return The operator set.
+	 */
 	polsearch_op_e op(polsearch_op_e opr);
 
-		/**
-		 * Get the negated flag.
-		 * @return The negated flag.
-		 */
+	/**
+	 * Get the negated flag.
+	 * @return The negated flag.
+	 */
 	bool negated() const;
-		/**
-		 * Set the negated flag.
-		 * @param neg If \a true, the logic result of the comparison operator
-		 * will be negated.
-		 * @return The value set.
-		 */
+	/**
+	 * Set the negated flag.
+	 * @param neg If \a true, the logic result of the comparison operator
+	 * will be negated.
+	 * @return The value set.
+	 */
 	bool negated(bool neg);
 
-		/**
-		 * Get the test with which the criterion is associated.
-		 * @return A pointer to the test with which the criterion is associated,
-		 * or NULL if it has not yet been associated with any test.
-		 */
+	/**
+	 * Get the test with which the criterion is associated.
+	 * @return A pointer to the test with which the criterion is associated,
+	 * or NULL if it has not yet been associated with any test.
+	 */
 	const polsearch_test *test() const;
 
-		/**
-		 * Get the parameter checked by the criterion.
-		 * @return The parameter checked by the criterion.
-		 */
+	/**
+	 * Get the parameter checked by the criterion.
+	 * @return The parameter checked by the criterion.
+	 */
 	const polsearch_parameter *param() const;
-		/**
-		 * Get the parameter checked by the criterion.
-		 * @return The parameter checked by the criterion.
-		 */
+	/**
+	 * Get the parameter checked by the criterion.
+	 * @return The parameter checked by the criterion.
+	 */
 	polsearch_parameter *param();
-		/**
-		 * Set the parameter to be checked by the criterion. If any previous
-		 * parameter was set it will be deleted.
-		 * @param p The parameter to set. The caller should not delete this
-		 * parameter once it is associated with the criterion.
-		 * @return The parameter set.
-		 * @exception std::invalid_argument Parameter \a p is NULL or of the
-		 * wrong type for the current operator.
-		 */
+	/**
+	 * Set the parameter to be checked by the criterion. If any previous
+	 * parameter was set it will be deleted.
+	 * @param p The parameter to set. The caller should not delete this
+	 * parameter once it is associated with the criterion.
+	 * @return The parameter set.
+	 * @exception std::invalid_argument Parameter \a p is NULL or of the
+	 * wrong type for the current operator.
+	 */
 	polsearch_parameter *param(polsearch_parameter * p) throw(std::invalid_argument);
-		/**
-		 * Get a list of valid parameter types for the criterion.
-		 * @return A vector of all valid types of parameter the criterion can check.
-		 */
-	 std::vector < polsearch_param_type_e > getValidParamTypes() const;
+	/**
+	 * Get a list of valid parameter types for the criterion.
+	 * @return A vector of all valid types of parameter the criterion can check.
+	 */
+	std::vector < polsearch_param_type_e > getValidParamTypes() const;
 
-		/**
-		 * Get a string representing the criterion.
-		 * @return A string representing the criterion.
-		 */
+	/**
+	 * Get a string representing the criterion.
+	 * @return A string representing the criterion.
+	 */
 	 std::string toString() const;
 
-		/**
-		 * Check a list test candidates to see which of them match this criterion.
-		 * @param policy The policy from which all relevant elements come.
-		 * @param test_candidates The list of possible candidates to match.
-		 * This vector will be pruned to only those candidates that match the criterion.
-		 * @param Xnames A list of names valid for the symbol X.
-		 * If empty, this list is ignored.
-		 * @exception std::runtime_error Could not perform check.
-		 * @exception std::bad_alloc Out of memory.
-		 */
+	/**
+	 * Check a list test candidates to see which of them match this criterion.
+	 * @param policy The policy from which all relevant elements come.
+	 * @param test_candidates The list of possible candidates to match.
+	 * This vector will be pruned to only those candidates that match the criterion.
+	 * @param Xnames A list of names valid for the symbol X.
+	 * If empty, this list is ignored.
+	 * @exception std::runtime_error Could not perform check.
+	 * @exception std::bad_alloc Out of memory.
+	 */
 	void check(const apol_policy_t * policy, std::vector < const void *>&test_candidates,
 		   const std::vector < std::string > &Xnames) const throw(std::runtime_error, std::bad_alloc);
 
 	friend polsearch_criterion & polsearch_test::addCriterion(polsearch_op_e opr, bool neg);
+
+	/**
+	 * DO NOT CALL. This default constructor is defined for SWIG.
+	 * Criteria should be created via polsearch_test::addCriterion().
+	 */
+	polsearch_criterion();
       protected:
 		/**
 		 * Create a criterion.

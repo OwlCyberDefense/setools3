@@ -1,3 +1,7 @@
+2007-08-13  J. Mowery  <jmowery@tresys.com>
+
+	* Added SWIG wrappers for libpolsearch.
+
 2007-08-06  J. Tang  <jtang@tresys.com>
 
 	* configure.ac: Tk is checked only if --enable-swig-tcl and

@@ -34,6 +34,7 @@
 #include <sefs/fclist.hh>
 
 #include <apol/policy.h>
+#include <apol/bool-query.h>
 
 #include <stdexcept>
 #include <vector>
@@ -42,6 +43,7 @@
 using std::vector;
 using std::string;
 using std::runtime_error;
+using std::bad_alloc;
 
 polsearch_bool_query::polsearch_bool_query(polsearch_match_e m) throw(std::invalid_argument):polsearch_query(m)
 {
@@ -58,28 +60,26 @@ polsearch_bool_query::~polsearch_bool_query()
 	//nothing to do
 }
 
-polsearch_test & polsearch_bool_query::addTest(polsearch_test_cond_e test_cond) throw(std::invalid_argument)
+std::vector<const void *>polsearch_bool_query::getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc, std::runtime_error)
 {
-	_tests.push_back(polsearch_test(this, test_cond));
-	return *_tests.end();
-}
+	apol_bool_query_t *bq = apol_bool_query_create();
+	if (!bq)
+		throw bad_alloc();
+	apol_vector_t *v = NULL;
+	if (apol_bool_get_by_query(policy, bq, &v))
+	{
+		if (!v)
+			throw bad_alloc();
+		else
+			throw runtime_error("Unable to get all booleans");
+	}
+	vector<const void *> bv;
+	for (size_t i = 0; i < apol_vector_get_size(v); i++)
+	{
+		bv.push_back(apol_vector_get_element(v, i));
+	}
 
-/*
- * Run the query.
- * @param policy The policy containing the booleans to match.
- * @param fclist A file_contexts list to optionally use for tests that
- * match file_context entries. It is an error to not provide \a fclist
- * if a test matches file_context entries.
- * @return A vector of results containing one entry per boolean that matches the query.
- * @exception std::runtime_error Error running tests.
- */
-std::vector < polsearch_result > polsearch_bool_query::run(const apol_policy_t * policy,
-							   sefs_fclist * fclist) const throw(std::runtime_error)
-{
-	vector<polsearch_result> master_results;
-	//TODO polsearch_bool_query.run()
-
-	return master_results;
+	return bv;
 }
 
 std::string polsearch_bool_query::toString() const

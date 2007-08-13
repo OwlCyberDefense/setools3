@@ -47,6 +47,11 @@ using std::bad_alloc;
 using std::vector;
 using std::string;
 
+polsearch_criterion::polsearch_criterion()
+{
+	throw std::runtime_error("Cannot directly create criteria.");
+}
+
 polsearch_criterion::polsearch_criterion(const polsearch_test * test, polsearch_op_e opr, bool neg) throw(std::invalid_argument)
 {
 	if (!validate_operator(test->elementType(), test->testCond(), opr))

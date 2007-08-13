@@ -80,6 +80,11 @@ class polsearch_proof
 							    polsearch_proof_element_free_fn free_fn);
 	friend int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void *data);
 
+	/**
+	 * DO NOT CALL. This default constructor is defined for SWIG.
+	 * Proof entries should be created via polsearch_result::addProof().
+	 */
+	polsearch_proof();
       protected:
 	/**
 	 * Create a new poof entry.

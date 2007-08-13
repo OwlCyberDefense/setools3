@@ -67,7 +67,7 @@ class polsearch_regex_parameter:public polsearch_parameter
 	 * @exception std::invalid_argument Invalid regular expression.
 	 * @exception std::bad_alloc Out of memory.
 	 */
-	 std::string & expression(const std::string & expr) throw(std::invalid_argument, std::bad_alloc);;
+	 const std::string & expression(const std::string & expr) throw(std::invalid_argument, std::bad_alloc);;
 
 	/**
 	 * Determine if case is ignored when matching the regular expression.

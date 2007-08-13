@@ -95,7 +95,7 @@ const std::string & polsearch_regex_parameter::expression() const
 	return _expression;
 }
 
-std::string & polsearch_regex_parameter::expression(const std::string & expr)throw(std::invalid_argument, std::bad_alloc)
+const std::string & polsearch_regex_parameter::expression(const std::string & expr)throw(std::invalid_argument, std::bad_alloc)
 {
 	if (_compiled)
 		regfree(_compiled);

@@ -78,7 +78,7 @@ class polsearch_result
 	 */
 	 std::string toString() const;
 
-	friend const std::vector < polsearch_result > polsearch_test::run(apol_policy_t * policy, sefs_fclist * fclist,
+	friend const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t * policy, sefs_fclist * fclist,
 									  std::vector <
 									  const void *>&Xcandidates) const throw(std::
 														 runtime_error);
@@ -104,7 +104,13 @@ class polsearch_result
 	 */
 	void merge(const polsearch_result & rhs) throw(std::invalid_argument);
 
-      protected:
+	/**
+	 * DO NOT CALL. This default constructor is defined for SWIG.
+	 * Result entries will be created via polsearch_test::run().
+	 */
+	polsearch_result();
+
+	protected:
 	/**
 	 * Create a result entry.
 	 * @param elem_type Type of element found.

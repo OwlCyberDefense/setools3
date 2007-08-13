@@ -42,6 +42,11 @@ using std::iterator;
 using std::string;
 using std::invalid_argument;
 
+polsearch_result::polsearch_result()
+{
+	throw std::runtime_error("Cannot directly create result entries.");
+}
+
 polsearch_result::polsearch_result(polsearch_element_e elem_type, const void *elem, const apol_policy_t * p, sefs_fclist * fclist)
 {
 	_element_type = elem_type;

@@ -56,25 +56,14 @@ class polsearch_bool_query:public polsearch_query
 	~polsearch_bool_query();
 
 	/**
-	 * Add a test to the query.
-	 * @param test_cond The condition to be tested.
-	 * @return A reference to the newly created and added test.
-	 * @exception std::invalid_argument Given condition is not valid for booleans.
+	 * Get all conditional booleans.
+	 * to pass to tests when calling \a polsearch_test::run().
+	 * @param policy The policy from which to get the booleans.
+	 * @return A vector of all booleans.
+	 * @exception std::bad_alloc Out of memory.
+	 * @exception std::runtime_error Unable to get the booleans from the poliy.
 	 */
-	virtual polsearch_test & addTest(polsearch_test_cond_e test_cond) throw(std::invalid_argument);
-
-	/**
-	 * Run the query.
-	 * @param policy The policy containing the booleans to match.
-	 * @param fclist A file_contexts list to optionally use for tests that
-	 * match file_context entries. It is an error to not provide \a fclist
-	 * if a test matches file_context entries.
-	 * @return A vector of results containing one entry per boolean that matches
-	 * the query.
-	 * @exception std::runtime_error Error running tests.
-	 */
-	virtual std::vector < polsearch_result > run(const apol_policy_t * policy, sefs_fclist * fclist =
-						     NULL) const throw(std::runtime_error);
+	virtual std::vector<const void *>getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc, std::runtime_error);
 
 	/**
 	 * Get a string repersenting the query.
