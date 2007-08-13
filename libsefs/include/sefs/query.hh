@@ -108,7 +108,8 @@ class sefs_query
 
 	/**
 	 * Set a sefs query to match only entries with contexts with a
-	 * range of \a range.
+	 * range of \a range.  If the fclist is not MLS then \a name
+	 * and \a match will be ignored.
 	 * @param name Limit query to only contexts matching this
 	 * string representing the MLS range, or NULL to clear this
 	 * field.  The string will be duplicated.
@@ -130,6 +131,12 @@ class sefs_query
 	/**
 	 * Set a sefs query to match only entries with object class \a
 	 * objclass.
+	 *
+	 * <em>Note:</em> If the query is run against a fcfile, then
+	 * entries without explicit object classes (i.e., no explicit
+	 * <tt>--</tt>, <tt>-d</tt>, etc.) will always match
+	 * irrespective of the query's object class field.
+	 *
 	 * @param Numeric identifier for an objclass, one of
 	 * QPOL_CLASS_FILE, QPOL_CLASS_DIR, etc., as defined in
 	 * <qpol/genfscon_query.h>.  Use QPOL_CLASS_ALL to match all
@@ -139,16 +146,20 @@ class sefs_query
 
 	/**
 	 * Set a sefs query to match only entries with object class \a
-	 * name.
+	 * name.  The \a name parameter is not affected by regex().
+	 *
 	 * @param name Limit query to only entries with this object
 	 * class, or NULL to clear this field.  The incoming string
 	 * must be legal according to apol_str_to_objclass().
+	 *
+	 * @see objectClass(uint32_t) for note about fcfiles.
 	 */
 	void objectClass(const char *name);
 
 	/**
 	 * Set a sefs query to match only entries with path \a path.
-	 * <em>Note:</em> if the query is run against a fcfile, the
+	 *
+	 * <em>Note:</em> If the query is run against a fcfile, the
 	 * behavior of matching paths is slightly different.  For each
 	 * of fcfile's entries, that entry's regular expression is
 	 * matched against \a path.  This is the reverse for other
