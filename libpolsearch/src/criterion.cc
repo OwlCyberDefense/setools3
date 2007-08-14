@@ -126,7 +126,7 @@ polsearch_parameter *polsearch_criterion::param(polsearch_parameter * p) throw(s
 std::vector < polsearch_param_type_e > polsearch_criterion::getValidParamTypes() const
 {
 	vector < polsearch_param_type_e > valid;
-	for (int i = POLSEARCH_PARAM_TYPE_REGEX; i <= POLSEARCH_PARAM_TYPE_RANGE; i)
+	for (int i = POLSEARCH_PARAM_TYPE_REGEX; i <= POLSEARCH_PARAM_TYPE_RANGE; i++)
 	{
 		if (validate_parameter_type
 		    (_test->elementType(), _test->testCond(), _op, static_cast < polsearch_param_type_e > (i)))

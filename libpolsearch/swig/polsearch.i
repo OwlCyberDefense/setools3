@@ -113,11 +113,11 @@ static char *tcl_get_error(void)
 
 %wrapper %{
 /* Tcl module's initialization routine is expected to be named
- * Sefs_Init(), but the output file will be called libtsefs.so instead
- * of libsefs.so.  Therefore add an alias from Tsefs_Init() to the
- * real Sefs_Init().
+ * Polsearch_Init(), but the output file will be called
+ * libtpolsearch.so instead of libpolsearch.so.  Therefore add an
+ * alias from Tpolsearch_Init() to the real Polsearch_Init().
  */
-SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
+SWIGEXPORT int Tpolsearch_Init(Tcl_Interp *interp) {
 	return SWIG_init(interp);
 }
 %}
@@ -137,7 +137,7 @@ SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
 %ignore fcentry_callback;
 //Java can't handle const and non-const versions of same function
 %ignore polsearch_criterion::param()const;
-%ignore *::clone();
+%ignore *::clone() const;
 
 #define __attribute__(x)
 
@@ -159,7 +159,7 @@ const char *libpolsearch_get_version (void);
 %include <polsearch/result.hh>
 %include <polsearch/proof.hh>
 
-//tell SWIg which types of vectors the target language will need
+//tell SWIG which types of vectors the target language will need
 namespace std {
 	%template(testVector) vector<polsearch_test>;
 	%template(criterionVector) vector<polsearch_criterion>;
@@ -174,12 +174,13 @@ namespace std {
 
 #ifdef SWIGPYTHON
 %wrapper %{
+extern "C++" {
 	namespace swig {
 		template <>
 		struct traits<void> {
-			typedef pointer_category category;
 			static const char *type_name() {return "void*";}
 		};
 	}
+}
 %}
 #endif

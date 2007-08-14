@@ -17,7 +17,6 @@ VERS_1.0{
 				polsearch_regex_parameter::expression;
 				polsearch_regex_parameter::ignoreCase;
 		};
-		polsearch_*;
 		libpolsearch_get_version;
 	local:
 		extern "C++"

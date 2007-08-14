@@ -140,6 +140,16 @@ struct fcdata
 	vector < polsearch_proof > *cur_proof;	//! The vector to which to append proof entries.
 };
 
+
+/**
+ * Callback for processing one file_context entry at a time to avoid
+ * potentially large vectors from becoming necessary for large filesystems.
+ * @param fclist The file_contexts list from which \a entry comes.
+ * @param entry The entry to test.
+ * @param data An instance of struct fcdata with all necessary values to
+ * check criteria and append a proof as necessary.
+ * @return 0 if \a entry was processed successfully, and < 0 on error.
+ */
 int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void *data)
 {
 	struct fcdata *datum = static_cast < struct fcdata *>(data);
