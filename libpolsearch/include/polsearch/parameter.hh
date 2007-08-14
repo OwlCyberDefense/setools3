@@ -129,6 +129,7 @@ class polsearch_parameter
 	 */
 	virtual std::string toString() const = 0;
 	/**
+	 * Do not call this function from outside the library.
 	 * Get a deep copy of the derived parameter class.
 	 * @return A newly allocated parameter that is a deep copy of \a this.
 	 * @exception std::bad_alloc Out of memory.

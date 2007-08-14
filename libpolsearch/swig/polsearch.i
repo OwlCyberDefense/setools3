@@ -137,6 +137,7 @@ SWIGEXPORT int Tsefs_Init(Tcl_Interp *interp) {
 %ignore fcentry_callback;
 //Java can't handle const and non-const versions of same function
 %ignore polsearch_criterion::param()const;
+%ignore *::clone();
 
 #define __attribute__(x)
 
