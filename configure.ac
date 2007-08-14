@@ -124,11 +124,13 @@ QPOL_CFLAGS='-I$(top_srcdir)/libqpol/include'
 APOL_CFLAGS='-I$(top_srcdir)/libapol/include'
 SEFS_CFLAGS='-I$(top_srcdir)/libsefs/include'
 POLDIFF_CFLAGS='-I$(top_srcdir)/libpoldiff/include'
+POLSEARCH_CFLAGS='-I$(top_srcdir)/libpolsearch/include'
 SEAUDIT_CFLAGS='-I$(top_srcdir)/libseaudit/include'
 AC_SUBST(QPOL_CFLAGS)
 AC_SUBST(APOL_CFLAGS)
 AC_SUBST(SEFS_CFLAGS)
 AC_SUBST(POLDIFF_CFLAGS)
+AC_SUBST(POLSEARCH_CFLAGS)
 AC_SUBST(SEAUDIT_CFLAGS)
 
 AC_SUBST(QPOL_LIB_FLAG)
@@ -795,7 +797,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libapol/swig/Makefile libapol/swig/python/Makefile libapol/swig/java/Makefile libapol/swig/java/MANIFEST.MF libapol/swig/tcl/Makefile \
                  libpoldiff/Makefile libpoldiff/src/Makefile libpoldiff/include/Makefile libpoldiff/include/poldiff/Makefile libpoldiff/tests/Makefile \
                  libpoldiff/swig/Makefile libpoldiff/swig/python/Makefile libpoldiff/swig/java/Makefile libpoldiff/swig/java/MANIFEST.MF libpoldiff/swig/tcl/Makefile \
-                 libpolsearch/Makefile libpolsearch/src/Makefile libpolsearch/include/Makefile libpolsearch/include/polsearch/Makefile \
+                 libpolsearch/Makefile libpolsearch/src/Makefile libpolsearch/include/Makefile libpolsearch/include/polsearch/Makefile libpolsearch/tests/Makefile \
                  libpolsearch/swig/Makefile libpolsearch/swig/python/Makefile libpolsearch/swig/java/Makefile libpolsearch/swig/java/MANIFEST.MF libpolsearch/swig/tcl/Makefile \
                  libsefs/Makefile libsefs/src/Makefile libsefs/include/Makefile libsefs/include/sefs/Makefile libsefs/tests/Makefile \
                  libsefs/swig/Makefile libsefs/swig/python/Makefile libsefs/swig/java/Makefile libsefs/swig/tcl/Makefile libsefs/swig/java/MANIFEST.MF \

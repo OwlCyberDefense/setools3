@@ -37,6 +37,9 @@
 #include <vector>
 #include <string>
 
+/**
+ * Query for conditional booleans.
+ */
 class polsearch_bool_query:public polsearch_query
 {
       public:
@@ -63,7 +66,8 @@ class polsearch_bool_query:public polsearch_query
 	 * @exception std::bad_alloc Out of memory.
 	 * @exception std::runtime_error Unable to get the booleans from the poliy.
 	 */
-	virtual std::vector<const void *>getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc, std::runtime_error);
+	virtual std::vector < const void *>getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc,
+												   std::runtime_error);
 
 	/**
 	 * Get a string repersenting the query.

@@ -110,7 +110,7 @@ class polsearch_criterion
 	 * Get a list of valid parameter types for the criterion.
 	 * @return A vector of all valid types of parameter the criterion can check.
 	 */
-	std::vector < polsearch_param_type_e > getValidParamTypes() const;
+	 std::vector < polsearch_param_type_e > getValidParamTypes() const;
 
 	/**
 	 * Get a string representing the criterion.
@@ -137,7 +137,7 @@ class polsearch_criterion
 	 * DO NOT CALL. This default constructor is defined for SWIG.
 	 * Criteria should be created via polsearch_test::addCriterion().
 	 */
-	polsearch_criterion();
+	 polsearch_criterion();
       protected:
 		/**
 		 * Create a criterion.

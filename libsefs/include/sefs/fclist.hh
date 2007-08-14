@@ -114,7 +114,7 @@ class sefs_fclist
 #endif
 
       public:
-	 virtual ~ sefs_fclist();
+	 virtual ~sefs_fclist();
 
 	/**
 	 * Perform a sefs query on the given file context list object,

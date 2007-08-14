@@ -60,7 +60,8 @@ polsearch_bool_query::~polsearch_bool_query()
 	//nothing to do
 }
 
-std::vector<const void *>polsearch_bool_query::getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc, std::runtime_error)
+std::vector < const void *>polsearch_bool_query::getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc,
+													       std::runtime_error)
 {
 	apol_bool_query_t *bq = apol_bool_query_create();
 	if (!bq)
@@ -71,9 +72,9 @@ std::vector<const void *>polsearch_bool_query::getCandidates(const apol_policy_t
 		if (!v)
 			throw bad_alloc();
 		else
-			throw runtime_error("Unable to get all booleans");
+		throw runtime_error("Unable to get all booleans");
 	}
-	vector<const void *> bv;
+	vector < const void *>bv;
 	for (size_t i = 0; i < apol_vector_get_size(v); i++)
 	{
 		bv.push_back(apol_vector_get_element(v, i));

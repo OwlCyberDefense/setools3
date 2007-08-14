@@ -108,9 +108,9 @@ class polsearch_result
 	 * DO NOT CALL. This default constructor is defined for SWIG.
 	 * Result entries will be created via polsearch_test::run().
 	 */
-	polsearch_result();
+	 polsearch_result();
 
-	protected:
+      protected:
 	/**
 	 * Create a result entry.
 	 * @param elem_type Type of element found.

@@ -60,6 +60,7 @@ polsearch_criterion::polsearch_criterion(const polsearch_test * test, polsearch_
 	_op = opr;
 	_negated = neg;
 	_test = test;
+	_param = NULL;
 }
 
 polsearch_criterion::polsearch_criterion(const polsearch_criterion & rhs)
@@ -68,7 +69,7 @@ polsearch_criterion::polsearch_criterion(const polsearch_criterion & rhs)
 	_negated = rhs._negated;
 	_test = rhs._test;
 	if (rhs._param)
-		_param = _param->clone();
+		_param = rhs._param->clone();
 	else
 		_param = NULL;
 }
@@ -731,7 +732,7 @@ void polsearch_criterion::check(const apol_policy_t * policy, std::vector < cons
 
 		if (!match)
 		{
-			if (candidate_type = POLSEARCH_ELEMENT_MLS_LEVEL)	//the following odd cast handles freeing the memory temporarily used for the level
+			if (candidate_type == POLSEARCH_ELEMENT_MLS_LEVEL)	//the following odd cast handles freeing the memory temporarily used for the level
 				apol_mls_level_destroy((reinterpret_cast <
 							apol_mls_level_t ** >(const_cast < void **>(&(test_candidates[i])))));
 			test_candidates.erase(test_candidates.begin() + i);

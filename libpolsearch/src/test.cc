@@ -88,8 +88,7 @@ polsearch_test_cond_e polsearch_test::testCond(polsearch_test_cond_e test_cond) 
 
 polsearch_criterion & polsearch_test::addCriterion(polsearch_op_e opr, bool neg) throw(std::invalid_argument)
 {
-	polsearch_criterion crit(this, opr, neg);
-	_criteria.insert(_criteria.end(), crit);
+	_criteria.push_back(polsearch_criterion(this, opr, neg));
 	return _criteria.back();
 }
 
@@ -400,7 +399,7 @@ static vector < const void *>get_test_candidates(const apol_policy_t * policy, c
 	case POLSEARCH_ELEMENT_PERMISSION:
 	{
 		const qpol_common_t *c = NULL;
-		if (elem_type = POLSEARCH_ELEMENT_CLASS)
+		if (elem_type == POLSEARCH_ELEMENT_CLASS)
 		{
 			qpol_class_get_perm_iter(qp, static_cast < const qpol_class_t * >(element), &iter);
 			if (!iter)

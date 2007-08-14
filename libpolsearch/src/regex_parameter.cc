@@ -95,7 +95,7 @@ const std::string & polsearch_regex_parameter::expression() const
 	return _expression;
 }
 
-const std::string & polsearch_regex_parameter::expression(const std::string & expr)throw(std::invalid_argument, std::bad_alloc)
+const std::string & polsearch_regex_parameter::expression(const std::string & expr) throw(std::invalid_argument, std::bad_alloc)
 {
 	if (_compiled)
 		regfree(_compiled);
@@ -135,7 +135,13 @@ bool polsearch_regex_parameter::ignoreCase(bool icase) throw(std::bad_alloc)
 	if (!_compiled)
 		throw bad_alloc();
 	char errbuf[1024] = { '\0' };
-	regcomp(_compiled, _expression.c_str(), flags);
+	int regretv = regcomp(_compiled, _expression.c_str(), flags);
+	if (regretv)
+	{
+		regerror(regretv, _compiled, errbuf, 1024);
+		free(_compiled);
+		throw invalid_argument(errbuf);
+	}
 
 	return _ignore_case;
 }
