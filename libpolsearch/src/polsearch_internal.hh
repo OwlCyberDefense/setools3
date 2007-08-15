@@ -79,7 +79,14 @@ bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_
 			     const std::type_info & param_type);
 
 /**
- * @overload validate_parameter_type(polsearch_element_e, polsearch_test_cond_e, polsearch_op_e, const std::type_info&)
+ * Determine if a parameter type is valid for a particular comparison operator,
+ * test condition, and type of element.
+ * @param elem_type The type of element queried.
+ * @param cond The test condition.
+ * @param opr The comparison operator.
+ * @param param_type The parameter type.
+ * @return If parameter type \a param_type is valid for \a cond,
+ * \a elem_type, and \a opr, return \a true, otherwise, return \a false.
  */
 bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr,
 			     polsearch_param_type_e param_type);

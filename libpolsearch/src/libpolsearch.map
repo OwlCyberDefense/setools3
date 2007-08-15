@@ -8,20 +8,20 @@ VERS_1.0{
 				polsearch_proof::*;
 				polsearch_test::*;
 				polsearch_*parameter::*param*;
-				polsearch_*parameter::match;
-				polsearch_*parameter::toString;
-				polsearch_bool_parameter::truthValue;
-				polsearch_level_parameter::level;
-				polsearch_range_parameter::range;
-				polsearch_number_parameter::value;
-				polsearch_regex_parameter::expression;
-				polsearch_regex_parameter::ignoreCase;
+				polsearch_*parameter::match*;
+				polsearch_*parameter::toString*;
+				polsearch_bool_parameter::truthValue*;
+				polsearch_level_parameter::level*;
+				polsearch_range_parameter::range*;
+				polsearch_number_parameter::value*;
+				polsearch_regex_parameter::expression*;
+				polsearch_regex_parameter::ignoreCase*;
 		};
 		libpolsearch_get_version;
 	local:
 		extern "C++"
 		{
-			polsearch_*parameter::clone;
+			polsearch_*parameter::clone*;
 		};
 		*;
 };
