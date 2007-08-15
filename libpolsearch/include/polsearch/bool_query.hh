@@ -59,17 +59,6 @@ class polsearch_bool_query:public polsearch_query
 	~polsearch_bool_query();
 
 	/**
-	 * Get all conditional booleans.
-	 * to pass to tests when calling \a polsearch_test::run().
-	 * @param policy The policy from which to get the booleans.
-	 * @return A vector of all booleans.
-	 * @exception std::bad_alloc Out of memory.
-	 * @exception std::runtime_error Unable to get the booleans from the poliy.
-	 */
-	virtual std::vector < const void *>getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc,
-												   std::runtime_error);
-
-	/**
 	 * Get a string repersenting the query.
 	 * @return A string representing the query.
 	 */
@@ -80,6 +69,19 @@ class polsearch_bool_query:public polsearch_query
 	 * @return Always returns POLSEARCH_ELEMENT_BOOL.
 	 */
 	virtual polsearch_element_e elementType() const;
+
+      protected:
+	/**
+	 * Get all conditional booleans.
+	 * to pass to tests when calling \a polsearch_test::run().
+	 * @param policy The policy from which to get the booleans.
+	 * @return A vector of all booleans.
+	 * @exception std::bad_alloc Out of memory.
+	 * @exception std::runtime_error Unable to get the booleans from the poliy.
+	 */
+	 virtual std::vector < const void *>getCandidates(const apol_policy_t * policy) const throw(std::bad_alloc,
+												    std::runtime_error);
+
 };
 
 #endif				       /* POLSEARCH_BOOL_QUERY_HH */

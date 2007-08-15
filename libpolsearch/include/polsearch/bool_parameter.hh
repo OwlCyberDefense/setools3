@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <stdint.h>
 
@@ -37,7 +38,9 @@
 
 #include <apol/policy.h>
 #include <apol/policy-query.h>
-
+/**
+ * A parameter object for use in polsearch_criterion to check boolean values.
+ */
 class polsearch_bool_parameter:public polsearch_parameter
 {
       public:
@@ -73,9 +76,9 @@ class polsearch_bool_parameter:public polsearch_parameter
 	virtual bool match(bool b) const throw(std::invalid_argument);
 	/**
 	 * Get the type of parameter.
-	 * @return Always returns POLSEARCH_PARAM_TYPE_BOOL.
+	 * @return The type of parameter.
 	 */
-	virtual polsearch_param_type_e paramType() const;
+	virtual const std::type_info & paramType() const;
 	/**
 	 * Get a string representing the parameter.
 	 * @return A string representing the parameter.

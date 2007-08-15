@@ -25,6 +25,13 @@
 
 #include <polsearch/polsearch.hh>
 #include "polsearch_internal.hh"
+#include <polsearch/parameter.hh>
+#include <polsearch/bool_parameter.hh>
+#include <polsearch/level_parameter.hh>
+#include <polsearch/number_parameter.hh>
+#include <polsearch/range_parameter.hh>
+#include <polsearch/regex_parameter.hh>
+#include <polsearch/string_expression_parameter.hh>
 
 #include <sefs/entry.hh>
 
@@ -36,6 +43,7 @@
 #include <cerrno>
 #include <cassert>
 #include <cstdlib>
+#include <typeinfo>
 
 using std::invalid_argument;
 using std::bad_alloc;
@@ -344,6 +352,37 @@ bool validate_operator(polsearch_element_e elem_type, polsearch_test_cond_e cond
 	}
 	}
 	return false;
+}
+
+/**
+ * This function exists to handle the need of passing the enumeration
+ * to SWIG rather than a std::type_info when calling
+ * polsearch_criterion::getValidParamTypes().
+ * @param pt The type of parameter.
+ * @return The corresponding enumeration value.
+ */
+static polsearch_param_type_e param_id(const std::type_info & pt)
+{
+	if (pt == typeid(polsearch_bool_parameter))
+		return POLSEARCH_PARAM_TYPE_BOOL;
+	else if (pt == typeid(polsearch_string_expression_parameter))
+		return POLSEARCH_PARAM_TYPE_STR_EXPR;
+	else if (pt == typeid(polsearch_regex_parameter))
+		return POLSEARCH_PARAM_TYPE_REGEX;
+	else if (pt == typeid(polsearch_number_parameter))
+		return POLSEARCH_PARAM_TYPE_RULE_TYPE;
+	else if (pt == typeid(polsearch_level_parameter))
+		return POLSEARCH_PARAM_TYPE_LEVEL;
+	else if (pt == typeid(polsearch_range_parameter))
+		return POLSEARCH_PARAM_TYPE_RANGE;
+	else
+		return POLSEARCH_PARAM_TYPE_NONE;
+}
+
+bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr,
+			     const std::type_info & param_type)
+{
+	return validate_parameter_type(elem_type, cond, opr, param_id(param_type));
 }
 
 bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr,

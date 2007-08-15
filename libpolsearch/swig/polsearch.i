@@ -36,6 +36,7 @@
 #include <polsearch/number_parameter.hh>
 #include <polsearch/range_parameter.hh>
 #include <polsearch/regex_parameter.hh>
+#include <polsearch/string_expression_parameter.hh>
 #include <polsearch/result.hh>
 #include <polsearch/proof.hh>
 #include <polsearch/util.hh>
@@ -156,6 +157,7 @@ const char *libpolsearch_get_version (void);
 %include <polsearch/number_parameter.hh>
 %include <polsearch/range_parameter.hh>
 %include <polsearch/regex_parameter.hh>
+%include <polsearch/string_expression_parameter.hh>
 %include <polsearch/result.hh>
 %include <polsearch/proof.hh>
 

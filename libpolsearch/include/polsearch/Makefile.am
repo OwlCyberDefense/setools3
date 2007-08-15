@@ -13,7 +13,6 @@ polsearch_HEADERS = \
 	range_parameter.hh \
 	regex_parameter.hh \
 	result.hh \
+	string_expression_parameter.hh \
 	test.hh \
 	util.hh
-	string_list.hh \
-	symbol_query.hh

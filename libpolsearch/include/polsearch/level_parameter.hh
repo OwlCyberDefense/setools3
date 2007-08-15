@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <stdint.h>
 
@@ -38,6 +39,9 @@
 #include <apol/policy.h>
 #include <apol/policy-query.h>
 
+/**
+ * A parameter object for use in polsearch_criterion to check MLS levels.
+ */
 class polsearch_level_parameter:public polsearch_parameter
 {
       public:
@@ -81,9 +85,9 @@ class polsearch_level_parameter:public polsearch_parameter
 													  std::bad_alloc);
 	/**
 	 * Get the type of parameter.
-	 * @return Always returns POLSEARCH_PARAM_TYPE_LEVEL.
+	 * @return The type of parameter.
 	 */
-	virtual polsearch_param_type_e paramType() const;
+	virtual const std::type_info & paramType() const;
 	/**
 	 * Get a string representing the parameter.
 	 * @return A string representing the parameter.

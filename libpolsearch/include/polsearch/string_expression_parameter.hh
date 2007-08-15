@@ -1,7 +1,8 @@
 /**
  * @file
  *
- * A parameter object for use in polsearch_criterion to check regular expressions.
+ * A parameter object for use in polsearch_criterion to check string
+ * expressions representing symbol names.
  *
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
@@ -23,15 +24,15 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef POLSEARCH_REGEX_PARAMETER_HH
-#define POLSEARCH_REGEX_PARAMETER_HH
+#ifndef POLSEARCH_STRING_EXPRESSION_PARAMETER_HH
+#define POLSEARCH_STRING_EXPRESSION_PARAMETER_HH
 
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <stdint.h>
-#include <regex.h>
 
 #include <polsearch/polsearch.hh>
 #include <polsearch/parameter.hh>
@@ -40,51 +41,22 @@
 #include <apol/policy-query.h>
 
 /**
- * A parameter object for use in polsearch_criterion to check regular expressions.
+ * A parameter object for use in polsearch_criterion to check string
+ * expressions representing symbol names.
  */
-class polsearch_regex_parameter:public polsearch_parameter
+class polsearch_string_expression_parameter:public polsearch_parameter
 {
       public:
 	/**
-	 * Create a regular expression parameter.
-	 * @param expr The regular expression to which to compare when calling \a match().
-	 * @param icase If \a true, ignore case when matching the expression.
-	 * @exception std::invalid_argument Invalid regular expression.
-	 * @exception std::bad_alloc Out of memory.
+	 * Create a string expression parameter.
+	 * @param expr The string representing the expression to match.
+	 * @exception std::invalid_argument Invalid expression.
 	 */
-	polsearch_regex_parameter(std::string expr, bool icase = false) throw(std::invalid_argument, std::bad_alloc);
+	polsearch_string_expression_parameter(const std::string & expr) throw(std::invalid_argument);
 	//! Copy constructor.
-	polsearch_regex_parameter(const polsearch_regex_parameter & rhs) throw(std::bad_alloc);
+	 polsearch_string_expression_parameter(const polsearch_string_expression_parameter & rhs);
 	//! Destructor.
-	 virtual ~polsearch_regex_parameter();
-
-	/**
-	 * Get the expression to match when calling \a match().
-	 * @return The expression matched.
-	 */
-	const std::string & expression() const;
-	/**
-	 * Set the expression to match when calling \a match().
-	 * @param expr The regular expression to set.
-	 * @return The expression set.
-	 * @exception std::invalid_argument Invalid regular expression.
-	 * @exception std::bad_alloc Out of memory.
-	 */
-	const std::string & expression(const std::string & expr) throw(std::invalid_argument, std::bad_alloc);;
-
-	/**
-	 * Determine if case is ignored when matching the regular expression.
-	 * @return If case is ignored, return \a true; otherwise, return \a false.
-	 */
-	bool ignoreCase() const;
-	/**
-	 * Set the regular expression matching to match or ignore case.
-	 * @param icase If \a true, ignore case when matching the expression;
-	 * if \a false, matching is case sensitive.
-	 * @return If case is ignored, return \a true; otherwise, return \a false.
-	 * @exception std::bad_alloc Out of memory.
-	 */
-	bool ignoreCase(bool icase) throw(std::bad_alloc);;
+	 virtual ~polsearch_string_expression_parameter();
 
 	/**
 	 * Determine if a string matches the parameter.
@@ -108,6 +80,7 @@ class polsearch_regex_parameter:public polsearch_parameter
 	 */
 	virtual bool match(const std::vector < std::string > &test_list,
 			   const std::vector < std::string > &Xnames) const throw(std::invalid_argument);
+
 	/**
 	 * Get the type of parameter.
 	 * @return The type of parameter.
@@ -127,9 +100,7 @@ class polsearch_regex_parameter:public polsearch_parameter
 	virtual polsearch_parameter *clone() const throw(std::bad_alloc);
 
       private:
-	 std::string _expression;      //!< The expression to match.
-	bool _ignore_case;	       //!< If \a true, \a _expression is case insensitive.
-	regex_t *_compiled;	       //!< The compiled regular expression.
+	 std::string _expression;      //!< The expression string. TODO the real members.
 };
 
-#endif				       /* POLSEARCH_REGEX_PARAMETER_HH */
+#endif				       /* POLSEARCH_STRING_EXPRESSION_PARAMETER_HH */

@@ -21,12 +21,9 @@ libpolsearch_a_SOURCES = \
 	range_parameter.cc \
 	regex_parameter.cc \
 	result.cc \
+	string_expression_parameter.cc \
 	test.cc \
 	util.cc
-	criterion_internal.hh \
-	string_list.cc \
-	symbol_query.cc \
-	test_internal.hh
 
 libpolsearch_a_DEPENDENCIES = \
 	$(top_builddir)/libapol/src/libapol.so \

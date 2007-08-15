@@ -52,14 +52,14 @@ polsearch_criterion::polsearch_criterion()
 	throw std::runtime_error("Cannot directly create criteria.");
 }
 
-polsearch_criterion::polsearch_criterion(const polsearch_test * test, polsearch_op_e opr, bool neg) throw(std::invalid_argument)
+polsearch_criterion::polsearch_criterion(const polsearch_test * Test, polsearch_op_e opr, bool neg) throw(std::invalid_argument)
 {
-	if (!validate_operator(test->elementType(), test->testCond(), opr))
+	if (!validate_operator(Test->elementType(), Test->testCond(), opr))
 		throw invalid_argument("Invalid operator for the given test.");
 
 	_op = opr;
 	_negated = neg;
-	_test = test;
+	_test = Test;
 	_param = NULL;
 }
 

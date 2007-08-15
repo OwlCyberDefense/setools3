@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <stdint.h>
 
@@ -122,7 +123,7 @@ class polsearch_parameter
 	 * Get the type of parameter.
 	 * @return The type of parameter.
 	 */
-	virtual polsearch_param_type_e paramType() const = 0;
+	virtual const std::type_info & paramType() const = 0;
 	/**
 	 * Get a string representing the parameter.
 	 * @return A string representing the parameter.

@@ -140,7 +140,6 @@ struct fcdata
 	vector < polsearch_proof > *cur_proof;	//! The vector to which to append proof entries.
 };
 
-
 /**
  * Callback for processing one file_context entry at a time to avoid
  * potentially large vectors from becoming necessary for large filesystems.
@@ -497,9 +496,9 @@ const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t *
 			if (!cur_proof->empty())
 			{
 				polsearch_result cur(_query->elementType(), Xcandidates[i], policy, fclist);
-				for (vector < polsearch_proof >::const_iterator i = cur_proof->begin(); i != cur_proof->end(); i++)
+				for (vector < polsearch_proof >::const_iterator j = cur_proof->begin(); j != cur_proof->end(); j++)
 				{
-					cur.addProof(*i);
+					cur.addProof(*j);
 				}
 				//append result to result_v
 				result_v.push_back(cur);

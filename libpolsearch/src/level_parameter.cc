@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <stdint.h>
 
@@ -94,9 +95,9 @@ bool polsearch_level_parameter::match(const apol_policy_t * policy, const apol_m
 	return (cmp == APOL_MLS_EQ || cmp == m);
 }
 
-polsearch_param_type_e polsearch_level_parameter::paramType() const
+const std::type_info & polsearch_level_parameter::paramType() const
 {
-	return POLSEARCH_PARAM_TYPE_LEVEL;
+	return typeid(*this);
 }
 
 std::string polsearch_level_parameter::toString() const

@@ -27,6 +27,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cstdlib>
+#include <typeinfo>
 
 #include <stdint.h>
 #include <regex.h>
@@ -174,9 +175,9 @@ bool polsearch_regex_parameter::match(const std::vector < std::string > &test_li
 	return false;
 }
 
-polsearch_param_type_e polsearch_regex_parameter::paramType() const
+const std::type_info & polsearch_regex_parameter::paramType() const
 {
-	return POLSEARCH_PARAM_TYPE_REGEX;
+	return typeid(*this);
 }
 
 std::string polsearch_regex_parameter::toString() const

@@ -70,9 +70,13 @@ std::vector < const void *>polsearch_bool_query::getCandidates(const apol_policy
 	if (apol_bool_get_by_query(policy, bq, &v))
 	{
 		if (!v)
+		{
 			throw bad_alloc();
+		}
 		else
-		throw runtime_error("Unable to get all booleans");
+		{
+			throw runtime_error("Unable to get all booleans");
+		}
 	}
 	vector < const void *>bv;
 	for (size_t i = 0; i < apol_vector_get_size(v); i++)

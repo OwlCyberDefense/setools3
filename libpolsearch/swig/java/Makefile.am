@@ -29,6 +29,7 @@ BUILT_SOURCES = polsearch_wrap.cc \
 	polsearch_query.java \
 	polsearch_range_parameter.java \
 	polsearch_regex_parameter.java \
+	polsearch_string_expression_parameter.java \
 	polsearch_result.java \
 	polsearch_test_cond_e.java \
 	polsearch_test.java \
@@ -38,6 +39,7 @@ BUILT_SOURCES = polsearch_wrap.cc \
 	testCondVector.java \
 	testVector.java \
 	SWIGTYPE_p_f_p_void__void.java \
+	SWIGTYPE_p_std__type_info.java \
 	polsearch.java \
 	polsearchJNI.java \
 	SWIGTYPE_p_void.java

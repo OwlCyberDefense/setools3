@@ -141,11 +141,11 @@ class polsearch_criterion
       protected:
 		/**
 		 * Create a criterion.
-		 * @param test The test with which the criterion is associated.
+		 * @param Test The test with which the criterion is associated.
 		 * @param opr The comparison operator to use.
 		 * @param neg If \a true, invert the logic result of \a opr.
 		 */
-	 polsearch_criterion(const polsearch_test * test, polsearch_op_e opr, bool neg = false) throw(std::invalid_argument);
+	 polsearch_criterion(const polsearch_test * Test, polsearch_op_e opr, bool neg = false) throw(std::invalid_argument);
 
       private:
 	 polsearch_op_e _op;	       /*!< The comparison operator. */

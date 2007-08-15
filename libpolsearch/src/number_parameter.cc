@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <stdint.h>
 
@@ -66,9 +67,9 @@ bool polsearch_number_parameter::match(uint32_t val) const throw(std::invalid_ar
 	return _value == val;
 }
 
-polsearch_param_type_e polsearch_number_parameter::paramType() const
+const std::type_info & polsearch_number_parameter::paramType() const
 {
-	return POLSEARCH_PARAM_TYPE_RULE_TYPE;
+	return typeid(*this);
 }
 
 std::string polsearch_number_parameter::toString() const

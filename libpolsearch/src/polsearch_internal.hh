@@ -33,6 +33,7 @@
 #include <stdexcept>
 #include <vector>
 #include <string>
+#include <typeinfo>
 
 /**
  * Determine the type of element for test candidates when running
@@ -73,6 +74,12 @@ bool validate_operator(polsearch_element_e elem_type, polsearch_test_cond_e cond
  * @param param_type The parameter type.
  * @return If parameter type \a param_type is valid for \a cond,
  * \a elem_type, and \a opr, return \a true, otherwise, return \a false.
+ */
+bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr,
+			     const std::type_info & param_type);
+
+/**
+ * @overload validate_parameter_type(polsearch_element_e, polsearch_test_cond_e, polsearch_op_e, const std::type_info&)
  */
 bool validate_parameter_type(polsearch_element_e elem_type, polsearch_test_cond_e cond, polsearch_op_e opr,
 			     polsearch_param_type_e param_type);

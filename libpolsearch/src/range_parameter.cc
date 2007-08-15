@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <stdint.h>
 
@@ -93,9 +94,9 @@ bool polsearch_range_parameter::match(const apol_policy_t * policy, const apol_m
 	return cmp > 0;
 }
 
-polsearch_param_type_e polsearch_range_parameter::paramType() const
+const std::type_info & polsearch_range_parameter::paramType() const
 {
-	return POLSEARCH_PARAM_TYPE_RANGE;
+	return typeid(*this);
 }
 
 std::string polsearch_range_parameter::toString() const

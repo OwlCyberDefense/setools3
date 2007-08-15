@@ -98,24 +98,24 @@ std::vector < polsearch_result > polsearch_query::run(const apol_policy_t * poli
 	for (vector < polsearch_test >::const_iterator i = _tests.begin(); i != _tests.end(); i++)
 	{
 		vector < polsearch_result > cur_test_results = i->run(policy, fclist, Xcandidates);
-		for (vector < polsearch_result >::iterator i = cur_test_results.begin(); i != cur_test_results.end(); i++)
+		for (vector < polsearch_result >::iterator j = cur_test_results.begin(); j != cur_test_results.end(); j++)
 		{
 			polsearch_result *master_entry = NULL;
-			for (vector < polsearch_result >::iterator j = master_results.begin(); j != master_results.end(); j++)
+			for (vector < polsearch_result >::iterator k = master_results.begin(); k != master_results.end(); k++)
 			{
-				if (j->element() == i->element())
+				if (k->element() == j->element())
 				{
-					master_entry = &(*j);
+					master_entry = &(*k);
 					break;
 				}
 			}
 			if (master_entry)
 			{
-				master_entry->merge(*i);
+				master_entry->merge(*j);
 			}
 			else
 			{
-				master_results.push_back(polsearch_result(*i));
+				master_results.push_back(polsearch_result(*j));
 			}
 		}
 	}
