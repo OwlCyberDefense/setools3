@@ -118,20 +118,8 @@ class polsearch_criterion
 	 */
 	 std::string toString() const;
 
-	/**
-	 * Check a list test candidates to see which of them match this criterion.
-	 * @param policy The policy from which all relevant elements come.
-	 * @param test_candidates The list of possible candidates to match.
-	 * This vector will be pruned to only those candidates that match the criterion.
-	 * @param Xnames A list of names valid for the symbol X.
-	 * If empty, this list is ignored.
-	 * @exception std::runtime_error Could not perform check.
-	 * @exception std::bad_alloc Out of memory.
-	 */
-	void check(const apol_policy_t * policy, std::vector < const void *>&test_candidates,
-		   const std::vector < std::string > &Xnames) const throw(std::runtime_error, std::bad_alloc);
-
-	friend polsearch_criterion & polsearch_test::addCriterion(polsearch_op_e opr, bool neg);
+	friend class polsearch_test;
+	friend int fcentry_callback(sefs_fclist * fclist, const sefs_entry * entry, void *data);
 
 	/**
 	 * DO NOT CALL. This default constructor is defined for SWIG.
@@ -139,6 +127,19 @@ class polsearch_criterion
 	 */
 	 polsearch_criterion();
       protected:
+	/**
+		 * Check a list test candidates to see which of them match this criterion.
+		 * @param policy The policy from which all relevant elements come.
+		 * @param test_candidates The list of possible candidates to match.
+		 * This vector will be pruned to only those candidates that match the criterion.
+		 * @param Xnames A list of names valid for the symbol X.
+		 * If empty, this list is ignored.
+		 * @exception std::runtime_error Could not perform check.
+		 * @exception std::bad_alloc Out of memory.
+	 */
+	void check(const apol_policy_t * policy, std::vector < const void *>&test_candidates,
+		   const std::vector < std::string > &Xnames) const throw(std::runtime_error, std::bad_alloc);
+
 		/**
 		 * Create a criterion.
 		 * @param Test The test with which the criterion is associated.

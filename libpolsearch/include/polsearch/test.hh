@@ -96,23 +96,7 @@ class polsearch_test
 	  */
 	 std::vector < polsearch_op_e > getValidOperators();
 
-	 /**
-	  * Run the test. Get all candidates for each criterion specified and check for any
-	  * that are satisfied. For each element of \a Xcandidates that satisfies the criteria,
-	  * there will be one result entry in the returned result vector.
-	  * @param policy The policy from which the elements of \a Xcandidates come.
-	  * @param fclist The file_context list to use.
-	  * @param Xcandidates The vector of potential candidates for this test. If the
-	  * query containing this test is set to match all, this vector will be pruned to
-	  * only those candidates satisfying all criteria for this test.
-	  * @return A vector containing one result entry for each element in \a Xcandidates
-	  * that satisfies all criteria for the test.
-	  * @exception std::runtime_error Unable to complete the test.
-	  */
-	const std::vector < polsearch_result > run(const apol_policy_t * policy, sefs_fclist * fclist,
-						   std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
-
-	friend polsearch_test & polsearch_query::addTest(polsearch_test_cond_e);
+	friend class polsearch_query;
 
 	/**
 	 * DO NOT CALL. This default constructor is defined for SWIG.
@@ -121,6 +105,22 @@ class polsearch_test
 	 polsearch_test();
 
       protected:
+	 /**
+	 * Run the test. Get all candidates for each criterion specified and check for any
+	 * that are satisfied. For each element of \a Xcandidates that satisfies the criteria,
+	 * there will be one result entry in the returned result vector.
+	 * @param policy The policy from which the elements of \a Xcandidates come.
+	 * @param fclist The file_context list to use.
+	 * @param Xcandidates The vector of potential candidates for this test. If the
+	 * query containing this test is set to match all, this vector will be pruned to
+	 * only those candidates satisfying all criteria for this test.
+	 * @return A vector containing one result entry for each element in \a Xcandidates
+	 * that satisfies all criteria for the test.
+	 * @exception std::runtime_error Unable to complete the test.
+	 */
+	const std::vector < polsearch_result > run(const apol_policy_t * policy, sefs_fclist * fclist,
+						   std::vector < const void *>&Xcandidates) const throw(std::runtime_error);
+
 	/**
 	 * Create a test.
 	 * @param query The query with which the test should be associated.

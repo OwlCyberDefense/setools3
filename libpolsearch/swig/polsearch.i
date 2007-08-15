@@ -171,18 +171,4 @@ namespace std {
 	%template(opVector) vector<polsearch_op_e>;
 	%template(paramTypeVector) vector<polsearch_param_type_e>;
 	%template(stringVector) vector<string>;
-	%template(cvoidVector) vector<const void *>;
 }
-
-#ifdef SWIGPYTHON
-%wrapper %{
-extern "C++" {
-	namespace swig {
-		template <>
-		struct traits<void> {
-			static const char *type_name() {return "void*";}
-		};
-	}
-}
-%}
-#endif

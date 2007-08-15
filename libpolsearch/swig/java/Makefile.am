@@ -12,7 +12,6 @@ wrappedjardir = $(libdir)/setools
 dist_noinst_DATA = $(srcdir)/../polsearch.i
 BUILT_SOURCES = polsearch_wrap.cc \
 	criterionVector.java \
-	cvoidVector.java \
 	opVector.java \
 	paramTypeVector.java \
 	polsearch_bool_parameter.java \

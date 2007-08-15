@@ -78,10 +78,7 @@ class polsearch_result
 	 */
 	 std::string toString() const;
 
-	friend const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t * policy, sefs_fclist * fclist,
-									  std::vector <
-									  const void *>&Xcandidates) const throw(std::
-														 runtime_error);
+	friend class polsearch_test;
 
 	/**
 	 * Add a new proof entry for this result.
