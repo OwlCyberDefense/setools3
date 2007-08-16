@@ -660,7 +660,7 @@ proc Apol_TE::_toggle_perms_toshow {name1 name2 op} {
         # don't change the list of permissions if there was a new
         # object class selection and the current radiobutton is all
         if {$op != "update"} {
-            set vals(cp:perms) $Apol_Class_Perms::perms_list
+            set vals(cp:perms) [Apol_Class_Perms::getPerms]
             set vals(cp:perms_selected) {}
         }
     } elseif {$vals(cp:perms_toshow) == "union"} {

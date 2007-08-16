@@ -228,10 +228,42 @@ proc Apol_Prefs::savePrefs {} {
     close $f
 }
 
-########## private functions below ##########
+proc Apol_Prefs::modifyPreferences {} {
+    variable dialog
+    variable prefs
+    variable temp_prefs
+    array set temp_prefs [array get prefs]
 
-proc Apol_Prefs::_create_dialog {} {
+    Dialog $dialog -title "Preferences" -separator 1 -parent . \
+        -default 0 -modal local
+    set policy_frame [TitleFrame $dialog.file -text "Opening Policies"]
+    pack $policy_frame -expand 1 -fill both -padx 4 -pady 4
+
+    set max_f [frame [$policy_frame getframe].max]
+    set l [label $max_f.l -text "Maximum recent policies: "]
+    set e [entry $max_f.e -bg [getPref active_bg] -width 3 \
+               -textvariable Apol_Prefs::temp_prefs(max_recent_files) \
+               -justify right -validate focus \
+               -validatecommand [list Apol_Prefs::_validate_max_recent %P]]
+    pack $l -side left -fill none -padx 4
+    pack $e -side left -padx 2
+    set cb [checkbutton [$policy_frame getframe].attrib \
+                -text "Warn when apol generates attribute names" \
+                -variable Apol_Prefs::temp_prefs(show_attrib_warning)]
+    pack $max_f $cb -anchor w -pady 2
+
+    $dialog add -text "Close"
+    $dialog draw
+    destroy $dialog
+
+    if {![_validate_max_recent $temp_prefs(max_recent_files)]} {
+        set temp_prefs(max_recent_files) 2
+    }
+    array set prefs [array get temp_prefs]
 }
+
+
+########## private functions below ##########
 
 proc Apol_Prefs::_apply_prefs {} {
     variable prefs
@@ -241,4 +273,12 @@ proc Apol_Prefs::_apply_prefs {} {
     option add *Dialog*font $prefs(dialog_font)
     option add *Dialog*TitleFrame.l.font $prefs(title_font)
     option add *text*font $prefs(text_font)
+}
+
+proc Apol_Prefs::_validate_max_recent {new_value} {
+    if {![string is integer -strict $new_value] ||
+        $new_value < 2} {
+        return 0
+    }
+    return 1
 }

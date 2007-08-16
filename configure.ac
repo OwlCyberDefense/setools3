@@ -89,6 +89,7 @@ if test "x${enable_debug}" = xyes; then
     APOL_LIB_FLAG='$(top_builddir)/libapol/src/libapol.a -Wl,-rpath=$(top_builddir)/libapol/src'
     SEFS_LIB_FLAG='$(top_builddir)/libsefs/src/libsefs.a -Wl,-rpath=$(top_builddir)/libsefs/src'
     POLDIFF_LIB_FLAG='$(top_builddir)/libpoldiff/src/libpoldiff.a -Wl,-rpath=$(top_builddir)/libpoldiff/src'
+    POLSEARCH_LIB_FLAG='$(top_builddir)/libpolsearch/src/libpolsearch.a -Wl,-rpath=$(top_builddir)/libpolsearch/src'
     SEAUDIT_LIB_FLAG='$(top_builddir)/libseaudit/src/libseaudit.a -Wl,-rpath=$(top_builddir)/libseaudit/src'
     use_shared=no
     AC_MSG_RESULT(yes)

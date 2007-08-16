@@ -218,8 +218,10 @@ proc ApolTop::_create_toplevel {} {
             {command "&Copy" {tag_policy_open} {} {Ctrl c} -command ApolTop::_copy}
             {command "Select &All" {tag_policy_open} {} {Ctrl a} -command ApolTop::_select_all}
             {separator}
-	    {command "&Find..." {tag_policy_open} "Find text in current buffer" {Ctrl f} -command ApolTop::_find}
-	    {command "&Goto Line..." {tag_policy_open} "Goto a line in current buffer" {Ctrl g} -command ApolTop::_goto}
+	    {command "&Find..." {tag_policy_open} "Find text in current buffer" {Ctrl f} -command Apol_Find::find}
+	    {command "&Goto Line..." {tag_policy_open} "Goto a line in current buffer" {Ctrl g} -command Apol_Goto::goto}
+            {separator}
+            {command "Prefere&nces..." {} "Modify user's preferences" {} -command Apol_Prefs::modifyPreferences}
 	}
 	"&Query" {} query 0 {
 	    {command "&Open Query..." {tag_policy_open} "Open query criteria file" {} -command ApolTop::_open_query_file}
@@ -548,14 +550,6 @@ proc ApolTop::_select_all {} {
     if {$w != {}} {
         $w tag add sel 1.0 end
     }
-}
-
-proc ApolTop::_find {} {
-    Apol_Find::find
-}
-
-proc ApolTop::_goto {} {
-    Apol_Goto::goto
 }
 
 proc ApolTop::_open_query_file {} {

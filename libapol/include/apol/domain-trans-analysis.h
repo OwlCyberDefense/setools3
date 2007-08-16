@@ -209,8 +209,8 @@ extern "C"
  *  classes.  Pass a NULL to clear all previously appended classes.
  *  <b>If access classes are appended, the caller must also call
  *  apol_domain_trans_analysis_append_access_type() at least once with
- *  a valid type and apol_domain_trans_analysis_append_access_perm()
- *  with a valid permission.</b>
+ *  a valid type and apol_domain_trans_analysis_append_perm() with a
+ *  valid permission.</b>
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
  *  @param class_name The class to which a result must have access.
@@ -222,15 +222,13 @@ extern "C"
 
 /**
  *  Set the analysis to return only types having access (via allow
- *  rules) to at least one class given by
- *  apol_domain_trans_analysis_append_class () with the given
- *  permission. <b>This is only valid for forward analysis.</b> If
- *  more than one permission is appended the resulting type must have
- *  at least one of the appended permissions.  Pass a NULL to clear
- *  all previously appended permissions. <b>If access permissions are
- *  appended, the caller must also call
+ *  rules) to at this permission. <b>This is only valid for forward
+ *  analysis.</b> If more than one permission is appended the
+ *  resulting type must have at least one of the appended permissions.
+ *  Pass a NULL to clear all previously appended permissions. <b>If
+ *  access permissions are appended, the caller must also call
  *  apol_domain_trans_analysis_append_access_type() at least once with
- *  a valid type and apol_domain_trans_analysis_append_class () at
+ *  a valid type and apol_domain_trans_analysis_append_class() at
  *  least once with a valid class.</b>
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.

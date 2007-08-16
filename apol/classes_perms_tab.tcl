@@ -177,6 +177,11 @@ proc Apol_Class_Perms::getClasses {} {
     set class_list
 }
 
+proc Apol_Class_Perms::getPerms {} {
+    variable perms_list
+    set perms_list
+}
+
 # Return a sorted list of all permissions assigned to a class.  If the
 # class has a common, include the common's permissions as well.
 proc Apol_Class_Perms::getPermsForClass {class_name} {

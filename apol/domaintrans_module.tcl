@@ -68,10 +68,10 @@ proc Apol_Analysis_domaintrans::open {} {
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
     set vals(targets:inc) [Apol_Types::getTypes]
     set vals(targets:inc_displayed) [Apol_Types::getTypes]
-    foreach c [Apol_Class_Perms::getClasses] {
-        set vals(classes:$c) [Apol_Class_Perms::getPermsForClass $c]
-        set vals(classes:$c:enable) 1
-    }
+    set vals(access:classes) [Apol_Class_Perms::getClasses]
+    set vals(access:classes_selected) $vals(access:classes)
+    set vals(access:perms) [Apol_Class_Perms::getPerms]
+    set vals(access:perms_selected) $vals(access:perms)
 }
 
 proc Apol_Analysis_domaintrans::close {} {
@@ -162,10 +162,13 @@ proc Apol_Analysis_domaintrans::saveQuery {channel} {
     foreach {key value} [array get vals] {
         switch -- $key {
             targets:inc_displayed -
-            classes:perms_displayed -
+            access:classes -
+            access:perms -
+            access:perms_toshow_prev -
             search:regexp -
             search:object_types -
-            search:classperm_perms {
+            search:classes -
+            search:perms {
                 # don't save these variables
             }
             default {
@@ -185,6 +188,8 @@ proc Apol_Analysis_domaintrans::saveQuery {channel} {
 proc Apol_Analysis_domaintrans::loadQuery {channel} {
     variable vals
     set targets_inc {}
+    set classes_selected {}
+    set perms_selected {}
     while {[gets $channel line] >= 0} {
         set line [string trim $line]
         # Skip empty lines and comments
@@ -195,15 +200,17 @@ proc Apol_Analysis_domaintrans::loadQuery {channel} {
         set value {}
         regexp -line -- {^(\S+)( (.+))?} $line -> key --> value
         if {$key == "targets:inc"} {
-            lappend targets_inc $value
-        } elseif {[regexp -- {^classes:(.+)} $key -> class]} {
-            set c($class) $value
+            set targets_inc $value
+        } elseif {$key == "access:classes_selected"} {
+            set classes_selected $value
+        } elseif {$key == "access:perms_selected"} {
+            set perms_selected $value
         } else {
             set vals($key) $value
         }
     }
 
-    # fill in the inclusion lists using only types/classes found
+    # fill in the inclusion lists using only types/classes/perms found
     # within the current policy
     open
 
@@ -215,23 +222,36 @@ proc Apol_Analysis_domaintrans::loadQuery {channel} {
         }
     }
 
-    foreach class_key [array names c] {
-        if {[regexp -- {^([^:]+):enable} $class_key -> class]} {
-            if {[lsearch [Apol_Class_Perms::getClasses] $class] >= 0} {
-                set vals(classes:$class:enable) $c($class_key)
-            }
+    set unknowns {}
+    set vals(access:classes_selected) {}
+    foreach class $classes_selected {
+        if {[set i [lsearch $vals(access:classes) $class]] >= 0} {
+            lappend vals(access:classes_selected) $class
         } else {
-            set class $class_key
-            set old_p $vals(classes:$class)
-            set new_p {}
-            foreach p $c($class) {
-                if {[lsearch $old_p $p] >= 0} {
-                    lappend new_p $p
-                }
-            }
-            set vals(classes:$class) [lsort -uniq $new_p]
+            lappend unknowns $class
         }
     }
+    if {[llength $unknowns] > 0} {
+        tk_messageBox -icon warning -type ok -title "Open Apol Query" \
+            -message "The following object classes do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
+            -parent .
+    }
+
+    set unknowns {}
+    set vals(access:perms_selected) {}
+    foreach perm $perms_selected {
+        if {[set i [lsearch $vals(access:perms) $perm]] >= 0} {
+            lappend vals(access:perms_selected) $perm
+        } else {
+            lappend unknowns $perm
+        }
+    }
+    if {[llength $unknowns] > 0} {
+        tk_messageBox -icon warning -type ok -title "Open Apol Query" \
+            -message "The following permissions do not exist in the currently loaded policy and were ignored:\n\n[join $unknowns ", "]" \
+            -parent .
+    }
+
     _reinitializeWidgets
 }
 
@@ -257,15 +277,14 @@ proc Apol_Analysis_domaintrans::_reinitializeVals {} {
         regexp {}
 
         access:enable 0
+        access:perms_toshow all   access:perms_toshow_prev all
         targets:inc {}   targets:inc_displayed {}
         targets:attribenable 0  targets:attrb {}
     }
-    array unset vals classes:*
-    array unset vals search:*
-    foreach c [Apol_Class_Perms::getClasses] {
-        set vals(classes:$c) [Apol_Class_Perms::getPermsForClass $c]
-        set vals(classes:$c:enable) 1
-    }
+    set vals(access:classes) [Apol_Class_Perms::getClasses]
+    set vals(access:classes_selected) $vals(access:classes)
+    set vals(access:perms) [Apol_Class_Perms::getPerms]
+    set vals(access:perms_selected) $vals(access:perms)
 }
 
 proc Apol_Analysis_domaintrans::_reinitializeWidgets {} {
@@ -329,7 +348,7 @@ proc Apol_Analysis_domaintrans::_createAccessTargets {f} {
     set l1 [label $type_f.l1 -text "Included Object Types"]
     pack $l1 -anchor w
 
-    set targets [Apol_Widget::makeScrolledListbox $type_f.targets -height 10 -width 24 \
+    set targets [Apol_Widget::makeScrolledListbox $type_f.targets -height 8 -width 24 \
                  -listvar Apol_Analysis_domaintrans::vals(targets:inc_displayed) \
                  -selectmode extended -exportselection 0]
     set targets_lb [Apol_Widget::getScrolledListbox $targets]
@@ -457,118 +476,169 @@ proc Apol_Analysis_domaintrans::_createAccessClasses {f} {
     pack $l1 -anchor w
     set rf [frame $f.right]
     pack $rf -side left -expand 0 -fill both -padx 4 -pady 4
-    set l2 [label $rf.l]
+    set l2 [label $rf.l -text "Included Permissions"]
     pack $l2 -anchor w
 
-    set vals(classes:all_classes) [Apol_Class_Perms::getClasses]
-    set classes [Apol_Widget::makeScrolledListbox $lf.classes -height 10 -width 24 \
-                     -listvar Apol_Analysis_domaintrans::vals(classes:all_classes) \
+    set classes [Apol_Widget::makeScrolledListbox $lf.classes -height 8 -width 24 \
+                     -listvar Apol_Analysis_domaintrans::vals(access:classes) \
                      -selectmode extended -exportselection 0]
     set classes_lb [Apol_Widget::getScrolledListbox $classes]
     pack $classes -expand 1 -fill both
-    set cbb [ButtonBox $lf.cbb -homogeneous 1 -spacing 4]
-    $cbb add -text "Include All" \
-        -command [list Apol_Analysis_domaintrans::_includeAllClasses $classes_lb]
-    $cbb add -text "Ignore All" \
-        -command [list Apol_Analysis_domaintrans::_ignoreAllClasses $classes_lb]
-    pack $cbb -pady 4 -expand 0
-
-    set perms [Apol_Widget::makeScrolledListbox $rf.perms -height 10 -width 24 \
-                     -listvar Apol_Analysis_domaintrans::vals(classes:perms_displayed) \
+    set perm_list_f [frame $rf.perms]
+    set perm_rb_f [frame $rf.rb]
+    pack $perm_list_f -side left -expand 0 -fill y
+    pack $perm_rb_f -side left -padx 4 -expand 1 -fill both
+    set perms [Apol_Widget::makeScrolledListbox $perm_list_f.lb -height 8 -width 24 \
+                     -listvar Apol_Analysis_domaintrans::vals(access:perms) \
                      -selectmode extended -exportselection 0]
     set perms_lb [Apol_Widget::getScrolledListbox $perms]
     pack $perms -expand 1 -fill both
-    set pbb [ButtonBox $rf.pbb -homogeneous 1 -spacing 4]
-    $pbb add -text "Include All" \
-        -command [list Apol_Analysis_domaintrans::_includeAllPerms $classes_lb $perms_lb]
-    $pbb add -text "Ignore All" \
-        -command [list Apol_Analysis_domaintrans::_ignoreAllPerms $classes_lb $perms_lb]
+    
+    set cbb [ButtonBox $lf.cbb -homogeneous 1 -spacing 4]
+    $cbb add -text "Clear" \
+        -command [list Apol_Analysis_domaintrans::_clear_classes $classes_lb $perms_lb]
+    pack $cbb -pady 4 -expand 0
+
+    set pbb [ButtonBox $perm_list_f.pbb -homogeneous 1 -spacing 4]
+    $pbb add -text "Clear" \
+        -command [list Apol_Analysis_domaintrans::_clear_perms $perms_lb]
+    $pbb add -text "Reverse" \
+        -command [list Apol_Analysis_domaintrans::_reverse_perms $perms_lb]
     pack $pbb -pady 4 -expand 0
 
-    bind $classes_lb <<ListboxSelect>> \
-        [list Apol_Analysis_domaintrans::_selectClassListbox $l2 $classes_lb $perms_lb]
-    bind $perms_lb <<ListboxSelect>> \
-        [list Apol_Analysis_domaintrans::_selectPermListbox $classes_lb $perms_lb]
+    set l [label $perm_rb_f.l -text "Permissions to show:"]
+    set all [radiobutton $perm_rb_f.all -text "All" \
+                 -variable Apol_Analysis_domaintrans::vals(access:perms_toshow) -value all \
+                 -command [list Apol_Analysis_domaintrans::_update_perms_shown $perms_lb update_rb]]
+    set union [radiobutton $perm_rb_f.union -text "All for selected classes" \
+                   -variable Apol_Analysis_domaintrans::vals(access:perms_toshow) -value union \
+                   -command [list Apol_Analysis_domaintrans::_update_perms_shown $perms_lb update_rb]]
+    set intersect [radiobutton $perm_rb_f.inter -text "Common to selected classes" \
+                       -variable Apol_Analysis_domaintrans::vals(access:perms_toshow) -value intersect \
+                   -command [list Apol_Analysis_domaintrans::_update_perms_shown $perms_lb update_rb]]
+    pack $l $all $union $intersect -anchor w
+    pack $perm_rb_f -anchor w -pady 4 -padx 4
 
-    foreach class_key [array names vals classes:*:enable] {
-        if {$vals($class_key)} {
-            regexp -- {^classes:([^:]+):enable} $class_key -> class
-            set i [lsearch [Apol_Class_Perms::getClasses] $class]
-            $classes_lb selection set $i $i
-        }
+    bind $classes_lb <<ListboxSelect>> \
+        [list Apol_Analysis_domaintrans::_selectClassListbox $classes_lb $perms_lb]
+    bind $perms_lb <<ListboxSelect>> \
+        [list Apol_Analysis_domaintrans::_selectPermListbox $perms_lb]
+
+    foreach class $vals(access:classes_selected) {
+        set i [lsearch -exact $vals(access:classes) $class]
+        $classes_lb selection set $i $i
     }
     if {[set anchor [lindex [lsort [$classes_lb curselection]] 0]] != {}} {
-        $classes_lb selection anchor $anchor
         $classes_lb see $anchor
     }
-    set vals(classes:perms_displayed) {}
-    _selectClassListbox $l2 $classes_lb $perms_lb
+    _update_perms_shown $perms_lb init
 }
 
-proc Apol_Analysis_domaintrans::_selectClassListbox {perm_label lb plb} {
+proc Apol_Analysis_domaintrans::_selectClassListbox {lb plb} {
     variable vals
-    for {set i 0} {$i < [$lb index end]} {incr i} {
-        set c [$lb get $i]
-        set vals(classes:$c:enable) [$lb selection includes $i]
-    }
-    if {[set class [$lb get anchor]] == {}} {
-        $perm_label configure -text "Permissions"
-        return
-    }
-
-    $perm_label configure -text "Permissions for $class"
-    set vals(classes:perms_displayed) [Apol_Class_Perms::getPermsForClass $class]
-    $plb selection clear 0 end
-    foreach p $vals(classes:$class) {
-        set i [lsearch $vals(classes:perms_displayed) $p]
-        $plb selection set $i
-    }
-    if {[set anchor [lindex [lsort [$plb curselection]] 0]] != {}} {
-        $plb selection anchor $anchor
-        $plb see $anchor
+    set vals(access:classes_selected) {}
+    foreach i [$lb curselection] {
+        lappend vals(access:classes_selected) [$lb get $i]
     }
     focus $lb
+    _update_perms_shown $plb "update_c"
 }
 
-proc Apol_Analysis_domaintrans::_includeAllClasses {lb} {
+proc Apol_Analysis_domaintrans::_clear_classes {lb plb} {
     variable vals
-    $lb selection set 0 end
-    foreach c [Apol_Class_Perms::getClasses] {
-        set vals(classes:$c:enable) 1
-    }
-}
-
-proc Apol_Analysis_domaintrans::_ignoreAllClasses {lb} {
-    variable vals
+    set vals(access:classes_selected) {}
     $lb selection clear 0 end
-    foreach c [Apol_Class_Perms::getClasses] {
-        set vals(classes:$c:enable) 0
-    }
+    _update_perms_shown $plb "update_c"
 }
 
-proc Apol_Analysis_domaintrans::_selectPermListbox {lb plb} {
+proc Apol_Analysis_domaintrans::_selectPermListbox {plb} {
     variable vals
-    set class [$lb get anchor]
-    set p {}
+    set vals(access:perms_selected) {}
     foreach i [$plb curselection] {
-        lappend p [$plb get $i]
+        lappend vals(access:perms_selected) [$plb get $i]
     }
-    set vals(classes:$class) $p
     focus $plb
 }
 
-proc Apol_Analysis_domaintrans::_includeAllPerms {lb plb} {
+proc Apol_Analysis_domaintrans::_includeAllPerms {plb} {
     variable vals
-    set class [$lb get anchor]
+    set vals(access:perms_selected) $vals(access:perms)
     $plb selection set 0 end
-    set vals(classes:$class) $vals(classes:perms_displayed)
 }
 
-proc Apol_Analysis_domaintrans::_ignoreAllPerms {lb plb} {
+proc Apol_Analysis_domaintrans::_clear_perms {plb} {
     variable vals
-    set class [$lb get anchor]
+    set vals(access:perms_selected) {}
     $plb selection clear 0 end
-    set vals(classes:$class) {}
+}
+
+proc Apol_Analysis_domaintrans::_reverse_perms {plb} {
+    variable vals
+    set old_selection [$plb curselection]
+    set items {}
+    for {set i 0} {$i < [$plb index end]} {incr i} {
+        if {[lsearch $old_selection $i] >= 0} {
+            $plb selection clear $i
+        } else {
+            $plb selection set $i
+            lappend items [$plb get $i]
+        }
+    }
+    set vals(access:perms_selected) $items
+}
+
+proc Apol_Analysis_domaintrans::_update_perms_shown {plb state} {
+    variable vals
+    if {$state == "update_rb" && $vals(access:perms_toshow) == $vals(access:perms_toshow_prev)} {
+        # user clicked on the same radiobutton as before, so don't do
+        # anything
+        return
+    }
+    set vals(access:perms_toshow_prev) $vals(access:perms_toshow)
+    if {$vals(access:perms_toshow) == "all"} {
+        set vals(access:perms) [Apol_Class_Perms::getPerms]
+    } elseif {$vals(access:perms_toshow) == "union"} {
+        set vals(access:perms) {}
+        foreach class $vals(access:classes_selected) {
+            set vals(access:perms) [lsort -unique -dictionary [concat $vals(access:perms) [Apol_Class_Perms::getPermsForClass $class]]]
+        }
+    } else { ;# intersection
+        if {$vals(access:classes_selected) == {}} {
+            set vals(access:perms) {}
+        } else {
+            set vals(access:perms) [Apol_Class_Perms::getPermsForClass [lindex $vals(access:classes_selected) 0]]
+            foreach class [lrange $vals(access:classes_selected) 1 end] {
+                set this_perms [Apol_Class_Perms::getPermsForClass $class]
+                set new_perms {}
+                foreach p $vals(access:perms) {
+                    if {[lsearch -exact $this_perms $p] >= 0} {
+                        lappend new_perms $p
+                    }
+                }
+                set vals(access:perms) $new_perms
+            }
+        }
+    }
+    $plb selection clear 0 end
+    if {$state == "update_rb"} {
+        # user selected a new radiobutton, so clear away all old
+        # permissions
+        set vals(access:perms_selected) {}
+    } else {
+        # user selected/deselected a class; only select permissions
+        # that are still visible
+        set new_perms {}
+        foreach p $vals(access:perms_selected) {
+            if {[set idx [lsearch -exact $vals(access:perms) $p]] >= 0} {
+                $plb selection set $idx $idx
+                lappend new_perms $p
+            }
+        }
+        set vals(access:perms_selected) $new_perms
+        if {$state == "init" && [set anchor [lindex [lsort [$plb curselection]] 0]] != {}} {
+            $plb see $anchor
+        }
+    }
 }
 
 #################### functions that do analyses ####################
@@ -596,29 +666,22 @@ proc Apol_Analysis_domaintrans::_checkParams {} {
     set vals(regexp:enable) $use_regexp
     set vals(regexp) $regexp
     if {$vals(dir) == $::APOL_DOMAIN_TRANS_DIRECTION_FORWARD && $vals(access:enable)} {
-        set classperm_pairs {}
-        foreach class [Apol_Class_Perms::getClasses] {
-            if {$vals(classes:$class:enable) == 0} {
-                continue
-            }
-            if {$vals(classes:$class) == {}} {
-                return "No permissions were selected for class $class."
-            }
-            foreach perm $vals(classes:$class) {
-                lappend classperm_pairs [list $class $perm]
-            }
-        }
         if {$vals(targets:inc) == {}} {
             return "No object types were selected."
         }
-        if {$classperm_pairs == {}} {
+        if {$vals(access:classes_selected) == {}} {
             return "No object classes were selected."
         }
+        if {$vals(access:perms_selected) == {}} {
+            return "No permissions were selected."
+        }
         set vals(search:object_types) $vals(targets:inc)
-        set vals(search:classperm_pairs) $classperm_pairs
+        set vals(search:classes) $vals(access:classes_selected)
+        set vals(search:perms) $vals(access:perms_selected)
     } else {
         set vals(search:object_types) {}
-        set vals(search:classperm_pairs) {}
+        set vals(search:classes) {}
+        set vals(search:perms) {}
     }
     if {$vals(regexp:enable)} {
         set vals(search:regexp) $vals(regexp)
@@ -638,9 +701,11 @@ proc Apol_Analysis_domaintrans::_analyze {} {
     foreach o $vals(search:object_types) {
         $q append_access_type $::ApolTop::policy $o
     }
-    foreach {cp_pair} $vals(search:classperm_pairs) {
-        $q append_class $::ApolTop::policy [lindex $cp_pair 0]
-        $q append_perm $::ApolTop::policy [lindex $cp_pair 1]
+    foreach c $vals(search:classes) {
+        $q append_class $::ApolTop::policy $c
+    }
+    foreach p $vals(search:perms) {
+        $q append_perm $::ApolTop::policy $p
     }
     apol_tcl_set_info_string $::ApolTop::policy "Building domain transition table..."
     $::ApolTop::policy build_domain_trans_table
@@ -657,7 +722,7 @@ proc Apol_Analysis_domaintrans::_analyzeMore {tree node analysis_args} {
     if {[$tree itemcget [$tree parent $node] -text] == $new_start} {
         return {}
     }
-    foreach {dir orig_type object_types classperm_pairs regexp} $analysis_args {break}
+    foreach {dir orig_type object_types classes perms regexp} $analysis_args {break}
     set q [new_apol_domain_trans_analysis_t]
     $q set_direction $::ApolTop::policy $dir
     $q set_start_type $::ApolTop::policy $new_start
@@ -665,9 +730,11 @@ proc Apol_Analysis_domaintrans::_analyzeMore {tree node analysis_args} {
     foreach o $object_types {
         $q append_access_type $::ApolTop::policy $o
     }
-    foreach {cp_pair} $classperm_pairs {
-        $q append_class $::ApolTop::policy [lindex $cp_pair 0]
-        $q append_perm $::ApolTop::policy [lindex $cp_pair 1]
+    foreach c $classes {
+        $q append_class $::ApolTop::policy $c
+    }
+    foreach p $perms {
+        $q append_perm $::ApolTop::policy $p
     }
     $::ApolTop::policy reset_domain_trans_table
     set v [$q run $::ApolTop::policy]
@@ -761,7 +828,7 @@ proc Apol_Analysis_domaintrans::_renderResults {f results} {
     set top_text [_renderTopText]
     $tree itemconfigure top -data $top_text
 
-    set search_crit [list $vals(dir) $vals(type) $vals(search:object_types) $vals(search:classperm_pairs) $vals(search:regexp)]
+    set search_crit [list $vals(dir) $vals(type) $vals(search:object_types) $vals(search:classes) $vals(search:perms) $vals(search:regexp)]
     _createResultsNodes $tree top $results $search_crit
     $tree selection set top
     $tree opentree top 0

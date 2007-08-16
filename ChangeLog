@@ -1,3 +1,13 @@
+2007-08-16  J. Tang  <jtang@tresys.com>
+
+	* apol's domain transition analysis has a new access filter dialog
+	that mimics the rule search's class/perm selection.
+
+2007-08-13  J. Tang  <jtang@tresys.com>
+
+	* Fix error in libsefs when querying a filesystem or fcfile by
+	range, but the fclist is not MLS.
+
 2007-08-13  J. Mowery  <jmowery@tresys.com>
 
 	* Added SWIG wrappers for libpolsearch.
