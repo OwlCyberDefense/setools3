@@ -27,7 +27,15 @@
 %{
 #include <polsearch/polsearch.hh>
 #include <polsearch/query.hh>
+#include <polsearch/attribute_query.hh>
 #include <polsearch/bool_query.hh>
+#include <polsearch/cat_query.hh>
+#include <polsearch/class_query.hh>
+#include <polsearch/common_query.hh>
+#include <polsearch/level_query.hh>
+#include <polsearch/role_query.hh>
+#include <polsearch/type_query.hh>
+#include <polsearch/user_query.hh>
 #include <polsearch/test.hh>
 #include <polsearch/criterion.hh>
 #include <polsearch/parameter.hh>
@@ -148,7 +156,15 @@ const char *libpolsearch_get_version (void);
 
 %include <polsearch/polsearch.hh>
 %include <polsearch/query.hh>
+%include <polsearch/attribute_query.hh>
 %include <polsearch/bool_query.hh>
+%include <polsearch/cat_query.hh>
+%include <polsearch/class_query.hh>
+%include <polsearch/common_query.hh>
+%include <polsearch/level_query.hh>
+%include <polsearch/role_query.hh>
+%include <polsearch/type_query.hh>
+%include <polsearch/user_query.hh>
 %include <polsearch/test.hh>
 %include <polsearch/criterion.hh>
 %include <polsearch/parameter.hh>

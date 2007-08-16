@@ -14,11 +14,16 @@ BUILT_SOURCES = polsearch_wrap.cc \
 	criterionVector.java \
 	opVector.java \
 	paramTypeVector.java \
+	polsearch_attribute_query.java \
 	polsearch_bool_parameter.java \
 	polsearch_bool_query.java \
+	polsearch_cat_query.java \
+	polsearch_class_query.java \
+	polsearch_common_query.java \
 	polsearch_criterion.java \
 	polsearch_element_e.java \
 	polsearch_level_parameter.java \
+	polsearch_level_query.java \
 	polsearch_match_e.java \
 	polsearch_number_parameter.java \
 	polsearch_op_e.java \
@@ -28,10 +33,13 @@ BUILT_SOURCES = polsearch_wrap.cc \
 	polsearch_query.java \
 	polsearch_range_parameter.java \
 	polsearch_regex_parameter.java \
+	polsearch_role_query.java \
 	polsearch_string_expression_parameter.java \
 	polsearch_result.java \
 	polsearch_test_cond_e.java \
 	polsearch_test.java \
+	polsearch_type_query.java \
+	polsearch_user_query.java \
 	proofVector.java \
 	resultVector.java \
 	stringVector.java \

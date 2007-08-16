@@ -8,10 +8,15 @@ AM_CXXFLAGS = @DEBUGCXXFLAGS@ @WARNCXXFLAGS@ @PROFILECFLAGS@ \
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
 libpolsearch_a_SOURCES = \
+	attribute_query.cc \
 	bool_parameter.cc \
 	bool_query.cc \
+	cat_query.cc \
+	class_query.cc \
+	common_query.cc \
 	criterion.cc \
 	level_parameter.cc \
+	level_query.cc \
 	number_parameter.cc \
 	parameter.cc \
 	polsearch.cc \
@@ -21,8 +26,11 @@ libpolsearch_a_SOURCES = \
 	range_parameter.cc \
 	regex_parameter.cc \
 	result.cc \
+	role_query.cc \
 	string_expression_parameter.cc \
 	test.cc \
+	type_query.cc \
+	user_query.cc \
 	util.cc
 
 libpolsearch_a_DEPENDENCIES = \
