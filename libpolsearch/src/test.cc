@@ -61,6 +61,7 @@ polsearch_test::polsearch_test(const polsearch_test & rhs)
 	_criteria = rhs._criteria;
 	_query = rhs._query;
 	_test_cond = rhs._test_cond;
+	update();
 }
 
 polsearch_test::~polsearch_test()
@@ -485,7 +486,7 @@ const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t *
 
 	for (size_t i = 0; i < Xcandidates.size(); i++)
 	{
-		vector < string > Xnames = get_all_names(Xcandidates[i], candidate_type, policy);
+		vector < string > Xnames = get_all_names(Xcandidates[i], elementType(), policy);
 		if (_test_cond == POLSEARCH_TEST_FCENTRY)
 		{
 			vector < polsearch_proof > *cur_proof = new vector < polsearch_proof > ();
@@ -515,9 +516,9 @@ const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t *
 		{
 			vector < const void *>test_candidates =
 				get_test_candidates(policy, Xcandidates[i], _query->elementType(), _test_cond);
-			for (size_t j = 0; j < _criteria.size(); j++)
+			for (vector < polsearch_criterion >::const_iterator j = _criteria.begin(); j != _criteria.end(); j++)
 			{
-				_criteria[j].check(policy, test_candidates, Xnames);
+				j->check(policy, test_candidates, Xnames);
 			}
 
 			if (!test_candidates.empty())
@@ -527,7 +528,7 @@ const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t *
 				for (size_t j = 0; j < test_candidates.size(); j++)
 				{
 					//create proof and append to result; const cast due to some qpol objects' need to be freed
-					res.addProof(_test_cond, candidate_type, const_cast < void *>(test_candidates[i]),
+					res.addProof(_test_cond, candidate_type, const_cast < void *>(test_candidates[j]),
 						     get_element_free_fn(candidate_type));
 				}
 				//append result to result_v
@@ -542,4 +543,12 @@ const std::vector < polsearch_result > polsearch_test::run(const apol_policy_t *
 	}
 
 	return result_v;
+}
+
+void polsearch_test::update()
+{
+	for (vector < polsearch_criterion >::iterator i = _criteria.begin(); i != _criteria.end(); i++)
+	{
+		i->_test = this;
+	}
 }

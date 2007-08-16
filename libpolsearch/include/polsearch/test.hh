@@ -131,7 +131,13 @@ class polsearch_test
 	 polsearch_test(polsearch_query * query, polsearch_test_cond_e test_cond) throw(std::invalid_argument);
 
       private:
-	 polsearch_query * _query;     /*!< The query with which this test is associated. */
+
+	/**
+	 * Update internal state data. Called when adding tests to the parent query or copying the test.
+	 */
+	void update();
+
+	polsearch_query *_query;       /*!< The query with which this test is associated. */
 	polsearch_test_cond_e _test_cond;	/*!< The condition tested. */
 	 std::vector < polsearch_criterion > _criteria;	/*!< The criteria to check. */
 };

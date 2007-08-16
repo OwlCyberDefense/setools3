@@ -673,15 +673,18 @@ void polsearch_criterion::check(const apol_policy_t * policy, std::vector < cons
 		case MATCH_BOOL:
 		{
 			match = _param->match(input.bval);
+			break;
 		}
 		case MATCH_STRING:
 		{
 			match = _param->match(*(input.str), Xnames);
 			delete input.str;
+			break;
 		}
 		case MATCH_NUM:
 		{
 			match = _param->match(input.nval);
+			break;
 		}
 		case MATCH_LEVEL:
 		{
@@ -698,6 +701,7 @@ void polsearch_criterion::check(const apol_policy_t * policy, std::vector < cons
 				throw runtime_error("Impossible case reached.");
 			}
 			match = _param->match(policy, input.lvl, method);
+			break;
 		}
 		case MATCH_RANGE:
 		{
@@ -714,11 +718,13 @@ void polsearch_criterion::check(const apol_policy_t * policy, std::vector < cons
 				throw runtime_error("Impossible case reached.");
 			}
 			match = _param->match(policy, input.rng, method);
+			break;
 		}
 		case MATCH_LIST:
 		{
 			match = _param->match(*(input.list), Xnames);
 			delete input.list;
+			break;
 		}
 		default:
 		{

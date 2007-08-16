@@ -27,6 +27,7 @@
 #include <polsearch/result.hh>
 #include <polsearch/test.hh>
 #include <polsearch/proof.hh>
+#include "polsearch_internal.hh"
 
 #include <sefs/fclist.hh>
 
@@ -104,7 +105,7 @@ void polsearch_result::merge(const polsearch_result & rhs) throw(std::invalid_ar
 polsearch_proof & polsearch_result::addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem,
 					     polsearch_proof_element_free_fn free_fn)
 {
-	_proof.push_back(polsearch_proof(test, elem_type, elem, _policy, _fclist, free_fn));
+	_proof.push_back(polsearch_proof(test, elem_type, element_copy(elem_type, elem), _policy, _fclist, free_fn));
 	return _proof.back();
 }
 

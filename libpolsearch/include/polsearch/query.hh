@@ -127,7 +127,13 @@ class polsearch_query
 	 std::vector < polsearch_test > _tests;	/*!< The set of tests used by the query to determine which elements match. */
 
       private:
-	 polsearch_match_e _match;     /*!< The matching behavior used for determining if an element matches with multiple tests. */
+
+	/**
+	 * Update internal state data. Called when adding tests or copying the query.
+	 */
+	void update();
+
+	polsearch_match_e _match;      /*!< The matching behavior used for determining if an element matches with multiple tests. */
 };
 
 #endif				       /* POLSEARCH_QUERY_HH */

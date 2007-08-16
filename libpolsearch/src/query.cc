@@ -122,3 +122,12 @@ std::vector < polsearch_result > polsearch_query::run(const apol_policy_t * poli
 
 	return master_results;
 }
+
+void polsearch_query::update()
+{
+	for (vector < polsearch_test >::iterator i = _tests.begin(); i != _tests.end(); i++)
+	{
+		i->_query = this;
+		i->update();
+	}
+}

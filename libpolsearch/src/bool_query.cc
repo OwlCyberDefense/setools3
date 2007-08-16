@@ -83,6 +83,8 @@ std::vector < const void *>polsearch_bool_query::getCandidates(const apol_policy
 	{
 		bv.push_back(apol_vector_get_element(v, i));
 	}
+	apol_vector_destroy(&v);
+	apol_bool_query_destroy(&bq);
 
 	return bv;
 }

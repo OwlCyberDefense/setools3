@@ -150,17 +150,8 @@ bool polsearch_regex_parameter::ignoreCase(bool icase) throw(std::bad_alloc)
 bool polsearch_regex_parameter::match(const std::string & str,
 				      const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
 {
-	if (str == "X")
-	{
-		for (vector < string >::const_iterator i = Xnames.begin(); i != Xnames.end(); i++)
-			if (!regexec(_compiled, i->c_str(), 0, NULL, 0))
-				return true;
-	}
-	else
-	{
-		if (!regexec(_compiled, str.c_str(), 0, NULL, 0))
-			return true;
-	}
+	if (!regexec(_compiled, str.c_str(), 0, NULL, 0))
+		return true;
 	return false;
 }
 
