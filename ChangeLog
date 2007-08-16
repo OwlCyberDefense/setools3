@@ -1,5 +1,12 @@
 2007-08-16  J. Tang  <jtang@tresys.com>
 
+	* Fixed an error in libapol's infoflow.  When performing a
+	transitive search, let there be an intermediate rule with source
+	A, an attribute.  If a member of A, type T, is excluded by not
+	calling apol_infoflow_analysis_append_intermediate(), it was still
+	possible to return an infoflow result that uses T.  This has been
+	fixed.
+
 	* apol's domain transition analysis has a new access filter dialog
 	that mimics the rule search's class/perm selection.
 

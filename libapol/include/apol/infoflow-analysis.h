@@ -222,7 +222,9 @@ extern "C"
  *
  * @param policy Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
- * @param type Intermediate type which a result must flow through.
+ * @param type Intermediate type which a result must flow through.  If
+ * NULL, then clear all existing intermediate types.  (All paths will
+ * be returned.)
  * @return 0 on success, negative on error.
  */
 	extern int apol_infoflow_analysis_append_intermediate(const apol_policy_t * p, apol_infoflow_analysis_t * ia,
