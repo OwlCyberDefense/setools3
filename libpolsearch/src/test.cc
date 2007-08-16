@@ -452,6 +452,7 @@ static vector < const void *>get_test_candidates(const apol_policy_t * policy, c
 	case POLSEARCH_ELEMENT_FC_ENTRY:
 	case POLSEARCH_ELEMENT_CLASS:
 	case POLSEARCH_ELEMENT_BOOL:
+	case POLSEARCH_ELEMENT_LEVEL:
 	case POLSEARCH_ELEMENT_NONE:
 	default:
 	{

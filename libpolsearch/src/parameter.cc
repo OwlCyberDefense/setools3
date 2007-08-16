@@ -45,7 +45,7 @@ polsearch_parameter::polsearch_parameter()
 	// no-op
 }
 
-polsearch_parameter::polsearch_parameter(const polsearch_parameter & rhs)
+polsearch_parameter::polsearch_parameter(const polsearch_parameter & rhs __attribute__ ((unused)))
 {
 	// no-op
 }
@@ -55,48 +55,46 @@ polsearch_parameter::~polsearch_parameter()
 	// no-op
 }
 
-bool polsearch_parameter::match(bool b) const throw(std::invalid_argument)
+bool polsearch_parameter::match(bool b __attribute__ ((unused))) const throw(std::invalid_argument)
 {
 	assert(0);
 	throw invalid_argument("Invalid parameter comparison");
-	return false;
 }
 
-bool polsearch_parameter::match(const std::string & str,
-				const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
+bool polsearch_parameter::match(const std::string & str __attribute__ ((unused)),
+				const std::vector < std::string > &Xnames
+				__attribute__ ((unused))) const throw(std::invalid_argument)
 {
 	assert(0);
 	throw invalid_argument("Invalid parameter comparison");
-	return false;
 }
 
-bool polsearch_parameter::match(uint32_t val) const throw(std::invalid_argument)
+bool polsearch_parameter::match(uint32_t val __attribute__ ((unused))) const throw(std::invalid_argument)
 {
 	assert(0);
 	throw invalid_argument("Invalid parameter comparison");
-	return false;
 }
 
-bool polsearch_parameter::match(const apol_policy_t * policy, const apol_mls_level_t * lvl,
-				int m) const throw(std::invalid_argument, std::bad_alloc)
+bool polsearch_parameter::match(const apol_policy_t * policy __attribute__ ((unused)), const apol_mls_level_t * lvl
+				__attribute__ ((unused)), int m
+				__attribute__ ((unused))) const throw(std::invalid_argument, std::bad_alloc)
 {
 	assert(0);
 	throw invalid_argument("Invalid parameter comparison");
-	return false;
 }
 
-bool polsearch_parameter::match(const apol_policy_t * policy, const apol_mls_range_t * rng,
-				unsigned int m) const throw(std::invalid_argument, std::bad_alloc)
+bool polsearch_parameter::match(const apol_policy_t * policy __attribute__ ((unused)), const apol_mls_range_t * rng
+				__attribute__ ((unused)), unsigned int m
+				__attribute__ ((unused))) const throw(std::invalid_argument, std::bad_alloc)
 {
 	assert(0);
 	throw invalid_argument("Invalid parameter comparison");
-	return false;
 }
 
-bool polsearch_parameter::match(const std::vector < std::string > &test_list,
-				const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
+bool polsearch_parameter::match(const std::vector < std::string > &test_list __attribute__ ((unused)),
+				const std::vector < std::string > &Xnames
+				__attribute__ ((unused))) const throw(std::invalid_argument)
 {
 	assert(0);
 	throw invalid_argument("Invalid parameter comparison");
-	return false;
 }

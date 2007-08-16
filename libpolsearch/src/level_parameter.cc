@@ -40,14 +40,16 @@
 
 using std::bad_alloc;
 
-polsearch_level_parameter::polsearch_level_parameter(const apol_mls_level_t * lvl) throw(std::bad_alloc)
+polsearch_level_parameter::polsearch_level_parameter(const apol_mls_level_t * lvl) throw(std::bad_alloc):polsearch_parameter()
 {
 	_level = apol_mls_level_create_from_mls_level(lvl);
 	if (!_level)
 		throw bad_alloc();
 }
 
-polsearch_level_parameter::polsearch_level_parameter(const polsearch_level_parameter & rhs) throw(std::bad_alloc)
+polsearch_level_parameter::polsearch_level_parameter(const polsearch_level_parameter & rhs) throw(std::
+												  bad_alloc):polsearch_parameter
+	(rhs)
 {
 	_level = apol_mls_level_create_from_mls_level(rhs._level);
 	if (!_level)

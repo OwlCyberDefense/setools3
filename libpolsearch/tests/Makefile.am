@@ -6,8 +6,6 @@ libpolsearch_tests_SOURCES = \
 	bool_query-tests.cc \
 	libpolsearch-tests.cc
 
-EXTRA_DIST = file_contexts.confed file_contexts.union file_contexts.broken
-
 AM_CXXFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@QPOL_CFLAGS@ @APOL_CFLAGS@ @SEFS_CFLAGS@ @POLSEARCH_CFLAGS@
 

@@ -38,12 +38,18 @@
 #include <apol/policy.h>
 #include <apol/policy-query.h>
 
-polsearch_string_expression_parameter::polsearch_string_expression_parameter(const std::string & expr) throw(std::invalid_argument)
+using std::vector;
+using std::string;
+
+polsearch_string_expression_parameter::polsearch_string_expression_parameter(const std::string & expr) throw(std::
+													     invalid_argument):polsearch_parameter
+	()
 {
 	_expression = expr;
 }
 
-polsearch_string_expression_parameter::polsearch_string_expression_parameter(const polsearch_string_expression_parameter & rhs)
+polsearch_string_expression_parameter::
+polsearch_string_expression_parameter(const polsearch_string_expression_parameter & rhs):polsearch_parameter(rhs)
 {
 	_expression = rhs._expression;
 }
@@ -57,14 +63,28 @@ bool polsearch_string_expression_parameter::match(const std::string & str,
 						  const std::vector < std::string >
 						  &Xnames) const throw(std::invalid_argument)
 {
-	//TODO
+	if (str == "X")
+	{
+		for (vector < string >::const_iterator i = Xnames.begin(); i != Xnames.end(); i++)
+		{
+			//TODO does *i match expression
+		}
+	}
+	else
+	{
+		//TODO does str match expression
+	}
 	return false;
 }
 
 bool polsearch_string_expression_parameter::match(const std::vector < std::string > &test_list,
 						  const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
 {
-	//TODO
+	for (vector < string >::const_iterator i = test_list.begin(); i != test_list.end(); i++)
+	{
+		if (match(*i, Xnames))
+			return true;
+	}
 	return false;
 }
 

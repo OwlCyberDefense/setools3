@@ -39,14 +39,16 @@
 
 using std::bad_alloc;
 
-polsearch_range_parameter::polsearch_range_parameter(const apol_mls_range_t * rng) throw(std::bad_alloc)
+polsearch_range_parameter::polsearch_range_parameter(const apol_mls_range_t * rng) throw(std::bad_alloc):polsearch_parameter()
 {
 	_range = apol_mls_range_create_from_mls_range(rng);
 	if (!_range)
 		throw bad_alloc();
 }
 
-polsearch_range_parameter::polsearch_range_parameter(const polsearch_range_parameter & rhs) throw(std::bad_alloc)
+polsearch_range_parameter::polsearch_range_parameter(const polsearch_range_parameter & rhs) throw(std::
+												  bad_alloc):polsearch_parameter
+	(rhs)
 {
 	_range = apol_mls_range_create_from_mls_range(rhs._range);
 	if (!_range)

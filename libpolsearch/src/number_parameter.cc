@@ -37,12 +37,12 @@
 #include <apol/policy.h>
 #include <apol/policy-query.h>
 
-polsearch_number_parameter::polsearch_number_parameter(uint32_t val)
+polsearch_number_parameter::polsearch_number_parameter(uint32_t val):polsearch_parameter()
 {
 	_value = val;
 }
 
-polsearch_number_parameter::polsearch_number_parameter(const polsearch_number_parameter & rhs)
+polsearch_number_parameter::polsearch_number_parameter(const polsearch_number_parameter & rhs):polsearch_parameter(rhs)
 {
 	_value = rhs._value;
 }

@@ -125,7 +125,7 @@ class polsearch_criterion
 	 * DO NOT CALL. This default constructor is defined for SWIG.
 	 * Criteria should be created via polsearch_test::addCriterion().
 	 */
-	 polsearch_criterion();
+	 polsearch_criterion() __attribute__ ((noreturn));
       protected:
 	/**
 		 * Check a list test candidates to see which of them match this criterion.

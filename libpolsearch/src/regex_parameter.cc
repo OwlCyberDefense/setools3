@@ -44,7 +44,8 @@ using std::bad_alloc;
 using std::vector;
 using std::string;
 
-polsearch_regex_parameter::polsearch_regex_parameter(std::string expr, bool icase) throw(std::invalid_argument, std::bad_alloc)
+polsearch_regex_parameter::polsearch_regex_parameter(std::string expr, bool icase) throw(std::invalid_argument, std::bad_alloc):polsearch_parameter
+	()
 {
 	_expression = expr;
 	_ignore_case = icase;
@@ -64,7 +65,9 @@ polsearch_regex_parameter::polsearch_regex_parameter(std::string expr, bool icas
 	}
 }
 
-polsearch_regex_parameter::polsearch_regex_parameter(const polsearch_regex_parameter & rhs) throw(std::bad_alloc)
+polsearch_regex_parameter::polsearch_regex_parameter(const polsearch_regex_parameter & rhs) throw(std::
+												  bad_alloc):polsearch_parameter
+	(rhs)
 {
 	_expression = rhs._expression;
 	_ignore_case = rhs._ignore_case;
@@ -148,7 +151,8 @@ bool polsearch_regex_parameter::ignoreCase(bool icase) throw(std::bad_alloc)
 }
 
 bool polsearch_regex_parameter::match(const std::string & str,
-				      const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
+				      const std::vector < std::string > &Xnames
+				      __attribute__ ((unused))) const throw(std::invalid_argument)
 {
 	if (!regexec(_compiled, str.c_str(), 0, NULL, 0))
 		return true;

@@ -102,7 +102,7 @@ class polsearch_test
 	 * DO NOT CALL. This default constructor is defined for SWIG.
 	 * Tests should be created via polsearch_query::addTest().
 	 */
-	 polsearch_test();
+	 polsearch_test() __attribute__ ((noreturn));
 
       protected:
 	 /**

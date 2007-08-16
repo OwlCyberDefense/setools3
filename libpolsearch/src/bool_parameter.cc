@@ -37,12 +37,12 @@
 #include <apol/policy.h>
 #include <apol/policy-query.h>
 
-polsearch_bool_parameter::polsearch_bool_parameter(bool truth)
+polsearch_bool_parameter::polsearch_bool_parameter(bool truth):polsearch_parameter()
 {
 	_truthValue = truth;
 }
 
-polsearch_bool_parameter::polsearch_bool_parameter(const polsearch_bool_parameter & rhs)
+polsearch_bool_parameter::polsearch_bool_parameter(const polsearch_bool_parameter & rhs):polsearch_parameter(rhs)
 {
 	_truthValue = rhs._truthValue;
 }

@@ -510,6 +510,17 @@ const char *symbol_get_name(const void *symbol, polsearch_element_e sym_type, co
 		break;
 	}
 	case POLSEARCH_ELEMENT_NONE:
+	case POLSEARCH_ELEMENT_STRING:
+	case POLSEARCH_ELEMENT_AVRULE:
+	case POLSEARCH_ELEMENT_TERULE:
+	case POLSEARCH_ELEMENT_ROLE_ALLOW:
+	case POLSEARCH_ELEMENT_ROLE_TRANS:
+	case POLSEARCH_ELEMENT_RANGE_TRANS:
+	case POLSEARCH_ELEMENT_FC_ENTRY:
+	case POLSEARCH_ELEMENT_MLS_LEVEL:
+	case POLSEARCH_ELEMENT_MLS_RANGE:
+	case POLSEARCH_ELEMENT_PERMISSION:
+	case POLSEARCH_ELEMENT_BOOL_STATE:
 	default:
 	{
 		errno = EINVAL;
@@ -588,6 +599,13 @@ void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_all
 		if (!rng)
 			throw bad_alloc();
 		return rng;
+	}
+	case POLSEARCH_ELEMENT_MLS_LEVEL:
+	{
+		apol_mls_level_t *lvl = apol_mls_level_create_from_mls_level(static_cast < apol_mls_level_t * >(elem));
+		if (!lvl)
+			throw bad_alloc();
+		return lvl;
 	}
 	case POLSEARCH_ELEMENT_STRING:
 	case POLSEARCH_ELEMENT_PERMISSION:

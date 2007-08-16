@@ -59,7 +59,7 @@ class polsearch_parameter
 	 * @exception std::invalid_argument This comparison is not valid for the
 	 * given parameter's data.
 	 */
-	virtual bool match(bool b) const throw(std::invalid_argument);
+	virtual bool match(bool b) const throw(std::invalid_argument) __attribute__ ((noreturn));
 	/**
 	 * Determine if a string matches the parameter.
 	 * @param str The string to match.
@@ -69,7 +69,8 @@ class polsearch_parameter
 	 * @exception std::invalid_argument This comparison is not valid for the
 	 * given parameter's data.
 	 */
-	virtual bool match(const std::string & str, const std::vector < std::string > &Xnames) const throw(std::invalid_argument);
+	virtual bool match(const std::string & str, const std::vector < std::string > &Xnames) const throw(std::invalid_argument)
+		__attribute__ ((noreturn));
 	/**
 	 * Determine if a numeric value matches the parameter.
 	 * @param val The value to match.
@@ -77,7 +78,7 @@ class polsearch_parameter
 	 * @exception std::invalid_argument This comparison is not valid for the
 	 * given parameter's data.
 	 */
-	virtual bool match(uint32_t val) const throw(std::invalid_argument);
+	virtual bool match(uint32_t val) const throw(std::invalid_argument) __attribute__ ((noreturn));
 	/**
 	 * Determine if a MLS level value matches the parameter.
 	 * @param policy The policy to use to determine the semantic meanting
@@ -91,7 +92,8 @@ class polsearch_parameter
 	 * @exception std::bad_alloc Out of memory.
 	 */
 	virtual bool match(const apol_policy_t * policy, const apol_mls_level_t * lvl, int m) const throw(std::invalid_argument,
-													  std::bad_alloc);
+													  std::bad_alloc)
+		__attribute__ ((noreturn));
 	/**
 	 * Determine if a MLS range value matches the parameter.
 	 * @param policy The policy to use to determine the semantic meanting
@@ -105,7 +107,7 @@ class polsearch_parameter
 	 * @exception std::bad_alloc Out of memory.
 	 */
 	virtual bool match(const apol_policy_t * policy, const apol_mls_range_t * rng,
-			   unsigned int m) const throw(std::invalid_argument, std::bad_alloc);
+			   unsigned int m) const throw(std::invalid_argument, std::bad_alloc) __attribute__ ((noreturn));
 	/**
 	 * Determine if any string in a list matches the parameter.
 	 * @param test_list The list of strings to match.
@@ -117,7 +119,7 @@ class polsearch_parameter
 	 * given parameter's data.
 	 */
 	virtual bool match(const std::vector < std::string > &test_list,
-			   const std::vector < std::string > &Xnames) const throw(std::invalid_argument);
+			   const std::vector < std::string > &Xnames) const throw(std::invalid_argument) __attribute__ ((noreturn));
 
 	/**
 	 * Get the type of parameter.

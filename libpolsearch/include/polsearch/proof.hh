@@ -84,7 +84,7 @@ class polsearch_proof
 	 * DO NOT CALL. This default constructor is defined for SWIG.
 	 * Proof entries should be created via polsearch_result::addProof().
 	 */
-	 polsearch_proof();
+	 polsearch_proof() __attribute__ ((noreturn));
       protected:
 	/**
 	 * Create a new poof entry.
