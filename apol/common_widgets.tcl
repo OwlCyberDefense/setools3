@@ -17,6 +17,7 @@ namespace eval Apol_Widget {
     variable menuPopup {}
     variable infoPopup {}
     variable infoPopup2 {}
+    variable treeTextBuffer {}
     variable vars
 }
 
@@ -521,6 +522,50 @@ proc Apol_Widget::showPopupParagraph {title info} {
     $text configure -state disabled
 }
 
+proc Apol_Widget::makeTreeResults {path args} {
+    variable vars
+    array unset vars $path:*
+    set sw [ScrolledWindow $path -scrollbar both -auto both]
+    set tree [eval Tree $sw.tree $args -bg [Apol_Prefs::getPref active_bg] \
+                  -redraw 1 -borderwidth 0 -highlightthickness 0 -showlines 1 \
+                  -padx 0]
+    # bind a right click to the /canvas/ part of the tree, rather than
+    # its surrounding frame
+    bind $tree.c <Button-3> [list Apol_Widget::_searchtree_popup $tree %x %y]
+    $sw setwidget $tree
+    update
+    grid propagate $sw 0
+    return $sw
+}
+
+proc Apol_Widget::clearSearchTree {path} {
+    set tree $path.tree
+    $tree delete [$tree nodes root]
+}
+
+proc Apol_Widget::copySearchTree {path} {
+    # In X, middle-click must be associated with some selected text or
+    # another.  The notion of "copying a tree" does not normally
+    # affect a selection, thus the clipboard and middle-click
+    # selection would no longer be synchronized.  Thus the solution is
+    # to create a hidden text buffer that will hold the text.  That
+    # hidden buffer can then be selected, and then its contents can be
+    # sent to the X clipboard.
+    variable treeTextBuffer
+    if {![winfo exists $treeTextBuffer]} {
+        set treeTextBuffer [text .apol_widget_tree_text_buffer]
+    }
+    $treeTextBuffer delete 0.0 end
+    $treeTextBuffer insert end "<ol>\n"
+    $treeTextBuffer insert end [_copy_searchtree_recurse $path [$path nodes root] 1]
+    $treeTextBuffer insert end "</ol>"
+
+    focus $treeTextBuffer
+    $treeTextBuffer tag add sel 1.0 end
+    clipboard clear
+    clipboard append -- [$treeTextBuffer get sel.first sel.last]
+}
+
 ########## private functions below ##########
 
 proc Apol_Widget::_listbox_key {listbox key} {
@@ -685,4 +730,40 @@ proc Apol_Widget::_render_typeset {typeset} {
     } else {
         set typeset
     }
+}
+
+proc Apol_Widget::_searchtree_popup {path x y} {
+    if {[ApolTop::is_policy_open]} {
+        focus $path
+        # create a global popup menu widget if one does not already exist
+        variable menuPopup
+        if {![winfo exists $menuPopup]} {
+            set menuPopup [menu .apol_widget_menu_popup -tearoff 0]
+        }
+        set callbacks {
+            {"Copy Tree Structure" Apol_Widget::copySearchTree}
+        }
+        ApolTop::popup $path $x $y $menuPopup $callbacks $path
+    }
+}
+
+proc Apol_Widget::_copy_searchtree_recurse {path node depth} {
+    if {![$path visible $node]} {
+        return {}
+    }
+    set s "[string repeat \t $depth]<li>[$path itemcget $node -text]"
+    set children [$path nodes $node]
+    if {[llength $children] > 0} {
+        set child_s {}
+        set child_depth [expr {$depth} + 1]
+        foreach n $children {
+            append child_s [_copy_searchtree_recurse $path $n $child_depth]
+        }
+        if {$child_s != {}} {
+            append s "\n[string repeat \t $depth]<ol>\n"
+            append s $child_s
+            append s "[string repeat \t $depth]</ol>"
+        }
+    }
+    append s "</li>\n"
 }

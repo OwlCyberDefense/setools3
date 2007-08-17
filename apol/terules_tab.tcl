@@ -153,7 +153,7 @@ proc Apol_TE::getTextWidget {} {
     if {[$widgets(results) pages] != {}} {
         set raisedPage [$widgets(results) raise]
         if {$raisedPage != {}} {
-            return $tabs($raisedPage)
+            return $tabs($raisedPage).tb
 	}
     }
     return {}

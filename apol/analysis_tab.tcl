@@ -103,7 +103,7 @@ proc Apol_Analysis::getTextWidget {} {
     variable tabs
     set curid [$widgets(results) raise]
     if {$curid != {}} {
-        $tabs($curid:module)::getTextWidget [$widgets(results) getframe $curid]
+        return [$tabs($curid:module)::getTextWidget [$widgets(results) getframe $curid]]
     }
     return {}
 }
