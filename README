@@ -39,6 +39,7 @@ and libraries:
   apol          policy analysis tool
   libapol       policy analysis library
   libpoldiff    semantic policy difference library
+  libpolsearch  find policy components using rule-based queries
   libqpol       library that abstracts policy internals
   libseaudit    parse and filter SELinux audit messages in log files
   libsefs       open and search SELinux file contexts
@@ -107,13 +108,13 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.3
+  $ cd setools-3.4
   $ ./configure
   $ make
   $ make install
 
 This will put the binaries in /usr/local/bin, data files in
-/usr/local/share/setool-3.3, and libraries in /usr/local/lib.
+/usr/local/share/setool-3.4, and libraries in /usr/local/lib.
 Assuming that /usr/local/bin is in your $PATH and /usr/local/lib in
 $LD_LIBRARY_PATH everything should now work.
 

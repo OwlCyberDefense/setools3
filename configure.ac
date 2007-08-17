@@ -1,4 +1,4 @@
-AC_INIT(setools, 3.3, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.4, [Tresys Technology <setools@tresys.com>], [setools])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
@@ -11,7 +11,7 @@ libqpol_pyswig_soname=_qpol.so.1
 libqpol_jswig_soname=libjqpol.so.1
 libqpol_tswig_soname=libtqpol.so.1
 
-libapol_version=4.1
+libapol_version=4.2
 libapol_soname=libapol.so.4
 libapol_pyswig_soname=_apol.so.4
 libapol_jswig_soname=libjapol.so.4
@@ -41,7 +41,7 @@ libseaudit_pyswig_soname=_seaudit.so.4
 libseaudit_jswig_soname=libjseaudit.so.4
 libseaudit_tswig_soname=libtseaudit.so.4
 
-setoolsdir='${prefix}/share/setools-3.3'
+setoolsdir='${prefix}/share/setools-3.4'
 javadir='${prefix}/share/java'
 
 version_min_sepol_major=1
