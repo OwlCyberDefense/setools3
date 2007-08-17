@@ -585,24 +585,24 @@ std::vector < std::string > mkvector(const apol_vector_t * rhs)
 	return v;
 }
 
-void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_alloc)
+void *element_copy(polsearch_element_e elem_type, const void *elem) throw(std::bad_alloc)
 {
 	switch (elem_type)
 	{
 	case POLSEARCH_ELEMENT_FC_ENTRY:
 	{
-		return new sefs_entry(static_cast < sefs_entry * >(elem));
+		return new sefs_entry(static_cast < const sefs_entry * >(elem));
 	}
 	case POLSEARCH_ELEMENT_MLS_RANGE:
 	{
-		apol_mls_range_t *rng = apol_mls_range_create_from_mls_range(static_cast < apol_mls_range_t * >(elem));
+		apol_mls_range_t *rng = apol_mls_range_create_from_mls_range(static_cast < const apol_mls_range_t * >(elem));
 		if (!rng)
 			throw bad_alloc();
 		return rng;
 	}
 	case POLSEARCH_ELEMENT_MLS_LEVEL:
 	{
-		apol_mls_level_t *lvl = apol_mls_level_create_from_mls_level(static_cast < apol_mls_level_t * >(elem));
+		apol_mls_level_t *lvl = apol_mls_level_create_from_mls_level(static_cast < const apol_mls_level_t * >(elem));
 		if (!lvl)
 			throw bad_alloc();
 		return lvl;
@@ -610,7 +610,7 @@ void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_all
 	case POLSEARCH_ELEMENT_STRING:
 	case POLSEARCH_ELEMENT_PERMISSION:
 	{
-		char *tmp = strdup(static_cast < char *>(elem));
+		char *tmp = strdup(static_cast < const char *>(elem));
 		if (!tmp)
 			throw bad_alloc();
 		return tmp;
@@ -633,8 +633,8 @@ void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_all
 	case POLSEARCH_ELEMENT_NONE:
 	default:
 	{
-		//these don't get copied
-		return elem;
+		//these don't get copied and thus not freed so const cast is safe here
+		return const_cast < void *>(elem);
 	}
 	}
 }

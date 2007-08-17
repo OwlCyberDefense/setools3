@@ -59,7 +59,7 @@ polsearch_result::polsearch_result(polsearch_element_e elem_type, const void *el
 polsearch_result::polsearch_result(const polsearch_result & rhs)
 {
 	_element_type = rhs._element_type;
-	_element = rhs._element;
+	_element = element_copy(_element_type, rhs._element);
 	_policy = rhs._policy;
 	_fclist = rhs._fclist;
 	_proof = rhs._proof;

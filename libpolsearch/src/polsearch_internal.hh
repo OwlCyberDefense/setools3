@@ -127,7 +127,7 @@ std::vector < std::string > mkvector(const apol_vector_t * rhs);
  * @param elem The element to copy.
  * @return A newly allocated copy of \a elem.
  */
-void *element_copy(polsearch_element_e elem_type, void *elem) throw(std::bad_alloc);
+void *element_copy(polsearch_element_e elem_type, const void *elem) throw(std::bad_alloc);
 
 /**
  * Get the function to free an element for use when adding proof entries or

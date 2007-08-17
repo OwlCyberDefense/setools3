@@ -55,17 +55,32 @@ polsearch_proof::polsearch_proof(polsearch_test_cond_e test, polsearch_element_e
 	_free_fn = free_fn;
 }
 
-polsearch_proof::polsearch_proof(const polsearch_proof & pp)
+polsearch_proof::polsearch_proof(const polsearch_proof & rhs)
 {
-	_test_cond = pp._test_cond;
-	_element_type = pp._element_type;
-	_policy = pp._policy;
-	_fclist = pp._fclist;
-	_free_fn = pp._free_fn;
+	_test_cond = rhs._test_cond;
+	_element_type = rhs._element_type;
+	_policy = rhs._policy;
+	_fclist = rhs._fclist;
+	_free_fn = rhs._free_fn;
 	if (_free_fn)
-		_element = element_copy(_element_type, pp._element);
+		_element = element_copy(_element_type, rhs._element);
 	else
-		_element = pp._element;
+		_element = rhs._element;
+}
+
+polsearch_proof & polsearch_proof::operator=(const polsearch_proof & rhs)
+{
+	_test_cond = rhs._test_cond;
+	_element_type = rhs._element_type;
+	_policy = rhs._policy;
+	_fclist = rhs._fclist;
+	_free_fn = rhs._free_fn;
+	if (_free_fn)
+		_element = element_copy(_element_type, rhs._element);
+	else
+		_element = rhs._element;
+
+	return *this;
 }
 
 polsearch_proof::~polsearch_proof()

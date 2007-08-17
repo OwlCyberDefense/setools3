@@ -49,9 +49,9 @@ class polsearch_proof
       public:
 	/**
 	 * Copy a proof.
-	 * @param pp The proof to copy.
+	 * @param rhs The proof to copy.
 	 */
-	polsearch_proof(const polsearch_proof & pp);
+	polsearch_proof(const polsearch_proof & rhs);
 	//! Destructor.
 	~polsearch_proof();
 
@@ -75,6 +75,13 @@ class polsearch_proof
 	 * @return The test condition.
 	 */
 	polsearch_test_cond_e testCond() const;
+	/**
+	 * Assignment operator defined so that memory ownership of \a _element
+	 * is properly handled in all cases.
+	 * @param rhs The proof object from which to assign.
+	 * @return The result of the assignment.
+	 */
+	 polsearch_proof & operator=(const polsearch_proof & rhs);
 
 	friend polsearch_proof & polsearch_result::addProof(polsearch_test_cond_e test, polsearch_element_e elem_type, void *elem,
 							    polsearch_proof_element_free_fn free_fn);

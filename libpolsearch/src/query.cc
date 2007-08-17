@@ -95,13 +95,16 @@ std::vector < polsearch_result > polsearch_query::run(const apol_policy_t * poli
 {
 	vector < polsearch_result > master_results;
 	vector < const void *>Xcandidates = getCandidates(policy);
+	//Run each test
 	for (vector < polsearch_test >::const_iterator i = _tests.begin(); i != _tests.end(); i++)
 	{
 		vector < polsearch_result > cur_test_results = i->run(policy, fclist, Xcandidates);
+		//Merge current test's results with the master list of results
 		for (vector < polsearch_result >::iterator j = cur_test_results.begin(); j != cur_test_results.end(); j++)
 		{
 			polsearch_result *master_entry = NULL;
-			for (vector < polsearch_result >::iterator k = master_results.begin(); k != master_results.end(); k++)
+			for (vector < polsearch_result >::iterator k = master_results.begin();
+			     i != _tests.begin() && k != master_results.end(); k++)
 			{
 				if (k->element() == j->element())
 				{
@@ -112,10 +115,34 @@ std::vector < polsearch_result > polsearch_query::run(const apol_policy_t * poli
 			if (master_entry)
 			{
 				master_entry->merge(*j);
+				continue;
 			}
-			else
+			//always merge on first test (otherwise there will never be results)
+			if (_match == POLSEARCH_MATCH_ANY || i == _tests.begin())
 			{
 				master_results.push_back(polsearch_result(*j));
+				continue;
+			}
+		}
+		//For each test after the first, prune any results not in current list if match all is set
+		if (_match == POLSEARCH_MATCH_ALL && i != _tests.begin())
+		{
+			for (vector < polsearch_result >::iterator k = master_results.begin(); k != master_results.end(); k++)
+			{
+				bool found = false;
+				for (vector < polsearch_result >::iterator j = cur_test_results.begin();
+				     j != cur_test_results.end(); j++)
+				{
+					if (k->element() == j->element())
+					{
+						found = true;
+						break;
+					}
+				}
+				if (found)
+					continue;
+				master_results.erase(k);
+				k--;
 			}
 		}
 	}
