@@ -73,7 +73,8 @@ extern "C"
 /**
  * Execute an information flow analysis against a particular policy.
  * The policy must have had a permission map loaded via
- * apol_permmap_load(), else this analysis will abort immediately.
+ * apol_policy_open_permmap(), else this analysis will abort
+ * immediately.
  *
  * @param p Policy within which to look up allow rules.
  * @param ia A non-NULL structure containing parameters for analysis.

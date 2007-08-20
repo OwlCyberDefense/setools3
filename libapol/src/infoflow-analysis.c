@@ -435,9 +435,9 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
 		}
 		return edge;
 	}
-	if ((edge = calloc(1, sizeof(*edge))) == NULL || (edge->rules = apol_vector_create(NULL)) == NULL) {
+	if ((edge = calloc(1, sizeof(*edge))) == NULL || (edge->rules = apol_vector_create(NULL)) == NULL || apol_vector_append(g->edges, edge) < 0) {
+		ERR(p, "%s", strerror(errno));
 		apol_infoflow_edge_free(edge);
-		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	edge->start_node = start_node;
@@ -445,7 +445,7 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
 	edge->length = len;
 	if (apol_vector_append(start_node->out_edges, edge) < 0 || apol_vector_append(end_node->in_edges, edge) < 0) {
 		/* don't free the edge -- it is owned by the graph */
-		ERR(p, "%s", strerror(ENOMEM));
+		ERR(p, "%s", strerror(errno));
 		return NULL;
 	}
 	return edge;
@@ -798,6 +798,11 @@ static int apol_infoflow_graph_create(const apol_policy_t * p, const apol_infofl
 			goto cleanup;
 		}
 	}
+	if (((*g)->edges = apol_vector_create(apol_infoflow_edge_free)) == NULL) {
+		ERR(p, "%s", strerror(errno));
+		goto cleanup;
+	}
+
 	if (qpol_policy_get_avrule_iter(p->p, QPOL_RULE_ALLOW, &iter) < 0) {
 		goto cleanup;
 	}
@@ -844,6 +849,7 @@ void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** g)
 	if (g != NULL && *g != NULL) {
 		apol_bst_destroy(&(*g)->nodes_bst);
 		apol_vector_destroy(&(*g)->nodes);
+		apol_vector_destroy(&(*g)->edges);
 		apol_vector_destroy(&(*g)->further_start);
 		apol_vector_destroy(&(*g)->further_end);
 		apol_regex_destroy(&(*g)->regex);
