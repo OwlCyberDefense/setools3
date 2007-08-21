@@ -969,7 +969,7 @@ proc ApolTop::_read_configuration_file {} {
                     if {[llength $line] == 1} {
                         # reading older recent files, before advent of
                         # policy_path
-                        set ppath [new_apol_policy_path_t $::APOL_POLICY_PATH_TYPE_MONOLITHIC $line {}]
+                        set ppath [new_apol_policy_path_t $::APOL_POLICY_PATH_TYPE_MONOLITHIC $line NULL]
                         $ppath -acquire
                     } else {
                         foreach {path_type primary modules} $line {break}
