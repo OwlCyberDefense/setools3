@@ -45,7 +45,7 @@
 using std::vector;
 using std::string;
 
-#define SOURCE_POLICY TEST_POLICIES "setools-3.0/apol/conditionals_testing_policy.conf"
+#define SOURCE_POLICY TEST_POLICIES "/setools-3.0/apol/conditionals_testing_policy.conf"
 
 static apol_policy_t *sp;
 
