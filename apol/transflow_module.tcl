@@ -240,7 +240,7 @@ proc Apol_Analysis_transflow::loadQuery {channel} {
 }
 
 proc Apol_Analysis_transflow::getTextWidget {tab} {
-    return [$tab.right getframe].res
+    return [$tab.right getframe].res.tb
 }
 
 proc Apol_Analysis_transflow::appendResultsNodes {tree parent_node results} {

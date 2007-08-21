@@ -238,7 +238,7 @@ proc Apol_Analysis_relabel::loadQuery {channel} {
 }
 
 proc Apol_Analysis_relabel::getTextWidget {tab} {
-    return [$tab.right getframe].res
+    return [$tab.right getframe].res.tb
 }
 
 #################### private functions below ####################

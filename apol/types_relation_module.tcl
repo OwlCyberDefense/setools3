@@ -170,7 +170,7 @@ proc Apol_Analysis_tra::loadQuery {channel} {
 }
 
 proc Apol_Analysis_tra::getTextWidget {tab} {
-    return [$tab.right getframe].res
+    return [$tab.right getframe].res.tb
 }
 
 

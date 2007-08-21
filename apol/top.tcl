@@ -286,16 +286,16 @@ proc ApolTop::_create_toplevel {} {
     $mainframe setmenustate tag_policy_open disabled
 
     variable notebook [NoteBook [$mainframe getframe].nb]
-    $notebook bindtabs <Button-1> ApolTop::_switch_tab
     pack $notebook -fill both -expand yes -padx 4 -pady 4
     set page [$notebook insert end components -text "Policy Components"]
     set components [NoteBook $page.nb]
-    $components bindtabs <Button-1> ApolTop::_switch_tab
     pack $components -fill both -expand yes -padx 4 -pady 4
     set page [$notebook insert end rules -text "Policy Rules"]
     set rules [NoteBook $page.nb]
-    $rules bindtabs <Button-1> ApolTop::_switch_tab
     pack $rules -fill both -expand yes -padx 4 -pady 4
+    $notebook bindtabs <Button-1> [list ApolTop::_switch_tab $components $rules]
+    $components bindtabs <Button-1> [list ApolTop::_switch_tab $components $rules]
+    $rules bindtabs <Button-1> [list ApolTop::_switch_tab $components $rules]
 
     variable tabs
     foreach tab $tabs {
@@ -317,7 +317,12 @@ proc ApolTop::_create_toplevel {} {
 
 # Callback invoked whenever the user clicks on a (possibly different)
 # tab in the toplevel notebook(s).
-proc ApolTop::_switch_tab {new_tab} {
+proc ApolTop::_switch_tab {components_nb rules_nb new_tab} {
+    if {$new_tab == "components"} {
+        set new_tab [$components_nb raise]
+    } elseif {$new_tab == "rules"} {
+        set new_tab [$rules_nb raise]
+    }
     variable current_tab $new_tab
     _toplevel_tab_switched
 }
