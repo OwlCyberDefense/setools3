@@ -298,8 +298,6 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(const apol_policy_t
  * @param g Infoflow to which add the node.
  * @param type Type for the new node.  If this is an attribute then it
  * will be expanded into its component types.
- * @param types If non-NULL, a BST of qpol_type_t pointers.  Only
- * create and return nodes which are members of this tree.
  * @param node_type Node type, one of APOL_INFOFLOW_NODE_SOURCE or
  * APOL_INFOFLOW_NODE_TARGET.
  *
@@ -308,8 +306,7 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(const apol_policy_t
  * calling apol_vector_destroy() upon the return value.
  */
 static apol_vector_t *apol_infoflow_graph_create_nodes(const apol_policy_t * p,
-						       apol_infoflow_graph_t * g, const qpol_type_t * type, apol_bst_t * types,
-						       int node_type)
+						       apol_infoflow_graph_t * g, const qpol_type_t * type, int node_type)
 {
 	unsigned char isattr;
 	apol_vector_t *v = NULL;
@@ -329,10 +326,6 @@ static apol_vector_t *apol_infoflow_graph_create_nodes(const apol_policy_t * p,
 		}
 		for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 			qpol_iterator_get_item(iter, (void **)&t);
-			void *result;
-			if (types != NULL && apol_bst_get_element(types, t, NULL, &result) < 0) {
-				continue;
-			}
 			if ((node = apol_infoflow_graph_create_node(p, g, t, node_type)) == NULL || apol_vector_append(v, node) < 0) {
 				qpol_iterator_destroy(&iter);
 				apol_vector_destroy(&v);
@@ -341,14 +334,11 @@ static apol_vector_t *apol_infoflow_graph_create_nodes(const apol_policy_t * p,
 		}
 		qpol_iterator_destroy(&iter);
 	} else {
-		/* for a direct search, do not expand types; the
-		 * algorithm will do that with
-		 * apol_infoflow_graph_get_nodes_for_type() and
-		 * apol_infoflow_analysis_direct_expand().  for
-		 * transitive searches the \a types BST was checked in
-		 * apol_infoflow_graph_check_types() if \a type is
-		 * just a type.
-		 */
+		/* for a direct search, do not expand types; the algorithm
+		 * will do that with apol_infoflow_graph_get_nodes_for_type()
+		 * and apol_infoflow_analysis_direct_expand().  for transitive
+		 * searches it is necessary to expand the types so that the
+		 * graph is correctly connected */
 		if ((v = apol_vector_create_with_capacity(1, NULL)) == NULL) {
 			return NULL;
 		}
@@ -435,9 +425,9 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
 		}
 		return edge;
 	}
-	if ((edge = calloc(1, sizeof(*edge))) == NULL || (edge->rules = apol_vector_create(NULL)) == NULL || apol_vector_append(g->edges, edge) < 0) {
-		ERR(p, "%s", strerror(errno));
+	if ((edge = calloc(1, sizeof(*edge))) == NULL || (edge->rules = apol_vector_create(NULL)) == NULL) {
 		apol_infoflow_edge_free(edge);
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	edge->start_node = start_node;
@@ -445,7 +435,7 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
 	edge->length = len;
 	if (apol_vector_append(start_node->out_edges, edge) < 0 || apol_vector_append(end_node->in_edges, edge) < 0) {
 		/* don't free the edge -- it is owned by the graph */
-		ERR(p, "%s", strerror(errno));
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	return edge;
@@ -455,17 +445,14 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
 
 /**
  * Take an avrule within a policy and possibly add it to the infoflow
- * graph.  The rule's source and target type sets are expanded.  If
- * the rule is to be added, then add its end nodes as necessary, and
- * an edge connecting those nodes as necessary, and then add the rule
- * to the edge.
+ * graph.  The rule must refer to types that are within the types
+ * vector.  If the rule is to be added, then add its end nodes as
+ * necessary, and an edge connecting those nodes as necessary, and
+ * then add the rule to the edge.
  *
  * @param p Policy containing rules.
  * @param g Information flow graph being created.
  * @param rule AV rule to use.
- * @param types BST of qpol_type_t pointers; while adding avrules to
- * the graph, only add those whose source and/or target is a member of
- * \a types, if \a types is non-NULL.
  * @param found_read Non-zero to indicate that this rule performs a
  * read operation.
  * @param read_len Length of the edge to create (proportionally
@@ -479,8 +466,8 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
  */
 static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
 					     apol_infoflow_graph_t * g,
-					     const qpol_avrule_t * rule,
-					     apol_bst_t * types, int found_read, int read_len, int found_write, int write_len)
+					     const qpol_avrule_t * rule, int found_read, int read_len, int found_write,
+					     int write_len)
 {
 	const qpol_type_t *src_type, *tgt_type;
 	apol_vector_t *src_nodes = NULL, *tgt_nodes = NULL;
@@ -493,10 +480,10 @@ static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
 		goto cleanup;
 	}
 
-	if ((src_nodes = apol_infoflow_graph_create_nodes(p, g, src_type, types, APOL_INFOFLOW_NODE_SOURCE)) == NULL) {
+	if ((src_nodes = apol_infoflow_graph_create_nodes(p, g, src_type, APOL_INFOFLOW_NODE_SOURCE)) == NULL) {
 		goto cleanup;
 	}
-	if ((tgt_nodes = apol_infoflow_graph_create_nodes(p, g, tgt_type, types, APOL_INFOFLOW_NODE_TARGET)) == NULL) {
+	if ((tgt_nodes = apol_infoflow_graph_create_nodes(p, g, tgt_type, APOL_INFOFLOW_NODE_TARGET)) == NULL) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(src_nodes); i++) {
@@ -537,9 +524,6 @@ static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
  * @param p Policy from which to create the infoflow graph.
  * @param g Infoflow graph being created.
  * @param rule AV rule to add.
- * @param types BST of qpol_type_t pointers; while adding avrules to
- * the graph, only add those whose source and/or target is a member of
- * \a types, if \a types is non-NULL.
  * @param max_len Maximum permission length (i.e., inverse of
  * permission weight) to consider when deciding to add this rule or
  * not.
@@ -547,7 +531,7 @@ static int apol_infoflow_graph_connect_nodes(const apol_policy_t * p,
  * @return 0 on success, < 0 on error.
  */
 static int apol_infoflow_graph_create_avrule(const apol_policy_t * p, apol_infoflow_graph_t * g, const qpol_avrule_t * rule,
-					     apol_bst_t * types, int max_len)
+					     int max_len)
 {
 	const qpol_class_t *obj_class;
 	qpol_iterator_t *perm_iter = NULL;
@@ -598,7 +582,7 @@ static int apol_infoflow_graph_create_avrule(const apol_policy_t * p, apol_infof
 
 	/* if we have found any flows then connect them within the graph */
 	if ((found_read || found_write) &&
-	    apol_infoflow_graph_connect_nodes(p, g, rule, types, found_read, read_len, found_write, write_len) < 0) {
+	    apol_infoflow_graph_connect_nodes(p, g, rule, found_read, read_len, found_write, write_len) < 0) {
 		goto cleanup;
 	}
 	if (perm_error) {
@@ -612,25 +596,22 @@ static int apol_infoflow_graph_create_avrule(const apol_policy_t * p, apol_infof
 }
 
 /**
- * Given a vector of strings representing types, return a BST of
- * qpol_type_t pointers consisting of those types, those types'
- * attributes, and those types' aliases.
+ * Given a vector of strings representing types, return a vector of
+ * qpol_type_t consisting of those types, those types' attributes, and
+ * those types' aliases.
  *
  * @param p Policy within which to look up types,
  * @param v Vector of type strings.
  *
- * @return BST of qpol_type_t pointers, or NULL on error.  The caller
- * is responsible for calling apol_bst_destroy() upon the returned
- * value.
+ * @return Vector of qpol_type_t pointers, or NULL on error.
  */
-static apol_bst_t *apol_infoflow_graph_create_required_types(const apol_policy_t * p, const apol_vector_t * v)
+static apol_vector_t *apol_infoflow_graph_create_required_types(const apol_policy_t * p, const apol_vector_t * v)
 {
-	apol_bst_t *types = NULL;
-	apol_vector_t *expanded_types = NULL;
+	apol_vector_t *types = NULL, *expanded_types = NULL;
 	size_t i;
 	char *s;
 	int retval = -1;
-	if ((types = apol_bst_create(NULL, NULL)) == NULL) {
+	if ((types = apol_vector_create(NULL)) == NULL) {
 		ERR(p, "%s", strerror(errno));
 		goto cleanup;
 	}
@@ -640,20 +621,18 @@ static apol_bst_t *apol_infoflow_graph_create_required_types(const apol_policy_t
 		if (expanded_types == NULL) {
 			goto cleanup;
 		}
-		for (size_t j = 0; j < apol_vector_get_size(expanded_types); j++) {
-			qpol_type_t *t = (qpol_type_t *) apol_vector_get_element(expanded_types, j);
-			if (apol_bst_insert(types, t, NULL) < 0) {
-				ERR(p, "%s", strerror(errno));
-				goto cleanup;
-			}
+		if (apol_vector_cat(types, expanded_types) < 0) {
+			ERR(p, "%s", strerror(ENOMEM));
+			goto cleanup;
 		}
 		apol_vector_destroy(&expanded_types);
 	}
+	apol_vector_sort_uniquify(types, NULL, NULL);
 	retval = 0;
       cleanup:
 	apol_vector_destroy(&expanded_types);
 	if (retval != 0) {
-		apol_bst_destroy(&types);
+		apol_vector_destroy(&types);
 	}
 	return types;
 }
@@ -664,24 +643,25 @@ static apol_bst_t *apol_infoflow_graph_create_required_types(const apol_policy_t
  *
  * @param p Policy to which look up classes and permissions.
  * @param rule AV rule to check.
- * @param types BST of qpol_type_t, of which both the source and
- * target types must be members.  If NULL allow all types.
+ * @param types Vector of qpol_type_t, of which both the source and
+ * target types must be members.  If NULL or empty then allow all
+ * types.
  *
  * @return 1 if rule matches, 0 if not, < 0 on error.
  */
-static int apol_infoflow_graph_check_types(const apol_policy_t * p, const qpol_avrule_t * rule, const apol_bst_t * types)
+static int apol_infoflow_graph_check_types(const apol_policy_t * p, const qpol_avrule_t * rule, const apol_vector_t * types)
 {
 	const qpol_type_t *source, *target;
-	void *result;
+	size_t i;
 	int retval = -1;
-	if (types == NULL) {
+	if (types == NULL || apol_vector_get_size(types) == 0) {
 		retval = 1;
 		goto cleanup;
 	}
 	if (qpol_avrule_get_source_type(p->p, rule, &source) < 0 || qpol_avrule_get_target_type(p->p, rule, &target) < 0) {
 		goto cleanup;
 	}
-	if (apol_bst_get_element(types, source, NULL, &result) < 0 || apol_bst_get_element(types, target, NULL, &result) < 0) {
+	if (apol_vector_get_index(types, source, NULL, NULL, &i) < 0 || apol_vector_get_index(types, target, NULL, NULL, &i) < 0) {
 		retval = 0;
 		goto cleanup;
 	}
@@ -768,7 +748,7 @@ static int apol_infoflow_graph_check_class_perms(const apol_policy_t * p, const 
  */
 static int apol_infoflow_graph_create(const apol_policy_t * p, const apol_infoflow_analysis_t * ia, apol_infoflow_graph_t ** g)
 {
-	apol_bst_t *types = NULL;
+	apol_vector_t *types = NULL;
 	qpol_iterator_t *iter = NULL;
 	int max_len = APOL_PERMMAP_MAX_WEIGHT - ia->min_weight + 1;
 	int compval, retval = -1;
@@ -798,11 +778,6 @@ static int apol_infoflow_graph_create(const apol_policy_t * p, const apol_infofl
 			goto cleanup;
 		}
 	}
-	if (((*g)->edges = apol_vector_create(apol_infoflow_edge_free)) == NULL) {
-		ERR(p, "%s", strerror(errno));
-		goto cleanup;
-	}
-
 	if (qpol_policy_get_avrule_iter(p->p, QPOL_RULE_ALLOW, &iter) < 0) {
 		goto cleanup;
 	}
@@ -824,7 +799,7 @@ static int apol_infoflow_graph_create(const apol_policy_t * p, const apol_infofl
 		} else if (compval == 0) {
 			continue;
 		}
-		if (apol_infoflow_graph_create_avrule(p, *g, rule, types, max_len) < 0) {
+		if (apol_infoflow_graph_create_avrule(p, *g, rule, max_len) < 0) {
 			goto cleanup;
 		}
 	}
@@ -836,7 +811,7 @@ static int apol_infoflow_graph_create(const apol_policy_t * p, const apol_infofl
 	apol_bst_destroy(&(*g)->nodes_bst);
 	retval = 0;
       cleanup:
-	apol_bst_destroy(&types);
+	apol_vector_destroy(&types);
 	qpol_iterator_destroy(&iter);
 	if (retval < 0) {
 		apol_infoflow_graph_destroy(g);
@@ -849,7 +824,6 @@ void apol_infoflow_graph_destroy(apol_infoflow_graph_t ** g)
 	if (g != NULL && *g != NULL) {
 		apol_bst_destroy(&(*g)->nodes_bst);
 		apol_vector_destroy(&(*g)->nodes);
-		apol_vector_destroy(&(*g)->edges);
 		apol_vector_destroy(&(*g)->further_start);
 		apol_vector_destroy(&(*g)->further_end);
 		apol_regex_destroy(&(*g)->regex);
@@ -1509,20 +1483,20 @@ static int apol_infoflow_trans_append(const apol_policy_t * p,
 
 /**
  * Given a start and end node, add a trans infoflow results to a
- * vector.  If a regular expression is compiled into the infoflow
- * graph, apply that regex match against candidate end node types
- * prior to creating result nodes.
+ * vector.  If the end node is an attribute, first expand the
+ * attribute to its component types.  If a regular expression is
+ * compiled into the infoflow graph, apply that regex match against
+ * candidate end node types prior to creating result nodes.
  *
  * @param p Policy to analyze.
  * @param g Information flow graph to analyze.
  * @param start_node Starting node.
  * @param end_node Ending node.
- * @param results Non-NULL vector to which append infoflow result.
+ * @param results Non-NULL vector to which append infoflow results.
  * The caller is responsible for calling apol_infoflow_results_free()
  * upon each element afterwards.
  *
- * @return 0 on success (including no result actually added), or < 0
- * on error.
+ * @return 0 on success, < 0 on error.
  */
 static int apol_infoflow_analysis_trans_expand(const apol_policy_t * p,
 					       apol_infoflow_graph_t * g,

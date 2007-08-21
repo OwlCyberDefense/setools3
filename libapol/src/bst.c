@@ -153,7 +153,7 @@ size_t apol_bst_get_size(const apol_bst_t * b)
 	}
 }
 
-int apol_bst_get_element(const apol_bst_t * b, const void *elem, void *data, void **result)
+int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **result)
 {
 	bst_node_t *node;
 	int compval;

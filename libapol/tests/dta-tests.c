@@ -32,7 +32,6 @@
 #include <apol/policy.h>
 #include <apol/policy-path.h>
 #include <stdbool.h>
-#include <string.h>
 
 #define POLICY TEST_POLICIES "/setools-3.3/apol/dta_test.policy.conf"
 
@@ -363,127 +362,6 @@ static void dta_reflexive(void)
 	apol_domain_trans_analysis_destroy(&d);
 }
 
-struct dta_invalid_item
-{
-	const char *start_type;
-	const char *end_type;
-	const char *entrypoint_type;
-	const bool missing_proc_trans;
-	const bool missing_entrypoint;
-	const bool missing_exec;
-	const bool missing_setexec;
-	const bool missing_type_trans;
-	bool used;
-};
-
-static void dta_invalid(void)
-{
-	struct dta_invalid_item items[] = {
-		{"boat_t", "dock_t", "net_t", false, false, true, false, false, false},
-		{"boat_t", "sand_t", "reel_t", false, false, true, false, false, false},
-		{"crab_t", "dock_t", "net_t", false, false, false, true, false, false},
-		{"crab_t", "dock_t", "rope_t", false, false, true, true, false, false},
-		{"crab_t", "dock_t", "wave_t", false, true, true, false, false, false},
-		{"gull_t", "dock_t", "net_t", false, false, false, true, true, false},
-		{"gull_t", "dock_t", "rope_t", false, false, true, true, true, false},
-		{"gull_t", "sand_t", "net_t", true, true, false, false, false, false},
-		{"marlin_t", "boat_t", "line_t", false, false, true, false, false, false},
-		{"marlin_t", "boat_t", "net_t", false, false, true, false, false, false},
-		{"ray_t", "boat_t", "line_t", true, false, true, false, false, false},
-		{"ray_t", "sand_t", "wave_t", true, false, false, false, false, false},
-		{"shark_t", "sand_t", "reel_t", false, false, true, false, false, false},
-		{"tuna_t", "boat_t", "line_t", false, false, true, false, false, false},
-		{"tuna_t", "boat_t", "reel_t", false, true, false, false, false, false},
-		{NULL, NULL, NULL, false, false, false, false, false, false}
-	};
-	const char *start_types[] = {
-		"boat_t", "crab_t", "gull_t", "marlin_t", "ray_t", "shark_t", "tuna_t", NULL
-	};
-	apol_domain_trans_analysis_t *d = apol_domain_trans_analysis_create();
-	CU_ASSERT_PTR_NOT_NULL_FATAL(d);
-	int retval = apol_domain_trans_analysis_set_direction(p, d, APOL_DOMAIN_TRANS_DIRECTION_FORWARD);
-	CU_ASSERT_EQUAL_FATAL(retval, 0);
-	retval = apol_domain_trans_analysis_set_valid(p, d, APOL_DOMAIN_TRANS_SEARCH_INVALID);
-	CU_ASSERT_EQUAL_FATAL(retval, 0);
-
-	qpol_policy_t *q = apol_policy_get_qpol(p);
-	apol_vector_t *v = NULL;
-	struct dta_invalid_item *item;
-	for (const char **start = start_types; *start != NULL; start++) {
-		apol_policy_reset_domain_trans_table(p);
-		retval = apol_domain_trans_analysis_set_start_type(p, d, *start);
-		CU_ASSERT_EQUAL_FATAL(retval, 0);
-
-		retval = apol_domain_trans_analysis_do(p, d, &v);
-		CU_ASSERT_EQUAL_FATAL(retval, 0);
-		CU_ASSERT(v != NULL && apol_vector_get_size(v) > 0);
-
-		for (size_t i = 0; i < apol_vector_get_size(v); i++) {
-			const apol_domain_trans_result_t *dtr = (const apol_domain_trans_result_t *)apol_vector_get_element(v, i);
-
-			const char *result_start, *result_end, *result_entry;
-
-			const qpol_type_t *qt = apol_domain_trans_result_get_start_type(dtr);
-			CU_ASSERT_PTR_NOT_NULL(qt);
-			retval = qpol_type_get_name(q, qt, &result_start);
-			CU_ASSERT_EQUAL_FATAL(retval, 0);
-			CU_ASSERT_STRING_EQUAL(result_start, *start);
-
-			qt = apol_domain_trans_result_get_end_type(dtr);
-			CU_ASSERT_PTR_NOT_NULL(qt);
-			retval = qpol_type_get_name(q, qt, &result_end);
-			CU_ASSERT_EQUAL_FATAL(retval, 0);
-
-			qt = apol_domain_trans_result_get_entrypoint_type(dtr);
-			CU_ASSERT_PTR_NOT_NULL(qt);
-			retval = qpol_type_get_name(q, qt, &result_entry);
-			CU_ASSERT_EQUAL_FATAL(retval, 0);
-
-			CU_ASSERT(apol_domain_trans_result_is_trans_valid(dtr) == 0);
-
-			for (item = items + 0; item->start_type != NULL; item++) {
-				if (strcmp(result_start, item->start_type) == 0 &&
-				    strcmp(result_end, item->end_type) == 0 &&
-				    strcmp(result_entry, item->entrypoint_type) == 0 && !item->used) {
-					item->used = true;
-
-					const apol_vector_t *cv;
-					if (item->missing_proc_trans) {
-						cv = apol_domain_trans_result_get_proc_trans_rules(dtr);
-						CU_ASSERT(cv != NULL && apol_vector_get_size(cv) == 0);
-					}
-					if (item->missing_entrypoint) {
-						cv = apol_domain_trans_result_get_entrypoint_rules(dtr);
-						CU_ASSERT(cv != NULL && apol_vector_get_size(cv) == 0);
-					}
-					if (item->missing_exec) {
-						cv = apol_domain_trans_result_get_exec_rules(dtr);
-						CU_ASSERT(cv != NULL && apol_vector_get_size(cv) == 0);
-					}
-					if (item->missing_setexec) {
-						cv = apol_domain_trans_result_get_setexec_rules(dtr);
-						CU_ASSERT(cv != NULL && apol_vector_get_size(cv) == 0);
-					}
-					if (item->missing_type_trans) {
-						cv = apol_domain_trans_result_get_type_trans_rules(dtr);
-						CU_ASSERT(cv != NULL && apol_vector_get_size(cv) == 0);
-					}
-					break;
-				}
-			}
-			if (item->start_type == NULL) {
-				CU_FAIL();
-			}
-		}
-		apol_vector_destroy(&v);
-	}
-
-	for (item = items + 0; item->start_type != NULL; item++) {
-		CU_ASSERT(item->used);
-	}
-	apol_domain_trans_analysis_destroy(&d);
-}
-
 CU_TestInfo dta_tests[] = {
 	{"dta forward", dta_forward}
 	,
@@ -496,8 +374,6 @@ CU_TestInfo dta_tests[] = {
 	{"dta reverse + regexp", dta_reverse_regexp}
 	,
 	{"dta reflexive", dta_reflexive}
-	,
-	{"dta invalid transitions", dta_invalid}
 	,
 	CU_TEST_INFO_NULL
 };

@@ -45,7 +45,7 @@ proc Apol_Cond_Bools::create {tab_name nb} {
     # Booleans listbox widget
     set left_frame [$cond_bools_box getframe]
     set sw_b [ScrolledWindow $left_frame.sw -auto both]
-    set widgets(listbox) [ScrollableFrame $sw_b.listbox -bg [Apol_Prefs::getPref active_bg] -width 200]
+    set widgets(listbox) [ScrollableFrame $sw_b.listbox -bg white -width 200]
     $sw_b setwidget $widgets(listbox)
     set button_defaults [button $left_frame.button_defaults \
                              -text "Reset to Policy Defaults" \
@@ -65,7 +65,7 @@ proc Apol_Cond_Bools::create {tab_name nb} {
     set widgets(combo_box) [ComboBox $bool_frame.combo_box \
                                 -textvariable Apol_Cond_Bools::opts(name) \
                                 -helptext "Type or select a boolean variable" \
-                                -state disabled -entrybg [Apol_Prefs::getPref active_bg] -autopost 1]
+                                -state disabled -entrybg white -autopost 1]
     set widgets(regexp) [checkbutton $bool_frame.regexp \
                              -text "Search using regular expression" \
                              -state disabled \
@@ -167,15 +167,15 @@ proc Apol_Cond_Bools::_insert_listbox_item {bool initial_state} {
 
     set cond_bools_values($bool) $initial_state
     set subf [$widgets(listbox) getframe]
-    set rb_true [radiobutton $subf.t:$bool -bg [Apol_Prefs::getPref active_bg] \
+    set rb_true [radiobutton $subf.t:$bool -bg white \
                      -variable Apol_Cond_Bools::cond_bools_values($bool) \
                      -value 1 -highlightthickness 0 -text "True"]
-    set rb_false [radiobutton $subf.f:$bool -bg [Apol_Prefs::getPref active_bg] \
+    set rb_false [radiobutton $subf.f:$bool -bg white \
                       -variable Apol_Cond_Bools::cond_bools_values($bool) \
                       -value 0 -highlightthickness 0 -text "False"]
     trace add variable Apol_Cond_Bools::cond_bools_values($bool) write \
         [list Apol_Cond_Bools::_set_bool_value]
-    set rb_label [label $subf.l:$bool -bg [Apol_Prefs::getPref active_bg] -text "- $bool"]
+    set rb_label [label $subf.l:$bool -bg white -text "- $bool"]
     grid $rb_true $rb_false $rb_label -padx 2 -pady 5 -sticky w
 }
 

@@ -24,8 +24,23 @@ namespace eval ApolTop {
     variable policy_stats_summary {}
     variable policy_stats  ;# array of statistics for the current policy
 
+    # user's preferences
+    variable dot_apol_file [file join $::env(HOME) .apol]
+    variable recent_files {}
     variable last_policy_path {}
+    variable max_recent_files 5
+    variable show_fake_attrib_warning 1 ;# warn if using fake attribute names
+
+    # store the default background color for use when diabling widgets
+    variable default_bg_color
+    variable text_font {}
+    variable title_font {}
+    variable dialog_font {}
+    variable general_font {}
     variable query_file_ext ".qf"
+    # Main window dimension defaults
+    variable mainframe_width 1000
+    variable mainframe_height 700
 
     # Other global widgets
     variable mainframe
@@ -122,15 +137,23 @@ proc ApolTop::openPolicyPath {ppath} {
 
     _toplevel_policy_open $ppath
 
-    Apol_Prefs::addRecent $ppath
-    _build_recent_files_menu
+    _add_recent $ppath
     variable last_policy_path $ppath
 
+    variable show_fake_attrib_warning
     if {![is_capable "attribute names"] && \
             [llength $::Apol_Types::attriblist] > 0 && \
-            [Apol_Prefs::getPref show_attrib_warning]} {
-        tk_messageBox -icon info -parent . -title "Open Policy" -type ok \
-            -message "Apol has generated attribute names because the original names were not preserved in the policy."
+            $show_fake_attrib_warning} {
+        set d [Dialog .fake_attribute_dialog -modal local -parent . \
+                   -title "Open Policy" -separator 1]
+        $d add -text "OK"
+        set f [$d getframe]
+        label $f.l -text "Warning: Apol has generated attribute names because\nthe original names were not preserved in the policy." -justify left
+        checkbutton $f.cb -text "Show this message again next time." \
+            -variable ApolTop::show_fake_attrib_warning
+        pack $f.l $f.cb -padx 10 -pady 10
+        $d draw
+        destroy $d
     }
 
     return 0  ;# indicates policy opened successfully
@@ -218,10 +241,8 @@ proc ApolTop::_create_toplevel {} {
             {command "&Copy" {tag_policy_open} {} {Ctrl c} -command ApolTop::_copy}
             {command "Select &All" {tag_policy_open} {} {Ctrl a} -command ApolTop::_select_all}
             {separator}
-	    {command "&Find..." {tag_policy_open} "Find text in current buffer" {Ctrl f} -command Apol_Find::find}
-	    {command "&Goto Line..." {tag_policy_open} "Goto a line in current buffer" {Ctrl g} -command Apol_Goto::goto}
-            {separator}
-            {command "Prefere&nces..." {} "Modify user's preferences" {} -command Apol_Prefs::modifyPreferences}
+	    {command "&Find..." {tag_policy_open} "Find text in current buffer" {Ctrl f} -command ApolTop::_find}
+	    {command "&Goto Line..." {tag_policy_open} "Goto a line in current buffer" {Ctrl g} -command ApolTop::_goto}
 	}
 	"&Query" {} query 0 {
 	    {command "&Open Query..." {tag_policy_open} "Open query criteria file" {} -command ApolTop::_open_query_file}
@@ -265,16 +286,16 @@ proc ApolTop::_create_toplevel {} {
     $mainframe setmenustate tag_policy_open disabled
 
     variable notebook [NoteBook [$mainframe getframe].nb]
+    $notebook bindtabs <Button-1> ApolTop::_switch_tab
     pack $notebook -fill both -expand yes -padx 4 -pady 4
     set page [$notebook insert end components -text "Policy Components"]
     set components [NoteBook $page.nb]
+    $components bindtabs <Button-1> ApolTop::_switch_tab
     pack $components -fill both -expand yes -padx 4 -pady 4
     set page [$notebook insert end rules -text "Policy Rules"]
     set rules [NoteBook $page.nb]
+    $rules bindtabs <Button-1> ApolTop::_switch_tab
     pack $rules -fill both -expand yes -padx 4 -pady 4
-    $notebook bindtabs <Button-1> [list ApolTop::_switch_tab $components $rules]
-    $components bindtabs <Button-1> [list ApolTop::_switch_tab $components $rules]
-    $rules bindtabs <Button-1> [list ApolTop::_switch_tab $components $rules]
 
     variable tabs
     foreach tab $tabs {
@@ -296,12 +317,7 @@ proc ApolTop::_create_toplevel {} {
 
 # Callback invoked whenever the user clicks on a (possibly different)
 # tab in the toplevel notebook(s).
-proc ApolTop::_switch_tab {components_nb rules_nb new_tab} {
-    if {$new_tab == "components"} {
-        set new_tab [$components_nb raise]
-    } elseif {$new_tab == "rules"} {
-        set new_tab [$rules_nb raise]
-    }
+proc ApolTop::_switch_tab {new_tab} {
     variable current_tab $new_tab
     _toplevel_tab_switched
 }
@@ -382,9 +398,11 @@ proc ApolTop::_toplevel_enable_tabs {tag new_state} {
 
 proc ApolTop::_build_recent_files_menu {} {
     variable mainframe
+    variable recent_files
+    variable max_recent_files
     set recent_menu [$mainframe getmenu recent]
-    $recent_menu delete 0 end
-    foreach r [Apol_Prefs::getPref recent_files] {
+    $recent_menu delete 0 $max_recent_files
+    foreach r $recent_files {
         foreach {path_type primary_file modules} [policy_path_to_list $r] {break}
         if {$path_type == "monolithic"} {
             set label $primary_file
@@ -397,6 +415,23 @@ proc ApolTop::_build_recent_files_menu {} {
         $recent_menu add command -label $label \
             -command [list ApolTop::openPolicyPath $r]
     }
+}
+
+# Add a policy path to the recently opened list, trim the menu to
+# max_recent_files, and then regenerate the recent menu.
+proc ApolTop::_add_recent {ppath} {
+    variable recent_files
+    variable max_recent_files
+
+    # if ppath is already in recent files list, remove it from there
+    set new_recent $ppath
+    foreach r $recent_files {
+        if {[apol_policy_path_compare $r $ppath] != 0} {
+            lappend new_recent $r
+        }
+    }
+    set recent_files [lrange $new_recent 0 [expr {$max_recent_files - 1}]]
+    _build_recent_files_menu
 }
 
 proc ApolTop::_toplevel_update_stats {} {
@@ -537,7 +572,7 @@ proc ApolTop::_exit {} {
         _close_policy
     }
     Apol_File_Contexts::close
-    Apol_Prefs::savePrefs
+    _write_configuration_file
     exit
 }
 
@@ -555,6 +590,14 @@ proc ApolTop::_select_all {} {
     if {$w != {}} {
         $w tag add sel 1.0 end
     }
+}
+
+proc ApolTop::_find {} {
+    Apol_Find::find
+}
+
+proc ApolTop::_goto {} {
+    Apol_Goto::goto
 }
 
 proc ApolTop::_open_query_file {} {
@@ -796,6 +839,217 @@ proc ApolTop::_about {} {
     }
 }
 
+##### functions that load and write user's configuration file #####
+
+proc ApolTop::_load_fonts {} {
+    variable title_font
+    variable dialog_font
+    variable general_font
+    variable text_font
+
+    tk scaling -displayof . 1.0
+    # First set all fonts in general; then change specific fonts
+    if {$general_font == ""} {
+        set general_font "Helvetica 10"
+    }
+    option add *Font $general_font
+    if {$title_font == {}} {
+        set title_font "Helvetica 10 bold italic"
+    }
+    option add *TitleFrame.l.font $title_font
+    if {$dialog_font == {}} {
+        set dialog_font "Helvetica 10"
+    }
+    option add *Dialog*font $dialog_font
+    option add *Dialog*TitleFrame.l.font $title_font
+    if {$text_font == ""} {
+        set text_font "fixed"
+    }
+    option add *text*font $text_font
+}
+
+# Reads in user data from their $HOME/.apol file
+proc ApolTop::_read_configuration_file {} {
+    variable dot_apol_file
+    variable recent_files
+
+    # if it doesn't exist, it will be created later
+    if {![file exists $dot_apol_file]} {
+        return
+    }
+
+    if {[catch {::open $dot_apol_file r} f]} {
+        tk_messageBox -icon error -type ok -title "apol" \
+            -message "Could not open $dot_apol_file: $f"
+        return
+    }
+
+    while {![eof $f]} {
+        set option [string trim [gets $f]]
+        if {$option == {} || [string compare -length 1 $option "\#"] == 0} {
+            continue
+        }
+        set value [string trim [gets $f]]
+        if {[eof $f]} {
+            puts stderr "EOF reached while reading $option"
+            break
+        }
+        if {$value == {}} {
+            puts stderr "Empty value for option $option"
+            continue
+        }
+        switch -- $option {
+            "\[window_height\]" {
+                if {[string is integer -strict $value] != 1} {
+                    puts stderr "window_height was not given as an integer and is ignored"
+                    break
+                }
+                variable mainframe_height $value
+            }
+            "\[window_width\]" {
+                if {[string is integer -strict $value] != 1} {
+                    puts stderr "window_width was not given as an integer and is ignored"
+                    break
+                }
+                variable mainframe_width $value
+            }
+            "\[title_font\]" {
+                variable title_font $value
+            }
+            "\[dialog_font\]" {
+                variable dialog_font $value
+            }
+            "\[text_font\]" {
+                variable text_font $value
+            }
+            "\[general_font\]" {
+                variable general_font $value
+            }
+            "\[show_fake_attrib_warning\]" {
+                variable show_fake_attrib_warning $value
+            }
+
+            # The form of [max_recent_file] is a single line that
+            # follows containing an integer with the max number of
+            # recent files to keep.  The default is 5 if this is not
+            # specified.  The minimum is 2.
+            "\[max_recent_files\]" {
+                if {[string is integer -strict $value] != 1} {
+                    puts stderr "max_recent_files was not given as an integer and is ignored"
+                } else {
+                    if {$value < 2} {
+                        variable max_recent_files 2
+                    } else {
+                        variable max_recent_files $value
+                    }
+                }
+            }
+            # The form of this key in the .apol file is as such
+            #
+            # recent_files
+            # 5			(# indicating how many file names follow)
+            # policy_path_0
+            # policy_path_1
+            # ...
+            "recent_files" {
+                if {[string is integer -strict $value] != 1} {
+                    puts stderr "Number of recent files was not given as an integer and was ignored."
+                    continue
+                } elseif {$value < 0} {
+                    puts stderr "Number of recent was less than 0 and was ignored."
+                    continue
+                }
+                while {$value > 0} {
+                    incr value -1
+                    set line [gets $f]
+                    if {[eof $f]} {
+                        puts stderr "EOF reached trying to read recent files."
+                        break
+                    }
+                    if {[llength $line] == 1} {
+                        # reading older recent files, before advent of
+                        # policy_path
+                        set ppath [new_apol_policy_path_t $::APOL_POLICY_PATH_TYPE_MONOLITHIC $line {}]
+                        $ppath -acquire
+                    } else {
+                        foreach {path_type primary modules} $line {break}
+                        if {[catch {list_to_policy_path $path_type $primary $modules} ppath]} {
+                            puts stderr "Invalid policy path line: $line"
+                            continue
+                        }
+                    }
+                    lappend recent_files $ppath
+                }
+            }
+        }
+    }
+    close $f
+}
+
+# Saves user data in their $HOME/.apol file
+proc ApolTop::_write_configuration_file {} {
+    variable dot_apol_file
+    variable recent_files
+    variable text_font
+    variable title_font
+    variable dialog_font
+    variable general_font
+
+    if {[catch {::open $dot_apol_file w} f]} {
+        tk_messageBox -icon error -type ok -title "apol" \
+            -message "Could not open $dot_apol_file for writing: $f"
+        return
+    }
+    puts $f "recent_files"
+    puts $f [llength $recent_files]
+    foreach r $recent_files {
+        puts $f [policy_path_to_list $r]
+    }
+
+    puts $f "\n"
+    puts $f "# Font format: family ?size? ?style? ?style ...?"
+    puts $f "# Possible values for the style arguments are as follows:"
+    puts $f "# normal bold roman italic underline overstrike\n#\n#"
+    puts $f "# NOTE: When configuring fonts, remember to remove the following "
+    puts $f "# \[window height\] and \[window width\] entries before starting apol. "
+    puts $f "# Not doing this may cause widgets to be obscured when running apol."
+    puts $f "\[general_font\]"
+    if {$general_font == {}} {
+        puts $f "Helvetica 10"
+    } else {
+        puts $f "$general_font"
+    }
+    puts $f "\[title_font\]"
+    if {$title_font == {}} {
+        puts $f "Helvetica 10 bold italic"
+    } else {
+        puts $f "$title_font"
+    }
+    puts $f "\[dialog_font\]"
+    if {$dialog_font == {}} {
+        puts $f "Helvetica 10"
+    } else {
+        puts $f "$dialog_font"
+    }
+    puts $f "\[text_font\]"
+    if {$text_font == {}} {
+        puts $f "fixed"
+    } else {
+        puts $f "$text_font"
+    }
+    puts $f "\[window_height\]"
+    puts $f [winfo height .]
+    puts $f "\[window_width\]"
+    puts $f [winfo width .]
+    puts $f "\[show_fake_attrib_warning\]"
+    variable show_fake_attrib_warning
+    puts $f $show_fake_attrib_warning
+    puts $f "\[max_recent_files\]"
+    variable max_recent_files
+    puts $f $max_recent_files
+    close $f
+}
+
 #######################################################
 # Start script here
 
@@ -819,16 +1073,13 @@ proc ApolTop::main {} {
     wm withdraw .
     wm title . "SELinux Policy Analysis"
     wm protocol . WM_DELETE_WINDOW ApolTop::_exit
+    variable default_bg_color [. cget -background]
 
     # Read apol's default settings file, gather all font information,
     # create the gui and then load recent files into the menu.
     catch {tcl_config_patch_bwidget}
-
-    tk scaling -displayof . 1.0
-
-    Apol_Prefs::create
-    Apol_Prefs::openPrefs
-
+    _load_fonts
+    _read_configuration_file
     _create_toplevel
     bind . <Button-1> {focus %W}
     bind . <Button-2> {focus %W}
@@ -841,7 +1092,9 @@ proc ApolTop::main {} {
     }
     variable apol_icon $icon
 
-    wm geom . [Apol_Prefs::getPref top_width]x[Apol_Prefs::getPref top_height]
+    variable mainframe_width [$notebook cget -width]
+    variable mainframe_height [$notebook cget -height]
+    wm geom . ${mainframe_width}x${mainframe_height}
 
     wm deiconify .
     raise .

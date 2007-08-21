@@ -103,7 +103,7 @@ proc Apol_Analysis::getTextWidget {} {
     variable tabs
     set curid [$widgets(results) raise]
     if {$curid != {}} {
-        return [$tabs($curid:module)::getTextWidget [$widgets(results) getframe $curid]]
+        $tabs($curid:module)::getTextWidget [$widgets(results) getframe $curid]
     }
     return {}
 }
@@ -312,7 +312,7 @@ proc Apol_Analysis::_displayRenameTabDialog {pageID} {
     set f [$d getframe]
     set l [label $f.l -text "Tab name:"]
     set tabs(tab:new_name) [$widgets(results) itemcget $pageID -text]
-    set e [entry $f.e -textvariable Apol_Analysis::tabs(tab:new_name) -width 16 -bg [Apol_Prefs::getPref active_bg]]
+    set e [entry $f.e -textvariable Apol_Analysis::tabs(tab:new_name) -width 16 -bg white]
     pack $l $e -side left -padx 2
     set retval [$d draw]
     destroy $d

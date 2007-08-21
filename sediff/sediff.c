@@ -41,7 +41,7 @@ enum opt_values
 {
 	DIFF_LEVEL = 256, DIFF_CATEGORY,
 	DIFF_AUDITALLOW, DIFF_DONTAUDIT, DIFF_NEVERALLOW,
-	DIFF_TYPE_CHANGE, DIFF_TYPE_MEMBER,
+	DIFF_TYPE_CHANGE, DIFF_TYPE_MEMBER, DIFF_TYPE_TRANS,
 	DIFF_ROLE_TRANS, DIFF_ROLE_ALLOW, DIFF_RANGE_TRANS,
 	OPT_STATS
 };
@@ -61,7 +61,7 @@ static struct option const longopts[] = {
 	{"dontaudit", no_argument, NULL, DIFF_DONTAUDIT},
 	{"neverallow", no_argument, NULL, DIFF_NEVERALLOW},
 	{"type_change", no_argument, NULL, DIFF_TYPE_CHANGE},
-	{"type_trans", no_argument, NULL, 'T'},
+	{"type_trans", no_argument, NULL, DIFF_TYPE_TRANS},
 	{"type_member", no_argument, NULL, DIFF_TYPE_MEMBER},
 	{"role_trans", no_argument, NULL, DIFF_ROLE_TRANS},
 	{"role_allow", no_argument, NULL, DIFF_ROLE_ALLOW},
@@ -97,7 +97,7 @@ static void usage(const char *prog_name, int brief)
 	printf("  --neverallow       neverallow rules\n");
 	printf("  --type_change      type_change rules\n");
 	printf("  --type_member      type_member rules\n");
-	printf("  -T, --type_trans   type_transition rules\n");
+	printf("  --type_trans       type_transition rules\n");
 	printf("  --role_trans       role_transition rules\n");
 	printf("  --role_allow       role allow rules\n");
 	printf("  --range_trans      range_transition rules\n");
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "ctarubATNDLMCRqhV", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "ctarubANDLMCRqhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 		case DIFF_TYPE_MEMBER:
 			flags |= POLDIFF_DIFF_TEMEMBER;
 			break;
-		case 'T':
+		case DIFF_TYPE_TRANS:
 			flags |= POLDIFF_DIFF_TETRANS;
 			break;
 		case DIFF_ROLE_ALLOW:

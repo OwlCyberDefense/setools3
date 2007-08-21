@@ -56,7 +56,7 @@ proc Apol_File_Contexts::create {tab_name nb} {
     pack $status_text -side left -anchor nw -padx 6 -pady 4
     label $status_text.l -text "Opened Index:"
     set status1 [label $status_text.t -textvariable Apol_File_Contexts::opts(statusText)]
-    set status2 [label $status_text.t2 -textvariable Apol_File_Contexts::opts(statusText2) -fg [Apol_Prefs::getPref highlight_fg]]
+    set status2 [label $status_text.t2 -textvariable Apol_File_Contexts::opts(statusText2) -fg red]
     trace add variable Apol_File_Contexts::opts(indexFilename) write \
         [list Apol_File_Contexts::_changeStatusLabel $status1 $status2]
     grid $status_text.l $status1 -sticky w
@@ -234,17 +234,17 @@ proc Apol_File_Contexts::_changeStatusLabel {label1 label2 name1 name2 opt} {
     variable opts
     if {$opts(db) == {}} {
         set opts(statusText) "No Index File Opened"
-        $label1 configure -fg [Apol_Prefs::getPref highlight_fg]
+        $label1 configure -fg red
         set opts(statusText2) {}
     } else {
         set opts(statusText) $opts(indexFilename)
-        $label1 configure -fg [Apol_Prefs::getPref active_fg]
+        $label1 configure -fg black
         if {$opts(fc_is_mls)} {
             set opts(statusText2) "Database contexts include MLS ranges."
-            $label2 configure -fg [Apol_Prefs::getPref active_bg]
+            $label2 configure -fg black
         } else {
             set opts(statusText2) "Database contexts do not include MLS ranges."
-            $label2 configure -fg [Apol_Prefs::getPref highlight_fg]
+            $label2 configure -fg red
         }
     }
 }
@@ -252,9 +252,9 @@ proc Apol_File_Contexts::_changeStatusLabel {label1 label2 name1 name2 opt} {
 proc Apol_File_Contexts::_toggleEnable {entry name1 name2 op} {
     variable opts
     if {$opts($name2)} {
-        $entry configure -state normal -bg [Apol_Prefs::getPref active_bg]
+        $entry configure -state normal -bg white
     } else {
-        $entry configure -state disabled -bg [Apol_Prefs::getPref disable_bg]
+        $entry configure -state disabled -bg $ApolTop::default_bg_color
     }
 }
 
@@ -263,11 +263,11 @@ proc Apol_File_Contexts::_toggleRange {cb entry name1 name2 op} {
     if {$opts(fc_is_mls)} {
         $cb configure -state normal
         if {$opts(useRange)} {
-            $entry configure -state normal -bg [Apol_Prefs::getPref active_bg]
+            $entry configure -state normal -bg white
         }
     } else {
         $cb configure -state disabled
-        $entry configure -state disabled -bg [Apol_Prefs::getPref disable_bg]
+        $entry configure -state disabled -bg $ApolTop::default_bg_color
     }
 }
 
@@ -285,7 +285,7 @@ proc Apol_File_Contexts::_create_dialog {} {
 
     set f [$d getframe]
     set file_l [label $f.file_l -justify left -anchor w -text "Save index to:"]
-    set file_entry [entry $f.file_e -width 30 -bg [Apol_Prefs::getPref active_bg] -takefocus 1\
+    set file_entry [entry $f.file_e -width 30 -bg white -takefocus 1\
                         -textvariable Apol_File_Contexts::opts(new_filename) \
                         -validate key \
                         -vcmd [list Apol_File_Contexts::_validateEntryKey %P $d new_rootdir]]
@@ -294,7 +294,7 @@ proc Apol_File_Contexts::_create_dialog {} {
                          -command [list Apol_File_Contexts::_browse_save]]
 
     set root_l [label $f.root_l -justify left -anchor w -text "Directory to index:"]
-    set root_entry [entry $f.root_e -width 30 -bg [Apol_Prefs::getPref active_bg] -takefocus 1 \
+    set root_entry [entry $f.root_e -width 30 -bg white -takefocus 1 \
                         -textvariable Apol_File_Contexts::opts(new_rootdir) \
                         -validate key \
                         -vcmd [list Apol_File_Contexts::_validateEntryKey %P $d new_filename]]

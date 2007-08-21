@@ -133,7 +133,7 @@ proc Apol_RBAC::_allowCreate {a_f} {
     set source_cb [checkbutton $source.enable -text "Source role" \
                        -variable Apol_RBAC::vals(source:use)]
     set widgets(allow:source) [ComboBox $source.cb -width 20 -state disabled \
-                                   -entrybg [Apol_Prefs::getPref disable_bg] \
+                                   -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(source:sym) \
                                    -helptext "Type or select a role" -autopost 1]
     set which_fm [frame $source.which]
@@ -157,7 +157,7 @@ proc Apol_RBAC::_allowCreate {a_f} {
     set widgets(allow:target_cb) [checkbutton $target.enable -text "Target role" \
                                       -variable Apol_RBAC::vals(target_role:use)]
     set widgets(allow:target) [ComboBox $target.cb -width 20 -state disabled \
-                                   -entrybg [Apol_Prefs::getPref disable_bg] \
+                                   -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(target_role:sym) \
                                    -helptext "Type or select a role" -autopost 1]
     trace add variable Apol_RBAC::vals(target_role:use) write \
@@ -175,7 +175,7 @@ proc Apol_RBAC::_transCreate {t_f} {
     set source_cb [checkbutton $source.enable -text "Source role" \
                        -variable Apol_RBAC::vals(source:use)]
     set widgets(trans:source) [ComboBox $source.cb -width 20 -state disabled \
-                                        -entrybg [Apol_Prefs::getPref disable_bg] \
+                                        -entrybg $ApolTop::default_bg_color \
                                         -textvariable Apol_RBAC::vals(source:sym) \
                                         -helptext "Type or select a role" -autopost 1]
     set which_fm [frame $source.which]
@@ -199,7 +199,7 @@ proc Apol_RBAC::_transCreate {t_f} {
     set target_cb [checkbutton $target.enable -text "Target type" \
                        -variable Apol_RBAC::vals(target_type:use)]
     set widgets(trans:target) [ComboBox $target.cb -width 20 -state disabled \
-                                   -entrybg [Apol_Prefs::getPref disable_bg] \
+                                   -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(target_type:sym) \
                                    -helptext "Type or select a type/attribute" -autopost 1]
     set ta_frame [frame $target.ta]
@@ -225,7 +225,7 @@ proc Apol_RBAC::_transCreate {t_f} {
     set widgets(trans:default_cb) [checkbutton $default.enable -text "Default role" \
                                        -variable Apol_RBAC::vals(default:use)]
     set widgets(trans:default) [ComboBox $default.cb -width 20 -state disabled \
-                                   -entrybg [Apol_Prefs::getPref disable_bg] \
+                                   -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(default:sym) \
                                    -helptext "Type or select a role" -autopost 1]
     trace add variable Apol_RBAC::vals(default:use) write \
@@ -243,7 +243,7 @@ proc Apol_RBAC::_bothCreate {b_f} {
     set source_cb [checkbutton $source.enable -text "Source role" \
                        -variable Apol_RBAC::vals(source:use)]
     set widgets(both:source) [ComboBox $source.cb -width 20 -state disabled \
-                                   -entrybg [Apol_Prefs::getPref disable_bg] \
+                                   -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(source:sym) \
                                    -helptext "Type or select a role" -autopost 1]
     set which_fm [frame $source.which]
@@ -268,12 +268,12 @@ proc Apol_RBAC::_toggleCheckbutton {cb w name1 name2 ops} {
     variable vals
 
     if {$vals($name2)} {
-        $cb configure -state normal -entrybg [Apol_Prefs::getPref active_bg]
+        $cb configure -state normal -entrybg white
         foreach x $w {
             $x configure -state normal
         }
     } else {
-        $cb configure -state disabled -entrybg [Apol_Prefs::getPref disable_bg]
+        $cb configure -state disabled -entrybg $ApolTop::default_bg_color
         foreach x $w {
             $x configure -state disabled
         }
@@ -294,7 +294,7 @@ proc Apol_RBAC::_maybeEnableTargetRole {} {
     variable widgets
     if {$vals(source:use) && $vals(source:which) == "either"} {
         $widgets(allow:target_cb) configure -state disabled
-        $widgets(allow:target) configure -state disabled -entrybg [Apol_Prefs::getPref disable_bg]
+        $widgets(allow:target) configure -state disabled -entrybg $ApolTop::default_bg_color
     } else {
         $widgets(allow:target_cb) configure -state normal
         # reset subwidgets' state
@@ -307,7 +307,7 @@ proc Apol_RBAC::_maybeEnableDefaultRole {} {
     variable widgets
     if {$vals(source:use) && $vals(source:which) == "either"} {
         $widgets(trans:default_cb) configure -state disabled
-        $widgets(trans:default) configure -state disabled -entrybg [Apol_Prefs::getPref disable_bg]
+        $widgets(trans:default) configure -state disabled -entrybg $ApolTop::default_bg_color
     } else {
         $widgets(trans:default_cb) configure -state normal
         # reset subwidgets' state

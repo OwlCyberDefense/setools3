@@ -17,7 +17,6 @@ namespace eval Apol_Widget {
     variable menuPopup {}
     variable infoPopup {}
     variable infoPopup2 {}
-    variable treeTextBuffer {}
     variable vars
 }
 
@@ -30,7 +29,7 @@ namespace eval Apol_Widget {
 # assumes that the listbox has been alphabetized.)
 proc Apol_Widget::makeScrolledListbox {path args} {
     set sw [ScrolledWindow $path -scrollbar both -auto both]
-    set lb [eval listbox $sw.lb $args -bg [Apol_Prefs::getPref active_bg] -highlightthickness 0]
+    set lb [eval listbox $sw.lb $args -bg white -highlightthickness 0]
     $sw setwidget $lb
 
     update
@@ -86,7 +85,7 @@ proc Apol_Widget::makeTypeCombobox {path args} {
     set f [frame $path]
     set type_box [eval ComboBox $f.tb -helptext {{Type or select a type}} \
                       -textvariable Apol_Widget::vars($path:type) \
-                      -entrybg [Apol_Prefs::getPref active_bg] -width 20 -autopost 1 $args]
+                      -entrybg white -width 20 -autopost 1 $args]
     pack $type_box -side top -expand 1 -fill x
 
     set attrib_width [expr {[$type_box cget -width] - 4}]
@@ -94,7 +93,7 @@ proc Apol_Widget::makeTypeCombobox {path args} {
                            -anchor w -text "Filter by attribute"\
                            -variable Apol_Widget::vars($path:attribenable) \
                            -command [list Apol_Widget::_attrib_enabled $path]]
-    set attrib_box [ComboBox $f.ab -autopost 1 -entrybg [Apol_Prefs::getPref active_bg] -width $attrib_width \
+    set attrib_box [ComboBox $f.ab -autopost 1 -entrybg white -width $attrib_width \
                         -textvariable Apol_Widget::vars($path:attrib)]
     trace add variable Apol_Widget::vars($path:attrib) write [list Apol_Widget::_attrib_changed $path]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
@@ -177,7 +176,7 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
     set f [frame $path]
     set sens_box [eval ComboBox $f.sens $args \
                       -textvariable Apol_Widget::vars($path:sens) \
-                      -entrybg [Apol_Prefs::getPref active_bg] -width 16 -autopost 1]
+                      -entrybg white -width 16 -autopost 1]
     trace add variable Apol_Widget::vars($path:sens) write [list Apol_Widget::_sens_changed $path]
     pack $sens_box -side top -expand 0 -fill x
 
@@ -309,7 +308,7 @@ proc Apol_Widget::makeRegexpEntry {path args} {
                 -variable Apol_Widget::vars($path:enable_regexp)]
     set regexp [eval entry $f.entry $args \
                     -textvariable Apol_Widget::vars($path:regexp) \
-                    -width 32 -state disabled -bg [Apol_Prefs::getPref disable_bg]]
+                    -width 32 -state disabled -bg $ApolTop::default_bg_color]
     trace add variable Apol_Widget::vars($path:enable_regexp) write \
         [list Apol_Widget::_toggle_regexp_check_button $regexp]
     pack $cb -side top -anchor nw
@@ -349,7 +348,7 @@ proc Apol_Widget::makeSearchResults {path args} {
     variable vars
     array unset vars $path:*
     set sw [ScrolledWindow $path -scrollbar both -auto both]
-    set tb [eval text $sw.tb $args -bg [Apol_Prefs::getPref active_bg] -wrap none -state disabled -font [Apol_Prefs::getPref text_font]]
+    set tb [eval text $sw.tb $args -bg white -wrap none -state disabled -font $ApolTop::text_font]
     set vars($path:cursor) [$tb cget -cursor]
     bind $tb <Button-3> [list Apol_Widget::_searchresults_popup %W %x %y]
     $tb tag configure linenum -foreground blue -underline 1
@@ -503,8 +502,8 @@ proc Apol_Widget::showPopupParagraph {title info} {
         $infoPopup2 add -text "Close" -command [list destroy $infoPopup2]
         set sw [ScrolledWindow [$infoPopup2 getframe].sw -auto both -scrollbar both]
         $sw configure -relief sunken
-        set text [text [$sw getframe].text -font [Apol_Prefs::getPref text_font] \
-                      -wrap none -width 75 -height 25 -bg [Apol_Prefs::getPref active_bg]]
+        set text [text [$sw getframe].text -font $ApolTop::text_font \
+                      -wrap none -width 75 -height 25 -bg white]
         $sw setwidget $text
         update
         grid propagate $sw 0
@@ -520,50 +519,6 @@ proc Apol_Widget::showPopupParagraph {title info} {
     $text delete 1.0 end
     $text insert 0.0 $info
     $text configure -state disabled
-}
-
-proc Apol_Widget::makeTreeResults {path args} {
-    variable vars
-    array unset vars $path:*
-    set sw [ScrolledWindow $path -scrollbar both -auto both]
-    set tree [eval Tree $sw.tree $args -bg [Apol_Prefs::getPref active_bg] \
-                  -redraw 1 -borderwidth 0 -highlightthickness 0 -showlines 1 \
-                  -padx 0]
-    # bind a right click to the /canvas/ part of the tree, rather than
-    # its surrounding frame
-    bind $tree.c <Button-3> [list Apol_Widget::_searchtree_popup $tree %x %y]
-    $sw setwidget $tree
-    update
-    grid propagate $sw 0
-    return $sw
-}
-
-proc Apol_Widget::clearSearchTree {path} {
-    set tree $path.tree
-    $tree delete [$tree nodes root]
-}
-
-proc Apol_Widget::copySearchTree {path} {
-    # In X, middle-click must be associated with some selected text or
-    # another.  The notion of "copying a tree" does not normally
-    # affect a selection, thus the clipboard and middle-click
-    # selection would no longer be synchronized.  Thus the solution is
-    # to create a hidden text buffer that will hold the text.  That
-    # hidden buffer can then be selected, and then its contents can be
-    # sent to the X clipboard.
-    variable treeTextBuffer
-    if {![winfo exists $treeTextBuffer]} {
-        set treeTextBuffer [text .apol_widget_tree_text_buffer]
-    }
-    $treeTextBuffer delete 0.0 end
-    $treeTextBuffer insert end "<ol>\n"
-    $treeTextBuffer insert end [_copy_searchtree_recurse $path [$path nodes root] 1]
-    $treeTextBuffer insert end "</ol>"
-
-    focus $treeTextBuffer
-    $treeTextBuffer tag add sel 1.0 end
-    clipboard clear
-    clipboard append -- [$treeTextBuffer get sel.first sel.last]
 }
 
 ########## private functions below ##########
@@ -690,9 +645,9 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
 
 proc Apol_Widget::_toggle_regexp_check_button {path name1 name2 op} {
     if {$Apol_Widget::vars($name2)} {
-        $path configure -state normal -bg [Apol_Prefs::getPref active_bg]
+        $path configure -state normal -bg white
     } else {
-        $path configure -state disabled -bg [Apol_Prefs::getPref disable_bg]
+        $path configure -state disabled -bg $ApolTop::default_bg_color
     }
 }
 
@@ -730,40 +685,4 @@ proc Apol_Widget::_render_typeset {typeset} {
     } else {
         set typeset
     }
-}
-
-proc Apol_Widget::_searchtree_popup {path x y} {
-    if {[ApolTop::is_policy_open]} {
-        focus $path
-        # create a global popup menu widget if one does not already exist
-        variable menuPopup
-        if {![winfo exists $menuPopup]} {
-            set menuPopup [menu .apol_widget_menu_popup -tearoff 0]
-        }
-        set callbacks {
-            {"Copy Tree Structure" Apol_Widget::copySearchTree}
-        }
-        ApolTop::popup $path $x $y $menuPopup $callbacks $path
-    }
-}
-
-proc Apol_Widget::_copy_searchtree_recurse {path node depth} {
-    if {![$path visible $node]} {
-        return {}
-    }
-    set s "[string repeat \t $depth]<li>[$path itemcget $node -text]"
-    set children [$path nodes $node]
-    if {[llength $children] > 0} {
-        set child_s {}
-        set child_depth [expr {$depth} + 1]
-        foreach n $children {
-            append child_s [_copy_searchtree_recurse $path $n $child_depth]
-        }
-        if {$child_s != {}} {
-            append s "\n[string repeat \t $depth]<ol>\n"
-            append s $child_s
-            append s "[string repeat \t $depth]</ol>"
-        }
-    }
-    append s "</li>\n"
 }

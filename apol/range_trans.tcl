@@ -61,7 +61,7 @@ proc Apol_Range::create {tab_name nb} {
     set widgets(classes) [listbox [$sw getframe].lb -height 5 -width 24 \
                               -highlightthickness 0 -selectmode multiple \
                               -exportselection 0 -state disabled \
-                              -bg [Apol_Prefs::getPref disable_bg] \
+                              -bg $ApolTop::default_bg_color \
                               -listvar Apol_Range::vals(classes)]
     $sw setwidget $widgets(classes)
     update
@@ -86,7 +86,7 @@ proc Apol_Range::open {ppath} {
     Apol_Widget::resetTypeComboboxToPolicy $widgets(source_type)
     Apol_Widget::resetTypeComboboxToPolicy $widgets(target_type)
     set vals(classes) [Apol_Class_Perms::getClasses]
-    $widgets(classes) configure -bg [Apol_Prefs::getPref active_bg] -state normal
+    $widgets(classes) configure -bg white -state normal
 }
 
 proc Apol_Range::close {} {
@@ -95,7 +95,7 @@ proc Apol_Range::close {} {
     Apol_Widget::clearTypeCombobox $widgets(source_type)
     Apol_Widget::clearTypeCombobox $widgets(target_type)
     set vals(classes) {}
-    $widgets(classes) configure -bg [Apol_Prefs::getPref disable_bg] -state disabled
+    $widgets(classes) configure -bg $ApolTop::default_bg_color -state disabled
     Apol_Widget::clearRangeSelector $widgets(range)
     Apol_Widget::clearSearchResults $widgets(results)
     set vals(enable_source) 0

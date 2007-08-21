@@ -76,7 +76,7 @@ extern "C"
 /**
  *  Allocate and return a vector that has been initialized with the
  *  contents of a binary search tree.  If change_owner is zero then
- *  this function will make a <b>shallow copy of the BST's
+ *  this function will make a <b> shallow copy of the BST's
  *  contents</b>; the BST will still <em>own</em> the objects.
  *  Otherwise the victor will gain ownership of the items; the BST can
  *  then be destroyed safely without affecting the vector.  (The
@@ -118,7 +118,7 @@ extern "C"
  *
  *  @return 0 if element was found, or < 0 if not found.
  */
-	extern int apol_bst_get_element(const apol_bst_t * b, const void *elem, void *data, void **result);
+	extern int apol_bst_get_element(const apol_bst_t * b, void *elem, void *data, void **result);
 
 /**
  *  Insert an element to the BST.  If the element already exists then

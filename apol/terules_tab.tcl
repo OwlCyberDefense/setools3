@@ -153,7 +153,7 @@ proc Apol_TE::getTextWidget {} {
     if {[$widgets(results) pages] != {}} {
         set raisedPage [$widgets(results) raise]
         if {$raisedPage != {}} {
-            return $tabs($raisedPage).tb
+            return $tabs($raisedPage)
 	}
     }
     return {}
@@ -351,7 +351,7 @@ proc Apol_TE::_create_ta_box {prefix f title has_indirect has_which has_attribs}
         set helptext "Type or select a type"
     }
     set widgets(ta:${prefix}_sym) [ComboBox $f.sym \
-                                       -state disabled -entrybg [Apol_Prefs::getPref disable_bg] \
+                                       -state disabled -entrybg $ApolTop::default_bg_color \
                                        -textvariable Apol_TE::vals(ta:${prefix}_sym) \
                                        -helptext $helptext -autopost 1]
     pack $widgets(ta:${prefix}_sym) -expand 0 -fill x -padx 8
@@ -491,12 +491,12 @@ proc Apol_TE::_toggle_enable_ta {col name1 name2 op} {
         foreach w $widgets(ta:${col}_widgets) {
             $w configure -state normal
         }
-        $widgets(ta:${col}_sym) configure -entrybg [Apol_Prefs::getPref active_bg]
+        $widgets(ta:${col}_sym) configure -entrybg white
     } else {
         foreach w $widgets(ta:${col}_widgets) {
             $w configure -state disabled
         }
-        $widgets(ta:${col}_sym) configure -entrybg [Apol_Prefs::getPref disable_bg]
+        $widgets(ta:${col}_sym) configure -entrybg $ApolTop::default_bg_color
     }
 
     # update this tab's name if one of the columns is enabled and used
@@ -553,7 +553,7 @@ proc Apol_TE::_createClassesPermsTab {} {
     set widgets(cp:classes) [listbox [$sw getframe].lb -height 5 -width 24 \
                                  -highlightthickness 0 -selectmode multiple \
                                  -exportselection 0 -state disabled \
-                                 -bg [Apol_Prefs::getPref disable_bg] \
+                                 -bg $ApolTop::default_bg_color \
                                  -listvar Apol_TE::vals(cp:classes)]
     $sw setwidget $widgets(cp:classes)
     update
@@ -571,7 +571,7 @@ proc Apol_TE::_createClassesPermsTab {} {
     set sw [ScrolledWindow $f.sw -auto both]
     set widgets(cp:perms) [listbox [$sw getframe].lb -height 5 -width 24 \
                                -highlightthickness 0 -selectmode multiple \
-                               -exportselection 0 -bg [Apol_Prefs::getPref active_bg] \
+                               -exportselection 0 -bg white \
                                -listvar Apol_TE::vals(cp:perms)]
     $sw setwidget $widgets(cp:perms)
     update
@@ -624,12 +624,12 @@ proc Apol_TE::_toggle_enable_cp {prefix name1 name2 op} {
         foreach w $widgets(cp:${prefix}_widgets) {
             $w configure -state normal
         }
-        $widgets(cp:${prefix}) configure -bg [Apol_Prefs::getPref active_bg]
+        $widgets(cp:${prefix}) configure -bg white
     } else {
         foreach w $widgets(cp:${prefix}_widgets) {
             $w configure -state disabled
         }
-        $widgets(cp:${prefix}) configure -bg [Apol_Prefs::getPref disable_bg]
+        $widgets(cp:${prefix}) configure -bg $ApolTop::default_bg_color
     }
     # force a refresh of this tab's name
     set vals(cp:${prefix}_selected) $vals(cp:${prefix}_selected)
@@ -660,7 +660,7 @@ proc Apol_TE::_toggle_perms_toshow {name1 name2 op} {
         # don't change the list of permissions if there was a new
         # object class selection and the current radiobutton is all
         if {$op != "update"} {
-            set vals(cp:perms) [Apol_Class_Perms::getPerms]
+            set vals(cp:perms) $Apol_Class_Perms::perms_list
             set vals(cp:perms_selected) {}
         }
     } elseif {$vals(cp:perms_toshow) == "union"} {
@@ -777,7 +777,7 @@ proc Apol_TE::_display_rename_tab_dialog {pageID} {
     set f [$d getframe]
     set l [label $f.l -text "Tab name:"]
     set tabs(tab:new_name) [$widgets(results) itemcget $pageID -text]
-    set e [entry $f.e -textvariable Apol_TE::tabs(tab:new_name) -width 16 -bg [Apol_Prefs::getPref active_bg]]
+    set e [entry $f.e -textvariable Apol_TE::tabs(tab:new_name) -width 16 -bg white]
     pack $l $e -side left -padx 2
     set retval [$d draw]
     destroy $d

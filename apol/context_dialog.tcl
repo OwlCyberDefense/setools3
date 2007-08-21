@@ -126,7 +126,7 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
     set user_f [frame $left_f.user]
     set vars($dialog:user_cb) [checkbutton $user_f.enable -text "User" \
                                   -variable Apol_Context_Dialog::vars($dialog:user_enable)]
-    set vars($dialog:user_box) [ComboBox $user_f.user -entrybg [Apol_Prefs::getPref active_bg] -width 12 \
+    set vars($dialog:user_box) [ComboBox $user_f.user -entrybg white -width 12 \
                                    -textvariable Apol_Context_Dialog::vars($dialog:user) -autopost 1]
     trace add variable Apol_Context_Dialog::vars($dialog:user_enable) write \
         [list Apol_Context_Dialog::_user_changed $dialog]
@@ -136,7 +136,7 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
     set role_f [frame $left_f.role]
     set vars($dialog:role_cb) [checkbutton $role_f.enable -text "Role" \
                                  -variable Apol_Context_Dialog::vars($dialog:role_enable)]
-    set vars($dialog:role_box) [ComboBox $role_f.role -entrybg [Apol_Prefs::getPref active_bg] -width 12 \
+    set vars($dialog:role_box) [ComboBox $role_f.role -entrybg white -width 12 \
                                   -textvariable Apol_Context_Dialog::vars($dialog:role) -autopost 1]
     trace add variable Apol_Context_Dialog::vars($dialog:role_enable) write \
         [list Apol_Context_Dialog::_role_changed $dialog]

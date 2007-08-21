@@ -55,7 +55,7 @@ enum opt_values
 {
 	RULE_NEVERALLOW = 256, RULE_AUDIT, RULE_AUDITALLOW, RULE_DONTAUDIT,
 	RULE_ROLE_ALLOW, RULE_ROLE_TRANS, RULE_RANGE_TRANS, RULE_ALL,
-	EXPR_ROLE_SOURCE, EXPR_ROLE_TARGET, RULE_TYPE_MEMBER, RULE_TYPE_CHANGE
+	EXPR_ROLE_SOURCE, EXPR_ROLE_TARGET
 };
 
 static struct option const longopts[] = {
@@ -64,9 +64,7 @@ static struct option const longopts[] = {
 	{"audit", no_argument, NULL, RULE_AUDIT},
 	{"auditallow", no_argument, NULL, RULE_AUDITALLOW},
 	{"dontaudit", no_argument, NULL, RULE_DONTAUDIT},
-	{"type_trans", no_argument, NULL, 'T'},
-	{"type_member", no_argument, NULL, RULE_TYPE_MEMBER},
-	{"type_change", no_argument, NULL, RULE_TYPE_CHANGE},
+	{"type", no_argument, NULL, 'T'},
 	{"role_allow", no_argument, NULL, RULE_ROLE_ALLOW},
 	{"role_trans", no_argument, NULL, RULE_ROLE_TRANS},
 	{"range_trans", no_argument, NULL, RULE_RANGE_TRANS},
@@ -108,9 +106,7 @@ typedef struct options
 	bool nallow;
 	bool auditallow;
 	bool dontaudit;
-	bool type_trans;
-	bool type_member;
-	bool type_change;
+	bool type;
 	bool rtrans;
 	bool role_allow;
 	bool role_trans;
@@ -129,12 +125,10 @@ void usage(const char *program_name, int brief)
 	printf("Search the rules in a SELinux policy.\n\n");
 	printf("RULE_TYPES:\n");
 	printf("  -A, --allow               allow rules\n");
+	printf("  --neverallow              neverallow rules\n");
 	printf("  --auditallow              auditallow rules\n");
 	printf("  --dontaudit               dontaudit rules\n");
-	printf("  --neverallow              neverallow rules\n");
-	printf("  --type_change             type_change rules\n");
-	printf("  --type_member             type_member rules\n");
-	printf("  -T, --type_trans          type_transition rules\n");
+	printf("  -T, --type                type_trans, type_member, and type_change\n");
 	printf("  --role_allow              role allow rules\n");
 	printf("  --role_trans              role_transition rules\n");
 	printf("  --range_trans             range_transition rules\n");
@@ -395,7 +389,9 @@ static int perform_te_query(const apol_policy_t * policy, const options_t * opt,
 		return -1;
 	}
 
-	if (!opt->all && !opt->type_trans && !opt->type_member && !opt->type_change) {
+	if (opt->all || opt->type) {
+		rules = (QPOL_RULE_TYPE_TRANS | QPOL_RULE_TYPE_CHANGE | QPOL_RULE_TYPE_MEMBER);
+	} else {
 		*v = NULL;
 		return 0;	       /* no search to do */
 	}
@@ -405,16 +401,6 @@ static int perform_te_query(const apol_policy_t * policy, const options_t * opt,
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return -1;
-	}
-
-	if (opt->all || opt->type_trans) {
-		rules |= QPOL_RULE_TYPE_TRANS;
-	}
-	if (opt->all || opt->type_member) {
-		rules |= QPOL_RULE_TYPE_MEMBER;
-	}
-	if (opt->all || opt->type_change) {
-		rules |= QPOL_RULE_TYPE_CHANGE;
 	}
 
 	apol_terule_query_set_rules(policy, teq, rules);
@@ -844,7 +830,7 @@ static void print_range_results(const apol_policy_t * policy, const options_t * 
 int main(int argc, char **argv)
 {
 	options_t cmd_opts;
-	int optc, rt = -1;
+	int optc, rt;
 
 	apol_policy_t *policy = NULL;
 	apol_vector_t *v = NULL;
@@ -965,14 +951,8 @@ int main(int argc, char **argv)
 		case RULE_DONTAUDIT:
 			cmd_opts.dontaudit = true;
 			break;
-		case 'T':	       /* type_transition */
-			cmd_opts.type_trans = true;
-			break;
-		case RULE_TYPE_MEMBER:	/* type_member */
-			cmd_opts.type_member = true;
-			break;
-		case RULE_TYPE_CHANGE:	/* type_change */
-			cmd_opts.type_change = true;
+		case 'T':	       /* type */
+			cmd_opts.type = true;
 			break;
 		case RULE_ROLE_ALLOW:
 			cmd_opts.role_allow = true;
@@ -1008,12 +988,10 @@ int main(int argc, char **argv)
 	}
 
 	if (!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.auditallow || cmd_opts.dontaudit || cmd_opts.role_allow ||
-	      cmd_opts.type_trans || cmd_opts.type_member || cmd_opts.type_change || cmd_opts.rtrans || cmd_opts.role_trans ||
-	      cmd_opts.all)) {
+	      cmd_opts.type || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
 		usage(argv[0], 1);
 		fprintf(stderr, "One of --all, --allow, --neverallow, --auditallow, --dontaudit,\n"
-			"--range_trans, --type_trans, --type_member, --type_change, --role_allow,\n"
-			"or --role_trans must be specified.\n");
+			"--range_trans, --type, --role_allow, or --role_trans must be specified.\n");
 		exit(1);
 	}
 

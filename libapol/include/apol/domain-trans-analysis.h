@@ -209,8 +209,8 @@ extern "C"
  *  classes.  Pass a NULL to clear all previously appended classes.
  *  <b>If access classes are appended, the caller must also call
  *  apol_domain_trans_analysis_append_access_type() at least once with
- *  a valid type and apol_domain_trans_analysis_append_perm() with a
- *  valid permission.</b>
+ *  a valid type and apol_domain_trans_analysis_append_access_perm()
+ *  with a valid permission.</b>
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
  *  @param class_name The class to which a result must have access.
@@ -222,13 +222,15 @@ extern "C"
 
 /**
  *  Set the analysis to return only types having access (via allow
- *  rules) to at this permission. <b>This is only valid for forward
- *  analysis.</b> If more than one permission is appended the
- *  resulting type must have at least one of the appended permissions.
- *  Pass a NULL to clear all previously appended permissions. <b>If
- *  access permissions are appended, the caller must also call
+ *  rules) to at least one class given by
+ *  apol_domain_trans_analysis_append_class () with the given
+ *  permission. <b>This is only valid for forward analysis.</b> If
+ *  more than one permission is appended the resulting type must have
+ *  at least one of the appended permissions.  Pass a NULL to clear
+ *  all previously appended permissions. <b>If access permissions are
+ *  appended, the caller must also call
  *  apol_domain_trans_analysis_append_access_type() at least once with
- *  a valid type and apol_domain_trans_analysis_append_class() at
+ *  a valid type and apol_domain_trans_analysis_append_class () at
  *  least once with a valid class.</b>
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
@@ -290,8 +292,8 @@ extern "C"
 /**
  *  Return the vector of process transition rules (qpol_avrule_t
  *  pointers) in an apol_domain_trans_result node.  The caller should
- *  not free the returned pointer.  If the transition is invalid then
- *  the returned vector will be empty.
+ *  not free the returned pointer.  If the transition in the node is
+ *  not valid there may be no rule in which case NULL is returned.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
@@ -301,8 +303,9 @@ extern "C"
 /**
  *  Return the vector of file entrypoint rules (qpol_avrule_t
  *  pointers) in an apol_domain_trans_result node.  The caller should
- *  not free the returned pointer.  If the transition is invalid then
- *  the returned vector will be empty.
+ *  not free the returned pointer. If the transition in the node is
+ *  not valid there may be no rule in which case NULL is returned.
+ *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
  */
@@ -311,8 +314,9 @@ extern "C"
 /**
  *  Return the vector of file execute rules (qpol_avrule_t pointers)
  *  in an apol_domain_trans_result node.  The caller should not free
- *  the returned pointer.  If the transition is invalid then the
- *  returned vector will be empty.
+ *  the returned pointer. If the transition in the node is not valid
+ *  there may be no rule in which case NULL is returned.
+ *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
  */
@@ -324,7 +328,7 @@ extern "C"
  *  not free the returned pointer.  For all policies of version 15 or
  *  later a transition requires either a setexec rule or a
  *  type_transition rule to be valid.  Valid transitions may have
- *  both; if there is no rule, this function returns an empty vector.
+ *  both; if there is no rule, this function returns NULL.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
@@ -337,7 +341,7 @@ extern "C"
  *  not free the returned pointer.  For all policies of version 15 or
  *  later a transition requires either a setexec rule or a
  *  type_transition rule to be valid.  Valid transitions may have
- *  both; if there is no rule, this function returns an empty vector.
+ *  both; if there is no rule, this function returns NULL.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_terule_t relative to the policy originally
  *  used to generate the results.

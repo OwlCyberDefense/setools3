@@ -606,37 +606,33 @@ bool sefs_filesystem::isQueryMatch(const sefs_query * query, const char *path, c
 		return false;
 	}
 
-	if (isMLS())
+	if (range == NULL)
 	{
-		if (range == NULL)
+		if (!query_str_compare(context_range_get(con), query->_range, query->_rerange, query->_regex))
 		{
-			if (!query_str_compare(context_range_get(con), query->_range, query->_rerange, query->_regex))
-			{
-				context_free(con);
-				return false;
-			}
-		}
-		else
-		{
-			assert(policy != NULL);
-			apol_mls_range_t *context_range = apol_mls_range_create_from_string(policy, context_range_get(con));
-			if (context_range == NULL)
-			{
-				SEFS_ERR(this, "%s", strerror(errno));
-				context_free(con);
-				throw std::runtime_error(strerror(errno));
-			}
-			int ret;
-			ret = apol_mls_range_compare(policy, range, context_range, query->_rangeMatch);
-			apol_mls_range_destroy(&context_range);
-			if (ret <= 0)
-			{
-				context_free(con);
-				return false;
-			}
+			context_free(con);
+			return false;
 		}
 	}
-
+	else
+	{
+		assert(policy != NULL);
+		apol_mls_range_t *context_range = apol_mls_range_create_from_string(policy, context_range_get(con));
+		if (context_range == NULL)
+		{
+			SEFS_ERR(this, "%s", strerror(errno));
+			context_free(con);
+			throw std::runtime_error(strerror(errno));
+		}
+		int ret;
+		ret = apol_mls_range_compare(policy, range, context_range, query->_rangeMatch);
+		apol_mls_range_destroy(&context_range);
+		if (ret <= 0)
+		{
+			context_free(con);
+			return false;
+		}
+	}
 	context_free(con);
 
 	if (query->_objclass != 0 && query->_objclass != filesystem_stat_to_objclass(sb))

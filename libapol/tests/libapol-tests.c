@@ -30,7 +30,6 @@
 
 #include "avrule-tests.h"
 #include "dta-tests.h"
-#include "infoflow-tests.h"
 #include "policy-21-tests.h"
 #include "terule-tests.h"
 
@@ -46,8 +45,6 @@ int main(void)
 		{"AV Rule Query", avrule_init, avrule_cleanup, avrule_tests}
 		,
 		{"Domain Transition Analysis", dta_init, dta_cleanup, dta_tests}
-		,
-		{"Infoflow Analysis", infoflow_init, infoflow_cleanup, infoflow_tests}
 		,
 		{"TE Rule Query", terule_init, terule_cleanup, terule_tests}
 		,

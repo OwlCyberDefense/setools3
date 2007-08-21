@@ -532,7 +532,8 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 								goto inc_dom_trans_run_fail;
 							}
 							item->test_result = 1;
-							item->item = (void *)
+							item->item =
+								(void *)
 								apol_domain_trans_result_create_from_domain_trans_result(dtr);
 							if (apol_vector_append(res->items, (void *)item) < 0) {
 								error = errno;
@@ -568,7 +569,8 @@ int inc_dom_trans_run(sechk_module_t * mod, apol_policy_t * policy, void *arg __
 								goto inc_dom_trans_run_fail;
 							}
 							item->test_result = 1;
-							item->item = (void *)
+							item->item =
+								(void *)
 								apol_domain_trans_result_create_from_domain_trans_result(dtr);
 							if (apol_vector_append(res->items, (void *)item) < 0) {
 								error = errno;

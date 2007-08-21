@@ -210,25 +210,21 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 					continue;
 				}
 
-				if (isMLS())
+				if (range == NULL)
 				{
-					if (range == NULL)
+					if (!query_str_compare(context->range, query->_range, query->_rerange, query->_regex))
 					{
-						if (!query_str_compare
-						    (context->range, query->_range, query->_rerange, query->_regex))
-						{
-							continue;
-						}
+						continue;
 					}
-					else
+				}
+				else
+				{
+					const apol_mls_range_t *context_range = apol_context_get_range(context->context);
+					int ret;
+					ret = apol_mls_range_compare(policy, context_range, range, query->_rangeMatch);
+					if (ret <= 0)
 					{
-						const apol_mls_range_t *context_range = apol_context_get_range(context->context);
-						int ret;
-						ret = apol_mls_range_compare(policy, context_range, range, query->_rangeMatch);
-						if (ret <= 0)
-						{
-							continue;
-						}
+						continue;
 					}
 				}
 
@@ -261,13 +257,14 @@ int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *
 						SEFS_ERR(this, "%s", strerror(errno));
 						throw std::runtime_error(strerror(errno));
 					}
+					free(anchored_path);
 
 					bool compval = query_str_compare(query->_path, anchored_path, &regex, true);
-					free(anchored_path);
 					regfree(&regex);
 					if (compval)
 					{
 						path_matched = true;
+						break;
 					}
 				}
 				if (!path_matched)

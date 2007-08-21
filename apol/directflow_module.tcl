@@ -207,7 +207,7 @@ proc Apol_Analysis_directflow::loadQuery {channel} {
 }
 
 proc Apol_Analysis_directflow::getTextWidget {tab} {
-    return [$tab.right getframe].res.tb
+    return [$tab.right getframe].res
 }
 
 proc Apol_Analysis_directflow::appendResultsNodes {tree parent_node results} {
@@ -378,8 +378,11 @@ proc Apol_Analysis_directflow::_createResultsDisplay {} {
 
     set tree_tf [TitleFrame $f.left -text "Direct Information Flow Tree"]
     pack $tree_tf -side left -expand 0 -fill y -padx 2 -pady 2
-    set tres [Apol_Widget::makeTreeResults [$tree_tf getframe].res -width 24]
-    pack $tres -expand 1 -fill both
+    set sw [ScrolledWindow [$tree_tf getframe].sw -auto both]
+    set tree [Tree [$sw getframe].tree -width 24 -redraw 1 -borderwidth 0 \
+                  -highlightthickness 0 -showlines 1 -padx 0 -bg white]
+    $sw setwidget $tree
+    pack $sw -expand 1 -fill both
 
     set res_tf [TitleFrame $f.right -text "Direct Information Flow Results"]
     pack $res_tf -side left -expand 1 -fill both -padx 2 -pady 2
@@ -390,8 +393,8 @@ proc Apol_Analysis_directflow::_createResultsDisplay {} {
     $res.tb tag configure subtitle_dir -foreground blue -font {Helvetica 10 bold}
     pack $res -expand 1 -fill both
 
-    $tres.tree configure -selectcommand [list Apol_Analysis_directflow::_treeSelect $res]
-   $tres.tree configure -opencmd [list Apol_Analysis_directflow::_treeOpen $tres.tree]
+    $tree configure -selectcommand [list Apol_Analysis_directflow::_treeSelect $res]
+    $tree configure -opencmd [list Apol_Analysis_directflow::_treeOpen $tree]
     return $f
 }
 
@@ -432,8 +435,10 @@ proc Apol_Analysis_directflow::_treeOpen {tree node} {
 
 proc Apol_Analysis_directflow::_clearResultsDisplay {f} {
     variable vals
-    Apol_Widget::clearSearchTree [$f.left getframe].res
+
+    set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
+    $tree delete [$tree nodes root]
     Apol_Widget::clearSearchResults $res
     Apol_Analysis::setResultTabCriteria [array get vals]
 }
@@ -445,7 +450,7 @@ proc Apol_Analysis_directflow::_renderResults {f results} {
     $graph_handler -acquire  ;# let Tcl's GC destroy graph when this tab closes
     set results_list [$results extract_result_vector]
 
-    set tree [[$f.left getframe].res getframe].tree
+    set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
 
     $tree insert end root top -text $vals(type) -open 1 -drawcross auto

@@ -353,7 +353,7 @@ proc Apol_Analysis_relabel::_createAdvancedDialog {} {
     set attrib_enable [checkbutton $attrib.ae -anchor w \
                            -text "Filter by attribute" \
                            -variable Apol_Analysis_relabel::vals(subjects:attribenable)]
-    set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg [Apol_Prefs::getPref active_bg] -width 16 \
+    set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg white -width 16 \
                         -values $Apol_Types::attriblist \
                         -textvariable Apol_Analysis_relabel::vals(subjects:attrib)]
     $attrib_enable configure -command \
@@ -615,8 +615,11 @@ proc Apol_Analysis_relabel::_createResultsDisplay {} {
     }
     set tree_tf [TitleFrame $f.left -text $tree_title]
     pack $tree_tf -side left -expand 0 -fill y -padx 2 -pady 2
-    set tres [Apol_Widget::makeTreeResults [$tree_tf getframe].res -width 24]
-    pack $tres -expand 1 -fill both
+    set sw [ScrolledWindow [$tree_tf getframe].sw -auto both]
+    set tree [Tree [$sw getframe].tree -width 24 -redraw 1 -borderwidth 0 \
+                  -highlightthickness 0 -showlines 1 -padx 0 -bg white]
+    $sw setwidget $tree
+    pack $sw -expand 1 -fill both
 
     set res_tf [TitleFrame $f.right -text "Relabeling Results"]
     pack $res_tf -side left -expand 1 -fill both -padx 2 -pady 2
@@ -627,7 +630,7 @@ proc Apol_Analysis_relabel::_createResultsDisplay {} {
     $res.tb tag configure type_tag -foreground blue -font {Helvetica 12 bold}
     pack $res -expand 1 -fill both
 
-    $tres.tree configure -selectcommand [list Apol_Analysis_relabel::_treeSelect $res]
+    $tree configure -selectcommand [list Apol_Analysis_relabel::_treeSelect $res]
     return $f
 }
 
@@ -650,8 +653,10 @@ proc Apol_Analysis_relabel::_treeSelect {res tree node} {
 
 proc Apol_Analysis_relabel::_clearResultsDisplay {f} {
     variable vals
-    Apol_Widget::clearSearchTree [$f.left getframe].res
+
+    set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
+    $tree delete [$tree nodes root]
     Apol_Widget::clearSearchResults $res
     Apol_Analysis::setResultTabCriteria [array get vals]
 }
@@ -659,7 +664,7 @@ proc Apol_Analysis_relabel::_clearResultsDisplay {f} {
 proc Apol_Analysis_relabel::_renderResults {f results} {
     variable vals
 
-    set tree [[$f.left getframe].res getframe].tree
+    set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
 
     $tree insert end root top -text $vals(type) -open 1 -drawcross auto
