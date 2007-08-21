@@ -179,7 +179,7 @@ This package includes the following graphical tools:
   seaudit       audit log analysis tool
   sediffx       semantic policy difference tool
 
-%define setoolsdir %{_datadir}/setools-%{version}
+%define setoolsdir %{_datadir}/setools-3.3
 %define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
 %define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
 %define javajardir %{_datadir}/java
@@ -493,6 +493,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %changelog
+* Tue Aug 21 2007 Jason Tang <selinux@tresys.com> 3.3.1-0
+- update to SETools 3.3.1 release
+
 * Thu Aug 02 2007 Jason Tang <selinux@tresys.com> 3.3-0
 - update to SETools 3.3 release
 

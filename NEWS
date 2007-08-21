@@ -1,3 +1,23 @@
+SETools 3.3.1:
+
+This release corrects a number of issues present in SETools 3.3:
+
+  * Fix to configure when Tcl is not found on build system; fix when
+    compiling with --disable-gui option.
+
+  * Fix to uninstall targets of Java wrappers.
+
+  * Fix to libapol where transitive flows could return results that
+    were supposed to be excluded; fixed memory leaks in infoflow graph
+    generation.
+
+  * Fix to libsefs when running MLS query on non-MLS fclists.
+
+  * Fix to apol when reading older .apol files; fix copy and select
+    all on certain tabs.
+
+==================================================
+
 SETools 3.3:
 
 SETools:
