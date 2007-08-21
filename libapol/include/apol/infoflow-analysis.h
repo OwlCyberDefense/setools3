@@ -73,7 +73,8 @@ extern "C"
 /**
  * Execute an information flow analysis against a particular policy.
  * The policy must have had a permission map loaded via
- * apol_permmap_load(), else this analysis will abort immediately.
+ * apol_policy_open_permmap(), else this analysis will abort
+ * immediately.
  *
  * @param p Policy within which to look up allow rules.
  * @param ia A non-NULL structure containing parameters for analysis.
@@ -222,7 +223,9 @@ extern "C"
  *
  * @param policy Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
- * @param type Intermediate type which a result must flow through.
+ * @param type Intermediate type which a result must flow through.  If
+ * NULL, then clear all existing intermediate types.  (All paths will
+ * be returned.)
  * @return 0 on success, negative on error.
  */
 	extern int apol_infoflow_analysis_append_intermediate(const apol_policy_t * p, apol_infoflow_analysis_t * ia,

@@ -229,8 +229,8 @@ tree form (a more natural form might be a graph presentation;
 presently we are not prepared for that type of investment into the
 GUI).  Each node in the tree represents a flow (in the direction
 selected) between the type of the parent node and the type of the
-node.  The results window shows details about the flow, including
-links to the rule(s) that allow the flow.
+node.  The results window shows each step of the flow including the
+contributing access rule(s).
 
 
 Managing permission mappings

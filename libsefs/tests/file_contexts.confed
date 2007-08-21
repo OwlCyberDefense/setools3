@@ -6,9 +6,9 @@
 /sharpsburg/nicodemus	-d	sharpsburg_u:location_r:terrain_t
 /sharpsburg/nicodemus/jackson(/.*)?	--	jackson_u:confed_r:infantry_t
 /sharpsburg/nicodemus/stuart		--	stuart_u:confed_r:artillery_t
-/sharpsburg/west_woods	-d	sharpsburg_u:location_r:terrain_t
+/sharpsburg/west_woods			-d	sharpsburg_u:location_r:terrain_t
 /sharpsburg/west_woods/jackson(/.*)?	-c	jackson_u:confed_r:infantry_t
-/sharpsburg/west_woods/jones            -c      jones_u:confed_r:infantry_t
+/sharpsburg/west_woods/jones		-c	jones_u:confed_r:infantry_t
 /sharpsburg/west_woods/lee		-c	lee_u:confed_r:artillery_t
 /sharpsburg/dunker		<<none>>
 /sharpsburg/hill	-p	hill_u:confed_r:infantry_t
@@ -21,4 +21,4 @@
 /antietam/cemetary_hill/artillery_ridge/toombs(/.*)?	-s	toombs_u:confed_r:artillery_t
 
 /harpers_ferry			virginia_u:location_r:city_t
-/harpers_ferry/.*               hill_u:confed_r:infantry_t
+/harpers_ferry/.*		hill_u:confed_r:infantry_t
