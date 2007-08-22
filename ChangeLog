@@ -1,4 +1,4 @@
-2007-08-21  J. Tang  <jtang@tresys.com>
+2007-08-22  J. Tang  <jtang@tresys.com>
 
 	* Ported bug fixes in branches/setools-devel to trunk.  This is
 	the official release of SETools 3.3.1.
