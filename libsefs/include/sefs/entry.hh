@@ -64,7 +64,10 @@ class sefs_entry
 	~sefs_entry();
 
 	/**
-	 * Get the context from a sefs entry.
+	 * Get the context from a sefs entry.  If the entry has no
+	 * context (such as being marked <tt>&lt;&lt;none&gt;&gt;</tt>
+	 * in a file_contexts file) then apol_context_get_user() and
+	 * others will return an empty string.
 	 * @return A pointer to the context, or NULL on error.  The
 	 * caller should not modify or destroy the returned context.
 	 */

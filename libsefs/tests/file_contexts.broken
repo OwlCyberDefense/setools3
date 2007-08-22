@@ -1,0 +1,3 @@
+# An intentionally broken file_contexts file.
+
+/antietam/burnside		-?	burnside_u:union_r:general_t
