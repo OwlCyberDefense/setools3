@@ -1,3 +1,39 @@
+2007-08-22  J. Tang  <jtang@tresys.com>
+
+	* Ported bug fixes in branches/setools-devel to trunk.  This is
+	the official release of SETools 3.3.1.
+
+2007-08-20  J. Tang  <jtang@tresys.com>
+
+	* Fixed memory leak in libapol/infoflow analysis, where edges were
+	not being freed.  Thanks to Ben Martin for spotting this error.
+
+2007-08-16  J. Tang  <jtang@tresys.com>
+
+	* Fixed an error in libapol's infoflow.  When performing a
+	transitive search, let there be an intermediate rule with source
+	A, an attribute.  If a member of A, type T, is excluded by not
+	calling apol_infoflow_analysis_append_intermediate(), it was still
+	possible to return an infoflow result that uses T.  This has been
+	fixed.
+
+2007-08-13  J. Tang  <jtang@tresys.com>
+
+	* Fix error in libsefs when querying a filesystem or fcfile by
+	range, but the fclist is not MLS.
+
+2007-08-06  J. Tang  <jtang@tresys.com>
+
+	* configure.ac: Tk is checked only if --enable-swig-tcl and
+	--enable-gui are given.  Also, if tclconfig.sh is not found, then
+	abort configuration.
+
+	* apol/top.tcl: Fixed error where reading from an older .apol file
+	(from SETools < 3.2) would cause a startup problem.
+
+	* libapol/include/apol/domain-trans-analysis.h: Upon invalid
+	transition, empty vectors are returned rather than NULL pointers.
+
 2007-08-02  J. Tang  <jtang@tresys.com>
 
 	* Official release of SETools 3.3.

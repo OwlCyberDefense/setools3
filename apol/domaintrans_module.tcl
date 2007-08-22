@@ -236,7 +236,7 @@ proc Apol_Analysis_domaintrans::loadQuery {channel} {
 }
 
 proc Apol_Analysis_domaintrans::getTextWidget {tab} {
-    return [$tab.right getframe].res
+    return [$tab.right getframe].res.tb
 }
 
 proc Apol_Analysis_domaintrans::appendResultsNodes {tree parent_node results} {
@@ -816,14 +816,14 @@ same, you cannot open the child. This avoids cyclic analyses.
 \n3) There must be at least one FILE TYPE that meets criterion 2) above
    and allows the SOURCE type EXECUTE access for FILE objects.
 
-\nThe information window shows all the rules and file types that meet
-these criteria for each target domain type.
+\n4) For modular policies and monolithic policies greater than version
+   15, there must also be at least one of the following:
+   a) A type_transition rule for class PROCESS from SOURCE to TARGET
+      for FILE TYPE, or
+   b) A rule that allows SETEXEC for SOURCE to itself.
 
-\nFUTURE NOTE: In the future we also plan to show the type_transition
-rules that provide for a default domain transitions.  While such rules
-cause a domain transition to occur by default, they do not allow it.
-Thus, associated type_transition rules are not truly part of the
-definition of allowed domain transition" {}
+\nThe information window shows all the rules and file types that meet
+these criteria for each target domain type." {}
 }
 
 proc Apol_Analysis_domaintrans::_createResultsNodes {tree parent_node results search_crit} {
