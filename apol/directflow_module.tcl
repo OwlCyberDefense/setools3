@@ -207,7 +207,7 @@ proc Apol_Analysis_directflow::loadQuery {channel} {
 }
 
 proc Apol_Analysis_directflow::getTextWidget {tab} {
-    return [$tab.right getframe].res
+    return [$tab.right getframe].res.tb
 }
 
 proc Apol_Analysis_directflow::appendResultsNodes {tree parent_node results} {

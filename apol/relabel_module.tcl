@@ -238,7 +238,7 @@ proc Apol_Analysis_relabel::loadQuery {channel} {
 }
 
 proc Apol_Analysis_relabel::getTextWidget {tab} {
-    return [$tab.right getframe].res
+    return [$tab.right getframe].res.tb
 }
 
 #################### private functions below ####################
@@ -484,7 +484,7 @@ proc Apol_Analysis_relabel::_filterTypeLists {attrib} {
     if {$attrib != {}} {
         set typesList {}
         if {[Apol_Types::isAttributeInPolicy $attrib]} {
-            set qpol_type_datum [qpol_type_from_void $::ApolTop::qpolicy $attrib]
+            set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attrib]
             set i [$qpol_type_datum get_type_iter $::ApolTop::qpolicy]
             foreach t [iter_to_list $i] {
                 set t [qpol_type_from_void $t]

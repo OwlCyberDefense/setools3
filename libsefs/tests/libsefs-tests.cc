@@ -1,7 +1,7 @@
 /**
  *  @file
  *
- *  CUnit testing framework for libapol.
+ *  CUnit testing framework for libsefs.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -28,28 +28,17 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 
-#include "avrule-tests.h"
-#include "dta-tests.h"
-#include "infoflow-tests.h"
-#include "policy-21-tests.h"
-#include "terule-tests.h"
+#include "fcfile-tests.hh"
 
 int main(void)
 {
-	if (CU_initialize_registry() != CUE_SUCCESS) {
+	if (CU_initialize_registry() != CUE_SUCCESS)
+	{
 		return CU_get_error();
 	}
 
 	CU_SuiteInfo suites[] = {
-		{"Policy Version 21", policy_21_init, policy_21_cleanup, policy_21_tests}
-		,
-		{"AV Rule Query", avrule_init, avrule_cleanup, avrule_tests}
-		,
-		{"Domain Transition Analysis", dta_init, dta_cleanup, dta_tests}
-		,
-		{"Infoflow Analysis", infoflow_init, infoflow_cleanup, infoflow_tests}
-		,
-		{"TE Rule Query", terule_init, terule_cleanup, terule_tests}
+		{"fcfile", fcfile_init, fcfile_cleanup, fcfile_tests}
 		,
 		CU_SUITE_INFO_NULL
 	};

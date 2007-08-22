@@ -1,12 +1,12 @@
 Name: setools
-Version: 3.3
+Version: 3.3.1
 Release: 0
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: setools-3.3.tar.gz
+Source: setools-3.3.1.tar.gz
 AutoReqProv: no
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
@@ -16,10 +16,10 @@ Requires: setools-libs = %{version} setools-libs-tcl = %{version} setools-gui = 
 %define __find_requires %{nil}
 
 %define libqpol_ver 1.3
-%define libapol_ver 4.1
+%define libapol_ver 4.1.1
 %define libpoldiff_ver 1.3
 %define libseaudit_ver 4.2
-%define libsefs_ver 4.0
+%define libsefs_ver 4.0.1
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
@@ -35,6 +35,7 @@ Group: System Environment/Libraries
 Requires: libselinux >= 1.30 libsepol >= 1.12.27 sqlite >= 3.2.0 libxml2 libstdc++.so.6
 Provides: libqpol = %{libqpol_ver} libapol = %{libapol_ver} libpoldiff = %{libpoldiff_ver} libseaudit = %{libseaudit_ver} libsefs = %{libsefs_ver} 
 BuildRequires: flex, bison, pkgconfig
+BuildRequires: glibc-devel libstdc++-devel
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
 BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
 BuildRequires: tcl-devel >= 8.4.9
@@ -178,7 +179,7 @@ This package includes the following graphical tools:
   seaudit       audit log analysis tool
   sediffx       semantic policy difference tool
 
-%define setoolsdir %{_datadir}/setools-%{version}
+%define setoolsdir %{_datadir}/setools-3.3
 %define pkgpyexecdir %{_libdir}/python?.?/site-packages/setools
 %define pkgpythondir %{_exec_prefix}/lib*/python?.?/site-packages/setools
 %define javajardir %{_datadir}/java
@@ -233,9 +234,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libseaudit.so.%{libseaudit_ver}
 %{_libdir}/libseaudit.so.4
 %{_libdir}/libseaudit.so
-%defattr(-, root, root)
-%{setoolsdir}/seaudit-report.conf
-%{setoolsdir}/seaudit-report.css
 
 %files libs-python
 %defattr(-,root,root)
@@ -434,6 +432,8 @@ rm -rf ${RPM_BUILD_ROOT}
 %{setoolsdir}/sechecker-profiles/sechecker.dtd
 %{setoolsdir}/sechecker_help.txt
 %{setoolsdir}/seaudit-report-service
+%{setoolsdir}/seaudit-report.conf
+%{setoolsdir}/seaudit-report.css
 %{_mandir}/man1/findcon.1.gz
 %{_mandir}/man1/indexcon.1.gz
 %{_mandir}/man1/replcon.1.gz
@@ -493,6 +493,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun -p /sbin/ldconfig
 
 %changelog
+* Wed Aug 22 2007 Jason Tang <selinux@tresys.com> 3.3.1-0
+- update to SETools 3.3.1 release
+
 * Thu Aug 02 2007 Jason Tang <selinux@tresys.com> 3.3-0
 - update to SETools 3.3 release
 
