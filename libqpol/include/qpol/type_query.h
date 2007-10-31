@@ -106,7 +106,7 @@ extern "C"
  *  @return Returns 0 on success, > 0 if the type is not an attribute
  *  and < 0 on failure; if the call fails, errno will be set and
  *  *types will be NULL. If the type is not an attribute *types will
- *  be NUll.
+ *  be NULL.
  */
 	extern int qpol_type_get_type_iter(const qpol_policy_t * policy, const qpol_type_t * datum, qpol_iterator_t ** types);
 
@@ -121,7 +121,7 @@ extern "C"
  *  @return Returns 0 on success, > 0 if the type is an attribute
  *  and < 0 on failure; if the call fails, errno will be set and
  *  *types will be NULL. If the type is an attribute *types will
- *  be NUll.
+ *  be NULL.
  */
 	extern int qpol_type_get_attr_iter(const qpol_policy_t * policy, const qpol_type_t * datum, qpol_iterator_t ** attrs);
 
@@ -138,7 +138,9 @@ extern "C"
 	extern int qpol_type_get_name(const qpol_policy_t * policy, const qpol_type_t * datum, const char **name);
 
 /**
- *  Get an iterator for the list of aliases for a type.
+ *  Get an iterator for the list of aliases for a type.  If the given
+ *  type is an alias, this returns an iterator of its primary type's
+ *  aliases.
  *  @param policy The policy associated with the type.
  *  @param datum The type for which to get aliases.
  *  @param aliases Iterator of type char* returned; the caller is

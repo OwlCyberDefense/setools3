@@ -96,13 +96,13 @@ char *poldiff_level_to_string(const poldiff_t * diff, const void *level)
 			break;
 		}
 		if (num_added > 0) {
-			if (apol_str_appendf(&s, &len, "%d Added %s", num_added, (num_added == 1 ? "Category" : "Categories")) < 0) {
+			if (apol_str_appendf(&s, &len, "%zd Added %s", num_added, (num_added == 1 ? "Category" : "Categories")) < 0) {
 				break;
 			}
 		}
 		if (num_removed > 0) {
 			if (apol_str_appendf
-			    (&s, &len, "%s%d Removed %s", (num_added > 0 ? ", " : ""), num_removed,
+			    (&s, &len, "%s%zd Removed %s", (num_added > 0 ? ", " : ""), num_removed,
 			     (num_removed == 1 ? "Category" : "Categories")) < 0) {
 				break;
 			}

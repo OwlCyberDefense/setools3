@@ -53,6 +53,7 @@
 #include <apol/user-query.h>
 #include <apol/util.h>
 #include <apol/vector.h>
+#include <errno.h>
 
 /* Provide hooks so that language-specific modules can define the
  * callback function, used by the handler in
@@ -65,11 +66,12 @@ SWIGEXPORT void * apol_swig_message_callback_arg = NULL;
 
 #ifdef SWIGJAVA
 %javaconst(1);
+
 /* get the java environment so we can throw exceptions */
 %{
-	static JNIEnv *jenv;
+	static JNIEnv *apol_global_jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
+		(*vm)->AttachCurrentThread(vm, (void **)&apol_global_jenv, NULL);
 		return JNI_VERSION_1_2;
 	}
 %}
@@ -79,8 +81,22 @@ SWIGEXPORT void * apol_swig_message_callback_arg = NULL;
 %include stdint.i
 %import qpol.i
 
+%{
+#undef BEGIN_EXCEPTION
+#undef END_EXCEPTION
+%}
+
 #ifdef SWIGJAVA
 
+%exception {
+	apol_global_jenv = jenv;
+	$action
+}
+
+%{
+#define BEGIN_EXCEPTION JNIEnv *local_jenv = apol_global_jenv; {
+#define END_EXCEPTION }
+%}
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
 %typemap(jtype) size_t "long"
@@ -121,15 +137,20 @@ typedef uint64_t size_t;
 #else
 typedef uint32_t size_t;
 #endif
+%{
+#define BEGIN_EXCEPTION
+#define END_EXCEPTION
+%}
 #endif
 
 #ifdef SWIGJAVA
+
 /* if java, pass the new exception macro to C not just SWIG */
 #undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception(code, msg) {SWIG_JavaException(local_jenv, code, msg); goto fail;}
 %inline %{
 #undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception(code, msg) {SWIG_JavaException(local_jenv, code, msg); goto fail;}
 %}
 #endif
 
@@ -216,7 +237,9 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 		int proto;
 	} apol_ip_t;
 	apol_ip_t *wrap_apol_str_to_internal_ip(char *str) {
-		apol_ip_t *ip = calloc(1, sizeof(*ip));
+		apol_ip_t *ip = NULL;
+		BEGIN_EXCEPTION
+		ip = calloc(1, sizeof(*ip));
 		int retv = 0;
 		if (!ip) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -227,13 +250,16 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 			SWIG_exception(SWIG_RuntimeError, "Could not convert string to IP");
 		}
 		ip->proto = retv;
+		END_EXCEPTION
 	fail:
 		return ip;
 	}
 %}
 %extend apol_ip_t {
 	apol_ip_t(const char *str) {
-		apol_ip_t *ip = calloc(1, sizeof(*ip));
+		apol_ip_t *ip = NULL;
+		BEGIN_EXCEPTION
+		ip = calloc(1, sizeof(*ip));
 		int retv = 0;
 		if (!ip) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -244,6 +270,7 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 			SWIG_exception(SWIG_RuntimeError, "Could not convert string to IP");
 		}
 		ip->proto = retv;
+		END_EXCEPTION
 	fail:
 		return ip;
 	};
@@ -301,30 +328,38 @@ typedef struct apol_vector {} apol_vector_t;
 		apol_vector_destroy(&self);
 	};
 	void append(void *x) {
+		BEGIN_EXCEPTION
 		if (apol_vector_append(self, x)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_unique(void *x) {
+		BEGIN_EXCEPTION
 		if (apol_vector_append_unique(self, x, NULL, NULL)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void cat(apol_vector_t *src) {
+		BEGIN_EXCEPTION
 		if (apol_vector_cat(self, src)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void remove(size_t idx) {
+		BEGIN_EXCEPTION
 		if (apol_vector_remove(self, idx)) {
 			SWIG_exception(SWIG_RuntimeError, "Error removing vector element");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -372,34 +407,42 @@ typedef struct apol_string_vector {} apol_string_vector_t;
 		return idx;
 	};
 	void append(char *str) {
+		BEGIN_EXCEPTION
 		char *tmp = strdup(str);
 		if (!tmp || apol_vector_append((apol_vector_t*)self, tmp)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_unique(char *str) {
+		BEGIN_EXCEPTION
 		char *tmp = strdup(str);
 		if (!tmp || apol_vector_append_unique((apol_vector_t*)self, tmp, apol_str_strcmp, NULL)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void cat(apol_string_vector_t *src) {
+		BEGIN_EXCEPTION
 		if (apol_vector_cat((apol_vector_t*)self, (apol_vector_t*)src)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 			return;
 	};
 	void remove(size_t idx) {
+		BEGIN_EXCEPTION
 		char *x = apol_vector_get_element((apol_vector_t*)self, idx);
 		if (apol_vector_remove((apol_vector_t*)self, idx)) {
 			SWIG_exception(SWIG_RuntimeError, "Error removing vector element");
 		}
 		free(x);
+		END_EXCEPTION
 	fail:
 			return;
 	};
@@ -421,33 +464,41 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 %extend apol_policy_path_t {
 	apol_policy_path_t(apol_policy_path_type_e type, char * primary, apol_string_vector_t *modules = NULL) {
 		apol_policy_path_t *p;
+		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create(type, primary,	(apol_vector_t*)modules)) == NULL) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return p;
 	};
 	apol_policy_path_t(char *path) {
 		apol_policy_path_t *p;
+		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create_from_file(path)) == NULL) {
 			SWIG_exception(SWIG_RuntimeError, "Input/output error");
 		}
+		END_EXCEPTION
 	fail:
 		return p;
 	};
 	apol_policy_path_t(char *str, int unused) {
 		apol_policy_path_t *p;
+		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create_from_string(str)) == NULL) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 			return p;
 	};
 	apol_policy_path_t(apol_policy_path_t *in) {
 		apol_policy_path_t *p;
+		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create_from_policy_path(in)) == NULL) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return p;
 	};
@@ -466,17 +517,21 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	%newobject to_string();
 	char *to_string() {
 		char *str;
+		BEGIN_EXCEPTION
 		str = apol_policy_path_to_string(self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	void to_file(char *path) {
+		BEGIN_EXCEPTION
 		if (apol_policy_path_to_file(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Input/outpet error");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -496,10 +551,16 @@ typedef struct apol_policy {} apol_policy_t;
 %extend apol_policy_t {
 	apol_policy_t(apol_policy_path_t *path, int options = 0) {
 		apol_policy_t *p;
+		BEGIN_EXCEPTION
 		p = apol_policy_create_from_policy_path(path, options, apol_swig_message_callback, apol_swig_message_callback_arg);
 		if (!p) {
-			SWIG_exception(SWIG_MemoryError, "Out of memory");
+			if (errno == ENOMEM) {
+				SWIG_exception(SWIG_MemoryError, "Out of memory");
+			} else {
+				SWIG_exception(SWIG_IOError, "Failed to create policy");
+			}
 		}
+		END_EXCEPTION
 	fail:
 		return p;
 	};
@@ -518,54 +579,68 @@ typedef struct apol_policy {} apol_policy_t;
 	%newobject get_version_type_mls_str();
 	char *get_version_type_mls_str() {
 		char *str;
+		BEGIN_EXCEPTION
 		str = apol_policy_get_version_type_mls_str(self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	void open_permmap(const char *path) {
+		BEGIN_EXCEPTION
 		if (apol_policy_open_permmap(self, path) < 0) {
 			SWIG_exception(SWIG_RuntimeError, "Error loading permission map");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void save_permmap(const char *path) {
+		BEGIN_EXCEPTION
 		if (apol_policy_save_permmap(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not save permission map");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	int get_permmap_weight(const char *class_name, const char *perm_name) {
 		int dir, weight;
+		BEGIN_EXCEPTION
 		if (apol_policy_get_permmap(self, class_name, perm_name, &dir, &weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not get permission map weight");
 		}
+		END_EXCEPTION
 	fail:
 		return weight;
 	};
 	int get_permmap_direction(char *class_name, char *perm_name) {
 		int dir, weight;
+		BEGIN_EXCEPTION
 		if (apol_policy_get_permmap(self, class_name, perm_name, &dir, &weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not get permission map direction");
 		}
+		END_EXCEPTION
 	fail:
 		return dir;
 	};
 	void set_permmap(const char *class_name, const char *perm_name, int direction, int weight) {
+		BEGIN_EXCEPTION
 		if (apol_policy_set_permmap(self, class_name, perm_name, direction, weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set permission mapping");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void build_domain_trans_table() {
+		BEGIN_EXCEPTION
 		if (apol_policy_build_domain_trans_table(self)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not build domain transition table");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -579,10 +654,12 @@ typedef struct apol_type_query {} apol_type_query_t;
 %extend apol_type_query_t {
 	apol_type_query_t() {
 		apol_type_query_t *tq;
+		BEGIN_EXCEPTION
 		tq = apol_type_query_create();
 		if (!tq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return tq;
 	};
@@ -592,16 +669,20 @@ typedef struct apol_type_query {} apol_type_query_t;
 	%newobject run(apol_policy_t *);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_type_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run type query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_type_query_set_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -615,10 +696,12 @@ typedef struct apol_attr_query {} apol_attr_query_t;
 %extend apol_attr_query_t {
 	apol_attr_query_t() {
 		apol_attr_query_t *aq;
+		BEGIN_EXCEPTION
 		aq = apol_attr_query_create();
 		if (!aq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aq;
 	};
@@ -628,16 +711,20 @@ typedef struct apol_attr_query {} apol_attr_query_t;
 	%newobject run(apol_policy_t *);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_attr_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run attribute query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_attr(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_attr_query_set_attr(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -651,10 +738,12 @@ typedef struct apol_role_query {} apol_role_query_t;
 %extend apol_role_query_t {
 	apol_role_query_t() {
 		apol_role_query_t *rq;
+		BEGIN_EXCEPTION
 		rq = apol_role_query_create();
 		if (!rq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return rq;
 	};
@@ -664,23 +753,29 @@ typedef struct apol_role_query {} apol_role_query_t;
 	%newobject run(apol_policy_t *);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_role_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run role query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_role(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_role_query_set_role(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_role_query_set_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -695,10 +790,12 @@ typedef struct apol_class_query {} apol_class_query_t;
 %extend apol_class_query_t {
 	apol_class_query_t() {
 		apol_class_query_t *cq;
+		BEGIN_EXCEPTION
 		cq = apol_class_query_create();
 		if (!cq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return cq;
 	};
@@ -708,23 +805,29 @@ typedef struct apol_class_query {} apol_class_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_class_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run class query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_class_query_set_class(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_common(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_class_query_set_common(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -738,10 +841,12 @@ typedef struct apol_common_query {} apol_common_query_t;
 %extend apol_common_query_t {
 	apol_common_query_t() {
 		apol_common_query_t *cq;
+		BEGIN_EXCEPTION
 		cq = apol_common_query_create();
 		if (!cq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return cq;
 	};
@@ -751,16 +856,20 @@ typedef struct apol_common_query {} apol_common_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_common_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run common query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_common(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_common_query_set_common(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -774,10 +883,12 @@ typedef struct apol_perm_query {} apol_perm_query_t;
 %extend apol_perm_query_t {
 	apol_perm_query_t() {
 		apol_perm_query_t *pq;
+		BEGIN_EXCEPTION
 		pq = apol_perm_query_create();
 		if (!pq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return pq;
 	};
@@ -787,16 +898,20 @@ typedef struct apol_perm_query {} apol_perm_query_t;
 	%newobject run(apol_policy_t*);
 	apol_string_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_perm_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run permission query");
 		}
+		END_EXCEPTION
 	fail:
 		return (apol_string_vector_t*)v;
 	};
 	void set_perm(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_perm_query_set_perm(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -810,10 +925,12 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 %extend apol_bool_query_t {
 	apol_bool_query_t() {
 		apol_bool_query_t *bq;
+		BEGIN_EXCEPTION
 		bq = apol_bool_query_create();
 		if (!bq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return bq;
 	};
@@ -823,16 +940,20 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_bool_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run boolean query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_bool(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_bool_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -846,55 +967,67 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 %extend apol_mls_level_t {
 	apol_mls_level_t() {
 		apol_mls_level_t *aml;
+		BEGIN_EXCEPTION
 		aml = apol_mls_level_create();
 		if (!aml) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aml;
 	};
 	apol_mls_level_t(apol_mls_level_t *in) {
 		apol_mls_level_t *aml;
+		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_mls_level(in);
 		if (!aml) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aml;
 	};
 	apol_mls_level_t(apol_policy_t *p, const char *str) {
 		apol_mls_level_t *aml;
+		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_string(p, str);
 		if (!aml) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aml;
 	};
 	apol_mls_level_t(const char *str) {
 		apol_mls_level_t *aml;
+		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_literal(str);
 		if (!aml) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aml;
 	};
 	apol_mls_level_t(apol_policy_t *p, qpol_mls_level_t *qml) {
 		apol_mls_level_t *aml;
+		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_qpol_mls_level(p, qml);
 		if (!aml) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aml;
 	};
 	apol_mls_level_t(apol_policy_t *p, qpol_level_t *ql) {
 		apol_mls_level_t *aml;
+		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_qpol_level_datum(p, ql);
 		if (!aml) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aml;
 	};
@@ -902,9 +1035,11 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 		apol_mls_level_destroy(&self);
 	};
 	void set_sens(apol_policy_t *p, char *sens) {
+		BEGIN_EXCEPTION
 		if (apol_mls_level_set_sens(p, self, sens)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set level sensitivity");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -912,9 +1047,11 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 		return apol_mls_level_get_sens(self);
 	};
 	void append_cats(apol_policy_t *p, char *cats) {
+		BEGIN_EXCEPTION
 		if (apol_mls_level_append_cats(p, self, cats)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append level category");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -922,36 +1059,47 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 		return (apol_string_vector_t *) apol_mls_level_get_cats(self);
 	};
 	int validate(apol_policy_t *p) {
-		int ret = apol_mls_level_validate(p, self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_mls_level_validate(p, self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not validate level");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
 	%newobject render(apol_policy_t*);
 	char *render(apol_policy_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = apol_mls_level_render(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	int convert(apol_policy_t *p) {
-		int ret = apol_mls_level_convert(p, self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_mls_level_convert(p, self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not convert level");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
 	int is_literal() {
-		int ret = apol_mls_level_is_literal(self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_mls_level_is_literal(self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if level is literal");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
@@ -982,46 +1130,56 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 %extend apol_mls_range_t {
 	apol_mls_range_t() {
 		apol_mls_range_t *amr;
+		BEGIN_EXCEPTION
 		amr = apol_mls_range_create();
 		if (!amr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return amr;
 	};
 	apol_mls_range_t(apol_mls_range_t *in) {
 		apol_mls_range_t *amr;
+		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_mls_range(in);
 		if (!amr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return amr;
 	};
 	apol_mls_range_t(apol_policy_t *p, const char *s) {
 		apol_mls_range_t *amr;
+		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_string(p, s);
 		if (!amr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return amr;
 	};
 	apol_mls_range_t(const char *s) {
 		apol_mls_range_t *amr;
+		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_literal(s);
 		if (!amr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return amr;
 	};
 	apol_mls_range_t(apol_policy_t *p, qpol_mls_range_t *in) {
 		apol_mls_range_t *amr;
+		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_qpol_mls_range(p, in);
 		if (!amr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return amr;
 	};
@@ -1029,16 +1187,20 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 		apol_mls_range_destroy(&self);
 	};
 	void set_low(apol_policy_t *p, apol_mls_level_t *lvl) {
+		BEGIN_EXCEPTION
 		if (apol_mls_range_set_low(p, self, lvl)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set low level");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_high(apol_policy_t *p, apol_mls_level_t *lvl) {
+		BEGIN_EXCEPTION
 		if (apol_mls_range_set_high(p, self, lvl)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set high level");
 		}
+		END_EXCEPTION
 	fail:
 			return;
 	};
@@ -1051,44 +1213,56 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	%newobject render(apol_policy_t*);
 	char *render(apol_policy_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = apol_mls_range_render(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	%newobject get_levels(apol_policy_t*);
 	apol_vector_t *get_levels(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = apol_mls_range_get_levels(p, self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 			return v;
 	};
 	int validate(apol_policy_t *p) {
 		int ret = apol_mls_range_validate(p, self);
+		BEGIN_EXCEPTION
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not validate range");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
 	int is_literal() {
-		int ret = apol_mls_range_is_literal(self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_mls_range_is_literal(self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not determine if range is literal");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
 	int convert(apol_policy_t *p) {
-		int ret = apol_mls_range_convert(p, self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_mls_range_convert(p, self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not convert range");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
@@ -1106,10 +1280,12 @@ typedef struct apol_level_query {} apol_level_query_t;
 %extend apol_level_query_t {
 	apol_level_query_t() {
 		apol_level_query_t * alq;
+		BEGIN_EXCEPTION
 		alq = apol_level_query_create();
 		if (!alq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return alq;
 	};
@@ -1119,23 +1295,29 @@ typedef struct apol_level_query {} apol_level_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_level_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run level query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_sens(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_level_query_set_sens(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_cat(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_level_query_set_cat(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 			return;
 	};
@@ -1149,10 +1331,12 @@ typedef struct apol_cat_query {} apol_cat_query_t;
 %extend apol_cat_query_t {
 	apol_cat_query_t() {
 		apol_cat_query_t * acq;
+		BEGIN_EXCEPTION
 		acq = apol_cat_query_create();
 		if (!acq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return acq;
 	};
@@ -1162,16 +1346,20 @@ typedef struct apol_cat_query {} apol_cat_query_t;
 	%newobject run(apol_policy_t *);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_cat_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run category query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_cat(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_cat_query_set_cat(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1193,10 +1381,12 @@ typedef struct apol_user_query {} apol_user_query_t;
 %extend apol_user_query_t {
 	apol_user_query_t() {
 		apol_user_query_t *auq;
+		BEGIN_EXCEPTION
 		auq = apol_user_query_create();
 		if (!auq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return auq;
 	};
@@ -1206,37 +1396,47 @@ typedef struct apol_user_query {} apol_user_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_user_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run user query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_user(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_user_query_set_user(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_role(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_user_query_set_role(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_default_level(apol_policy_t *p, apol_mls_level_t *lvl) {
+		BEGIN_EXCEPTION
 		if (apol_user_query_set_default_level(p, self, lvl)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
+		BEGIN_EXCEPTION
 		if (apol_user_query_set_range(p, self, rng, range_match)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1250,28 +1450,34 @@ typedef struct apol_context {} apol_context_t;
 %extend apol_context_t {
 	apol_context_t() {
 		apol_context_t *ctx;
+		BEGIN_EXCEPTION
 		ctx = apol_context_create();
 		if (!ctx) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return ctx;
 	};
 	apol_context_t(apol_policy_t *p, qpol_context_t *in) {
 		apol_context_t *ctx;
+		BEGIN_EXCEPTION
 		ctx = apol_context_create_from_qpol_context(p, in);
 		if (!ctx) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return ctx;
 	};
 	apol_context_t(const char *str) {
 		apol_context_t *ctx;
+		BEGIN_EXCEPTION
 		ctx = apol_context_create_from_literal(str);
 		if (!ctx) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return ctx;
 	};
@@ -1279,9 +1485,11 @@ typedef struct apol_context {} apol_context_t;
 		apol_context_destroy(&self);
 	};
 	void set_user(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_context_set_user(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1289,9 +1497,11 @@ typedef struct apol_context {} apol_context_t;
 		return apol_context_get_user(self);
 	};
 	void set_role(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_context_set_role(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1299,9 +1509,11 @@ typedef struct apol_context {} apol_context_t;
 		return apol_context_get_role(self);
 	};
 	void set_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_context_set_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1309,9 +1521,11 @@ typedef struct apol_context {} apol_context_t;
 		return apol_context_get_type(self);
 	};
 	void set_range(apol_policy_t *p, apol_mls_range_t *rng) {
+		BEGIN_EXCEPTION
 		if (apol_context_set_range(p, self, rng)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1319,36 +1533,47 @@ typedef struct apol_context {} apol_context_t;
 		return apol_context_get_range(self);
 	};
 	int validate(apol_policy_t *p) {
-		int ret = apol_context_validate(p, self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_context_validate(p, self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not validate context");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
 	int validate_partial(apol_policy_t *p) {
-		int ret = apol_context_validate_partial(p, self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_context_validate_partial(p, self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not validate context");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
 	%newobject render(apol_policy_t*);
 	char *render(apol_policy_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = apol_context_render(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	int convert(apol_policy_t *p) {
-		int ret = apol_context_convert(p, self);
+		int ret = -1;
+		BEGIN_EXCEPTION
+		ret = apol_context_convert(p, self);
 		if (ret < 0) {
 			SWIG_exception(SWIG_ValueError, "Could not convert context");
 		}
+		END_EXCEPTION
 	fail:
 		return ret;
 	}
@@ -1360,10 +1585,12 @@ typedef struct apol_constraint_query {} apol_constraint_query_t;
 %extend apol_constraint_query_t {
 	apol_constraint_query_t() {
 		apol_constraint_query_t *acq;
+		BEGIN_EXCEPTION
 		acq = apol_constraint_query_create();
 		if (!acq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return acq;
 	};
@@ -1373,23 +1600,29 @@ typedef struct apol_constraint_query {} apol_constraint_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_constraint_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run constraint query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_constraint_query_set_class(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	}
 	void set_perm(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_constraint_query_set_perm(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	}
@@ -1403,10 +1636,12 @@ typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 %extend apol_validatetrans_query_t {
 	apol_validatetrans_query_t() {
 		apol_validatetrans_query_t *avq;
+		BEGIN_EXCEPTION
 		avq = apol_validatetrans_query_create();
 		if (!avq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return avq;
 	};
@@ -1416,16 +1651,20 @@ typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_validatetrans_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run validatetrans query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_validatetrans_query_set_class(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	}
@@ -1447,10 +1686,12 @@ typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 %extend apol_genfscon_query_t {
 	apol_genfscon_query_t() {
 		apol_genfscon_query_t *agq;
+		BEGIN_EXCEPTION
 		agq = apol_genfscon_query_create();
 		if (!agq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return agq;
 	};
@@ -1460,30 +1701,38 @@ typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_genfscon_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run validatetrans query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_filesystem(apol_policy_t *p, char *fs) {
+		BEGIN_EXCEPTION
 		if (apol_genfscon_query_set_filesystem(p, self, fs)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_path(apol_policy_t *p, char *path) {
+		BEGIN_EXCEPTION
 		if (apol_genfscon_query_set_path(p, self, path)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_objclass(apol_policy_t *p, int objclass) {
+		BEGIN_EXCEPTION
 		if (apol_genfscon_query_set_objclass(p, self, objclass)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set object class for genfscon query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1499,10 +1748,12 @@ typedef struct apol_fs_use_query {} apol_fs_use_query_t;
 %extend apol_fs_use_query_t {
 	apol_fs_use_query_t() {
 		apol_fs_use_query_t *afq;
+		BEGIN_EXCEPTION
 		afq = apol_fs_use_query_create();
 		if (!afq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return afq;
 	};
@@ -1512,23 +1763,29 @@ typedef struct apol_fs_use_query {} apol_fs_use_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_fs_use_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run fs_use query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_filesystem(apol_policy_t *p, char *fs) {
+		BEGIN_EXCEPTION
 		if (apol_fs_use_query_set_filesystem(p, self, fs)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_behavior(apol_policy_t *p, int behavior) {
+		BEGIN_EXCEPTION
 		if (apol_fs_use_query_set_behavior(p, self, behavior)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set behavior for fs_use query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1544,10 +1801,12 @@ typedef struct apol_isid_query {} apol_isid_query_t;
 %extend apol_isid_query_t {
 	apol_isid_query_t() {
 		apol_isid_query_t *aiq;
+		BEGIN_EXCEPTION
 		aiq = apol_isid_query_create();
 		if (!aiq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aiq;
 	};
@@ -1557,16 +1816,20 @@ typedef struct apol_isid_query {} apol_isid_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_isid_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run initial sid query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_name(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_isid_query_set_name(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1580,10 +1843,12 @@ typedef struct apol_portcon_query {} apol_portcon_query_t;
 %extend apol_portcon_query_t {
 	apol_portcon_query_t() {
 		apol_portcon_query_t *apq;
+		BEGIN_EXCEPTION
 		apq = apol_portcon_query_create();
 		if (!apq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return apq;
 	};
@@ -1593,9 +1858,11 @@ typedef struct apol_portcon_query {} apol_portcon_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_portcon_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run portcon query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
@@ -1620,10 +1887,12 @@ typedef struct apol_netifcon_query {} apol_netifcon_query_t;
 %extend apol_netifcon_query_t {
 	apol_netifcon_query_t() {
 		apol_netifcon_query_t *anq;
+		BEGIN_EXCEPTION
 		anq = apol_netifcon_query_create();
 		if (!anq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return anq;
 	};
@@ -1633,16 +1902,20 @@ typedef struct apol_netifcon_query {} apol_netifcon_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_netifcon_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run netifcon query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_device(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_netifcon_query_set_device(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1661,10 +1934,12 @@ typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 %extend apol_nodecon_query_t {
 	apol_nodecon_query_t() {
 		apol_nodecon_query_t *anq;
+		BEGIN_EXCEPTION
 		anq = apol_nodecon_query_create();
 		if (!anq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return anq;
 	};
@@ -1674,44 +1949,56 @@ typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_nodecon_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run nodecon query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_protocol(apol_policy_t *p, int protocol) {
+		BEGIN_EXCEPTION
 		if (apol_nodecon_query_set_protocol(p, self, protocol)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set protocol for nodecon query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_addr(apol_policy_t *p, uint32_t *addr, int protocol) {
+		BEGIN_EXCEPTION
 		if (apol_nodecon_query_set_addr(p, self, addr, protocol)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set address for nodecon query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_addr(apol_policy_t *p, apol_ip_t *addr) {
+		BEGIN_EXCEPTION
 		if (apol_nodecon_query_set_addr(p, self, addr->ip, addr->proto)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set address for nodecon query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_mask(apol_policy_t *p, uint32_t *mask, int protocol) {
+		BEGIN_EXCEPTION
 		if (apol_nodecon_query_set_mask(p, self, mask, protocol)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set mask for nodecon query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_mask(apol_policy_t *p, apol_ip_t *mask) {
+		BEGIN_EXCEPTION
 		if (apol_nodecon_query_set_mask(p, self, mask->ip, mask->proto)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set mask for nodecon query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1727,10 +2014,12 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 %extend apol_avrule_query_t {
 	apol_avrule_query_t() {
 		apol_avrule_query_t *avq;
+		BEGIN_EXCEPTION
 		avq = apol_avrule_query_create();
 		if (!avq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return avq;
 	};
@@ -1740,18 +2029,22 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_avrule_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	%newobject run_syn(apol_policy_t*);
 	apol_vector_t *run_syn(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_syn_avrule_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
@@ -1759,51 +2052,65 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 		apol_avrule_query_set_rules(p, self, rules);
 	};
 	void set_source(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_source(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source for avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_source_component(apol_policy_t *p, int component) {
+		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_source_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source component for avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_target(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target for avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_target_component(apol_policy_t *p, int component) {
+		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_target_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target component for avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_avrule_query_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_perm(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_avrule_query_append_perm(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append permission to avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_bool(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set boolean for avrule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1831,19 +2138,23 @@ char *apol_syn_avrule_render(apol_policy_t * policy, qpol_syn_avrule_t * rule);
 %inline %{
 	apol_vector_t *wrap_apol_avrule_to_syn_avrules(apol_policy_t *p, qpol_avrule_t *rule, apol_string_vector_t *perms) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = apol_avrule_to_syn_avrules(p, rule, (apol_vector_t*)perms);
 		if (!v) {
 			SWIG_exception(SWIG_RuntimeError, "Could not convert avrule to syntactic avrules");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	}
 	apol_vector_t *wrap_apol_avrule_list_to_syn_avrules(apol_policy_t *p, apol_vector_t *rules, apol_string_vector_t *perms) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = apol_avrule_list_to_syn_avrules(p, rules, (apol_vector_t*)perms);
 		if (!v) {
 			SWIG_exception(SWIG_RuntimeError, "Could not convert avrules to syntactic avrules");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	}
@@ -1854,10 +2165,12 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 %extend apol_terule_query_t {
 	apol_terule_query_t() {
 		apol_terule_query_t *atq;
+		BEGIN_EXCEPTION
 		atq = apol_terule_query_create();
 		if (!atq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return atq;
 	};
@@ -1867,18 +2180,22 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_terule_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	%newobject run_syn(apol_policy_t*);
 	apol_vector_t *run_syn(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_syn_terule_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
@@ -1886,51 +2203,65 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 		apol_terule_query_set_rules(p, self, rules);
 	};
 	void set_source(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
 		if (apol_terule_query_set_source(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source for terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_source_component(apol_policy_t *p, int component) {
+		BEGIN_EXCEPTION
 		if (apol_terule_query_set_source_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source component for terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_target(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
 		if (apol_terule_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target for terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_target_component(apol_policy_t *p, int component) {
+		BEGIN_EXCEPTION
 		if (apol_terule_query_set_target_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target component for terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_terule_query_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_default(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_terule_query_set_default(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set default for terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_bool(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_terule_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set boolean for terule query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1958,10 +2289,12 @@ typedef struct apol_cond_query {} apol_cond_query_t;
 %extend apol_cond_query_t {
 	apol_cond_query_t() {
 		apol_cond_query_t *acq;
+		BEGIN_EXCEPTION
 		acq = apol_cond_query_create();
 		if (!acq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return acq;
 	};
@@ -1971,16 +2304,20 @@ typedef struct apol_cond_query {} apol_cond_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_cond_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run condiional query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_bool(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_cond_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set boolean for condiional query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1996,10 +2333,12 @@ typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 %extend apol_role_allow_query_t {
 	apol_role_allow_query_t() {
 		apol_role_allow_query_t *arq;
+		BEGIN_EXCEPTION
 		arq = apol_role_allow_query_create();
 		if (!arq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return arq;
 	};
@@ -2009,23 +2348,29 @@ typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_role_allow_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run role allow query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_source(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_role_allow_query_set_source(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_target(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_role_allow_query_set_target(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -2044,10 +2389,12 @@ typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 %extend apol_role_trans_query_t {
 	apol_role_trans_query_t() {
 		apol_role_trans_query_t *arq;
+		BEGIN_EXCEPTION
 		arq = apol_role_trans_query_create();
 		if (!arq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return arq;
 	};
@@ -2057,30 +2404,38 @@ typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_role_trans_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run role transition query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_source(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_role_trans_query_set_source(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_target(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
 		if (apol_role_trans_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_default(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_role_trans_query_set_default(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -2099,10 +2454,12 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 %extend apol_range_trans_query_t {
 	apol_range_trans_query_t() {
 		apol_range_trans_query_t *arq;
+		BEGIN_EXCEPTION
 		arq = apol_range_trans_query_create();
 		if (!arq) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return arq;
 	};
@@ -2112,37 +2469,47 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_range_trans_get_by_query(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run range transition query");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_source(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
 		if (apol_range_trans_query_set_source(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_target(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
 		if (apol_range_trans_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_range_trans_query_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to range transition query");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
+		BEGIN_EXCEPTION
 		if (apol_range_trans_query_set_range(p, self, rng, range_match)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -2166,10 +2533,12 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 %extend apol_domain_trans_analysis_t {
 	apol_domain_trans_analysis_t() {
 		apol_domain_trans_analysis_t *dta;
+		BEGIN_EXCEPTION
 		dta = apol_domain_trans_analysis_create();
 		if (!dta) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return dta;
 	};
@@ -2177,60 +2546,76 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 		apol_domain_trans_analysis_destroy(&self);
 	};
 	void set_direction(apol_policy_t *p, int direction) {
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_direction(p, self, (unsigned char)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for domain transition analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_valid(apol_policy_t *p, int valid) {
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_valid(p, self, (unsigned char)valid)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set valid flag for domain transition analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_start_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_start_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_result_regex(apol_policy_t *p, char *regex) {
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_result_regex(p, self, regex)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_access_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_append_access_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append access type for domain transition analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_class(apol_policy_t *p, char *class_name) {
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_append_class(p, self, class_name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append access class for domain transition analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_perm(apol_policy_t *p, char *perm_name) {
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_append_perm(p, self, perm_name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append access permission for domain transition analysis");
 		}
+		END_EXCEPTION
 	fail:
 			return;
 	};
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v = NULL;
+		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_do(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run domain transition analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
@@ -2239,10 +2624,12 @@ typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 %extend apol_domain_trans_result_t {
 	apol_domain_trans_result_t(apol_domain_trans_result_t *in) {
 		apol_domain_trans_result_t *dtr;
+		BEGIN_EXCEPTION
 		dtr = apol_domain_trans_result_create_from_domain_trans_result(in);
 		if (!dtr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return dtr;
 	};
@@ -2319,7 +2706,9 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 typedef struct apol_infoflow {} apol_infoflow_t;
 %extend apol_infoflow_t {
 	apol_infoflow_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -2343,10 +2732,12 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 %extend apol_infoflow_analysis_t {
 	apol_infoflow_analysis_t() {
 		apol_infoflow_analysis_t *aia;
+		BEGIN_EXCEPTION
 		aia = apol_infoflow_analysis_create();
 		if (!aia) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return aia;
 	};
@@ -2355,13 +2746,16 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	};
 	%newobject run(apol_policy_t*);
 	apol_infoflow_t *run(apol_policy_t *p) {
-		apol_infoflow_t *ai = apol_infoflow_create();
+		apol_infoflow_t *ai = NULL;
+		BEGIN_EXCEPTION
+		ai = apol_infoflow_create();
 		if (!ai) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 		if (apol_infoflow_analysis_do(p, self, &ai->v, &ai->g)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run information flow analysis");
 		}
+		END_EXCEPTION
 		return ai;
 	fail:
 		apol_vector_destroy(&ai->v);
@@ -2370,37 +2764,47 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 		return NULL;
 	};
 	void set_mode(apol_policy_t *p, int mode) {
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_mode(p, self, (unsigned int)mode)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set mode for information flow analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_dir(apol_policy_t *p, int direction) {
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_dir(p, self, (unsigned int)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for information flow analysis");
+		END_EXCEPTION
 		}
 	fail:
 		return;
 	};
 	void set_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set type for information flow analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_intermediate(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_append_intermediate(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append intermediate type for information flow analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_class_perm(apol_policy_t *p, char *class_name, char *perm_name) {
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_append_class_perm(p, self, class_name, perm_name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class and permission for information flow analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -2408,9 +2812,11 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 		apol_infoflow_analysis_set_min_weight(p, self, weight);
 	};
 	void set_result_regex(apol_policy_t *p, char *regex) {
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_result_regex(p, self, regex)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set result regular expression for information flow analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -2418,7 +2824,9 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 %extend apol_infoflow_graph_t {
 	apol_infoflow_graph_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_graph_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -2428,24 +2836,30 @@ typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 	%newobject do_more(apol_policy_t*, char*);
 	apol_vector_t *do_more(apol_policy_t *p, char *type) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_do_more(p, self, type, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not do more analysis of information flow graph");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void trans_further_prepare(apol_policy_t *p, char *start_type, char *end_type) {
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_trans_further_prepare(p, self, start_type, end_type)) {
 			SWIG_exception(SWIG_MemoryError, "Error preparing graph for further information flow analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	apol_vector_t *trans_further_next(apol_policy_t *p, apol_vector_t *v) {
 		apol_vector_t *retval = NULL;
+		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_trans_further_next(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run further analysis");
 		}
+		END_EXCEPTION
 		retval = v;
 	fail:
 		return retval;
@@ -2454,7 +2868,9 @@ typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 %extend apol_infoflow_result_t {
 	apol_infoflow_result_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_result_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -2486,7 +2902,9 @@ typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 typedef struct apol_infoflow_step {} apol_infoflow_step_t;
 %extend apol_infoflow_step_t {
 	apol_infoflow_step_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_step_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -2522,10 +2940,12 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 %extend apol_relabel_analysis_t {
 	apol_relabel_analysis_t() {
 		apol_relabel_analysis_t *ara;
+		BEGIN_EXCEPTION
 		ara = apol_relabel_analysis_create();
 		if (!ara) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return ara;
 	};
@@ -2535,44 +2955,56 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 	%newobject run(apol_policy_t*);
 	apol_vector_t *run(apol_policy_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_do(p, self, &v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run relabel analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	void set_dir(apol_policy_t *p, int direction) {
+		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_set_dir(p, self, (unsigned int)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for relabel analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_set_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set type for relabel analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to relabel analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_subject(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_append_subject(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append subject to relabel analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_result_regex(apol_policy_t *p, char *regex) {
+		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_set_result_regex(p, self, regex)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set result regular expression for relabel analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -2580,7 +3012,9 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 typedef struct apol_relabel_result {} apol_relabel_result_t;
 %extend apol_relabel_result_t {
 	apol_relabel_result_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_relabel_result_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -2609,7 +3043,9 @@ typedef struct apol_relabel_result {} apol_relabel_result_t;
 typedef struct apol_relabel_result_pair {} apol_relabel_result_pair_t;
 %extend apol_relabel_result_pair_t {
 	apol_relabel_result_pair_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_relabel_result_pair_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -2650,10 +3086,12 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 %extend apol_types_relation_analysis_t {
 	apol_types_relation_analysis_t() {
 		apol_types_relation_analysis_t *atr;
+		BEGIN_EXCEPTION
 		atr = apol_types_relation_analysis_create();
 		if (!atr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return atr;
 	};
@@ -2663,30 +3101,38 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 	%newobject run(apol_policy_t*);
 	apol_types_relation_result_t *run(apol_policy_t *p) {
 		apol_types_relation_result_t *res;
+		BEGIN_EXCEPTION
 		if (apol_types_relation_analysis_do(p, self, &res)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run types relation analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return res;
 	};
 	void set_first_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_types_relation_analysis_set_first_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set first type for types relation analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_other_type(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
 		if (apol_types_relation_analysis_set_other_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set other type for types relation analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_analyses(apol_policy_t *p, int analyses) {
+		BEGIN_EXCEPTION
 		if (apol_types_relation_analysis_set_analyses(p, self, (unsigned int)analyses)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set analyses to run for types relation analysis");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -2694,7 +3140,9 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 typedef struct apol_types_relation_result {} apol_types_relation_result_t;
 %extend apol_types_relation_result_t {
 	apol_types_relation_result_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_types_relation_result_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -2747,7 +3195,9 @@ typedef struct apol_types_relation_result {} apol_types_relation_result_t;
 typedef struct apol_types_relation_access {} apol_types_relation_access_t;
 %extend apol_types_relation_access_t {
 	apol_types_relation_access_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_types_relation_access_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};

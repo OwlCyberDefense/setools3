@@ -212,6 +212,10 @@ char *modified_roles[] = {
 	"aquarium_r -bass_t",
 	"garden_r -daikon_t",
 /* 08.3.4 */
+	"object_r +hippo_t",
+	"object_r +acorn_t",
+	"object_r -bass_t",
+	"object_r -koala_t",
 	"deity_r +acorn_t",
 	"deity_r +hippo_t",
 	"deity_r -bass_t",

@@ -15,13 +15,14 @@
  * 	Added conditional policy language extensions
  *
  * Updated: Joshua Brindle <jbrindle@tresys.com>
- *	    Karl MacMillan <kmacmillan@tresys.com>
+ *	    Karl MacMillan <kmacmillan@mentalrootkit.com>
  *          Jason Tang     <jtang@tresys.com>
  *
  *	Added support for binary policy modules
  *
  * Copyright (C) 2004-2005 Trusted Computer Solutions, Inc.
  * Copyright (C) 2003 - 2005 Tresys Technology, LLC
+ * Copyright (C) 2007 Red Hat Inc.
  *	This program is free software; you can redistribute it and/or modify
  *  	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, version 2.
