@@ -430,7 +430,8 @@ int qpol_type_get_alias_iter(const qpol_policy_t * policy, const qpol_type_t * d
 		return STATUS_ERR;
 	}
 
-	if (hs->node == NULL || hs->val != get_alias_primary((type_datum_t *) (hs->node->datum)))
+	if (hs->node == NULL || hs->val != get_alias_primary((type_datum_t *) (hs->node->datum)) ||
+	    !is_type_really_an_alias((type_datum_t *) hs->node->datum))
 		hash_state_next_type_alias(*aliases);
 
 	return STATUS_SUCCESS;

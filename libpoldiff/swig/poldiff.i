@@ -54,9 +54,9 @@ SWIGEXPORT void * poldiff_swig_message_callback_arg = NULL;
 %javaconst(1);
 /* get the java environment so we can throw exceptions */
 %{
-	static JNIEnv *jenv;
+	static JNIEnv *poldiff_global_jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
+		(*vm)->AttachCurrentThread(vm, (void **)&poldiff_global_jenv, NULL);
 		return JNI_VERSION_1_2;
 	}
 %}
@@ -66,7 +66,22 @@ SWIGEXPORT void * poldiff_swig_message_callback_arg = NULL;
 %include stdint.i
 %import apol.i
 
+%{
+#undef BEGIN_EXCEPTION
+#undef END_EXCEPTION
+%}
+
 #ifdef SWIGJAVA
+
+%exception {
+	poldiff_global_jenv = jenv;
+	$action
+}
+
+%{
+#define BEGIN_EXCEPTION JNIEnv *local_jenv = poldiff_global_jenv; {
+#define END_EXCEPTION }
+%}
 
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
@@ -117,16 +132,20 @@ typedef uint64_t size_t;
 #else
 typedef uint32_t size_t;
 #endif
+%{
+#define BEGIN_EXCEPTION
+#define END_EXCEPTION
+%}
 #endif
 
 #ifdef SWIGJAVA
 /* if java, pass the new exception macro to C not just SWIG */
 #undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception(code, msg) {SWIG_JavaException(local_jenv, code, msg); goto fail;}
 #define SWIG_exception_typemap(code, msg) {SWIG_JavaException(jenv, code, msg);}
 %inline %{
 #undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception(code, msg) {SWIG_JavaException(local_jenv, code, msg); goto fail;}
 %}
 #endif
 
@@ -256,10 +275,12 @@ typedef struct poldiff_stats {} poldiff_stats_t;
 %extend poldiff_stats_t {
 	poldiff_stats_t() {
 		poldiff_stats_t *s;
+		BEGIN_EXCEPTION
 		s = poldiff_stats_create();
 		if (!s) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return s;
 	};
@@ -267,6 +288,7 @@ typedef struct poldiff_stats {} poldiff_stats_t;
 		poldiff_stats_destroy(&self);
 	};
 	size_t get_stat(poldiff_form_e form) {
+		BEGIN_EXCEPTION
 		switch(form) {
 			case POLDIFF_FORM_ADDED:
 			{
@@ -294,6 +316,7 @@ typedef struct poldiff_stats {} poldiff_stats_t;
 				SWIG_exception(SWIG_ValueError, "Invalid poldiff form");
 			}
 		}
+		END_EXCEPTION
 	fail:
 		return 0;
 	};
@@ -327,10 +350,12 @@ typedef struct poldiff {} poldiff_t;
 %extend poldiff_t {
 	poldiff_t(apol_policy_t *op, apol_policy_t *mp) {
 		poldiff_t *p;
+		BEGIN_EXCEPTION
 		p = poldiff_create(op, mp, poldiff_swig_message_callback, poldiff_swig_message_callback_arg);
 		if (!p) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 		return p;
 	fail:
 		return NULL;
@@ -339,9 +364,11 @@ typedef struct poldiff {} poldiff_t;
 		poldiff_destroy(&self);
 	};
 	void run(uint32_t flags) {
+		BEGIN_EXCEPTION
 		if (poldiff_run(self, flags)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not run diff");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -350,22 +377,27 @@ typedef struct poldiff {} poldiff_t;
 	};
 	%newobject get_stats(uint32_t);
 	poldiff_stats_t *get_stats(uint32_t flags) {
-		poldiff_stats_t *s = poldiff_stats_create();
+		poldiff_stats_t *s = NULL;
+		BEGIN_EXCEPTION
+		s = poldiff_stats_create();
 		if (!s) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
 		if (poldiff_get_stats(self, flags, s->stats)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not get stats");
 		}
+		END_EXCEPTION
 		return s;
 	fail:
 		poldiff_stats_destroy(&s);
 		return NULL;
 	};
 	void enable_line_numbers() {
+		BEGIN_EXCEPTION
 		if (poldiff_enable_line_numbers(self)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not enable line numbers");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -430,9 +462,11 @@ typedef struct poldiff {} poldiff_t;
 		return poldiff_type_remap_get_entries(self);
 	};
 	void type_remap_create(apol_string_vector_t *orig_types, apol_string_vector_t *mod_types) {
+		BEGIN_EXCEPTION
 		if (poldiff_type_remap_create(self, (apol_vector_t*)orig_types, (apol_vector_t*)mod_types)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not remap types");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -445,7 +479,9 @@ typedef struct poldiff {} poldiff_t;
 typedef struct poldiff_attrib {} poldiff_attrib_t;
 %extend poldiff_attrib_t {
    poldiff_attrib_t () {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_attrib_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
    }
@@ -456,10 +492,12 @@ typedef struct poldiff_attrib {} poldiff_attrib_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_attrib_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -486,7 +524,9 @@ typedef struct poldiff_attrib {} poldiff_attrib_t;
 typedef struct poldiff_avrule {} poldiff_avrule_t;
 %extend poldiff_avrule_t {
    poldiff_avrule_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_avrule_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -497,10 +537,12 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_avrule_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -555,10 +597,12 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 	%newobject get_orig_line_numbers_for_perm(poldiff_t*, char*);
 	apol_vector_t *get_orig_line_numbers_for_perm(poldiff_t *p, char *perm) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = poldiff_avrule_get_orig_line_numbers_for_perm(p, self, perm);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
@@ -568,10 +612,12 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 	%newobject get_mod_line_numbers_for_perm(poldiff_t*, char*);
 	apol_vector_t *get_mod_line_numbers_for_perm(poldiff_t *p, char *perm) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = poldiff_avrule_get_mod_line_numbers_for_perm(p, self, perm);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
@@ -586,7 +632,9 @@ typedef struct poldiff_avrule {} poldiff_avrule_t;
 typedef struct poldiff_bool {} poldiff_bool_t;
 %extend poldiff_bool_t {
 	poldiff_bool_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_bool_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -597,10 +645,12 @@ typedef struct poldiff_bool {} poldiff_bool_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_bool_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -621,7 +671,9 @@ typedef struct poldiff_bool {} poldiff_bool_t;
 typedef struct poldiff_cat {} poldiff_cat_t;
 %extend poldiff_cat_t {
 	poldiff_cat_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_cat_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -632,10 +684,12 @@ typedef struct poldiff_cat {} poldiff_cat_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_cat_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -656,7 +710,9 @@ typedef struct poldiff_cat {} poldiff_cat_t;
 typedef struct poldiff_class {} poldiff_class_t;
 %extend poldiff_class_t {
 	poldiff_class_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_class_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -667,10 +723,12 @@ typedef struct poldiff_class {} poldiff_class_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_class_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -697,7 +755,9 @@ typedef struct poldiff_class {} poldiff_class_t;
 typedef struct poldiff_common {} poldiff_common_t;
 %extend poldiff_common_t {
 	poldiff_common_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_common_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -708,10 +768,12 @@ typedef struct poldiff_common {} poldiff_common_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_common_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -738,7 +800,9 @@ typedef struct poldiff_common {} poldiff_common_t;
 typedef struct poldiff_level {} poldiff_level_t;
 %extend poldiff_level_t {
 	poldiff_level_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_level_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -749,20 +813,24 @@ typedef struct poldiff_level {} poldiff_level_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_level_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	%newobject to_string_brief(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_level_to_string_brief(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -792,7 +860,9 @@ typedef struct poldiff_level {} poldiff_level_t;
 typedef struct poldiff_range {} poldiff_range_t;
 %extend poldiff_range_t {
 	poldiff_range_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_range_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -803,10 +873,12 @@ typedef struct poldiff_range {} poldiff_range_t;
 	%newobject to_string_brief(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_range_to_string_brief(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -839,7 +911,9 @@ typedef struct poldiff_range {} poldiff_range_t;
 typedef struct poldiff_range_trans {} poldiff_range_trans_t;
 %extend poldiff_range_trans_t {
 	poldiff_range_trans_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_range_trans_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -850,10 +924,12 @@ typedef struct poldiff_range_trans {} poldiff_range_trans_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_range_trans_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -883,7 +959,9 @@ typedef struct poldiff_range_trans {} poldiff_range_trans_t;
 typedef struct poldiff_role_allow {} poldiff_role_allow_t;
 %extend poldiff_role_allow_t {
 	poldiff_role_allow_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_role_allow_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -894,10 +972,12 @@ typedef struct poldiff_role_allow {} poldiff_role_allow_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_role_allow_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -927,7 +1007,9 @@ typedef struct poldiff_role_allow {} poldiff_role_allow_t;
 typedef struct poldiff_role_trans {} poldiff_role_trans_t;
 %extend poldiff_role_trans_t {
 	poldiff_role_trans_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_role_trans_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -938,10 +1020,12 @@ typedef struct poldiff_role_trans {} poldiff_role_trans_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_role_trans_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -971,7 +1055,9 @@ typedef struct poldiff_role_trans {} poldiff_role_trans_t;
 typedef struct poldiff_role {} poldiff_role_t;
 %extend poldiff_role_t {
 	poldiff_role_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_role_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -982,10 +1068,12 @@ typedef struct poldiff_role {} poldiff_role_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_role_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -1012,7 +1100,9 @@ typedef struct poldiff_role {} poldiff_role_t;
 typedef struct poldiff_terule {} poldiff_terule_t;
 %extend poldiff_terule_t {
 	poldiff_terule_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_terule_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -1023,10 +1113,12 @@ typedef struct poldiff_terule {} poldiff_terule_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_terule_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -1089,7 +1181,9 @@ typedef struct poldiff_terule {} poldiff_terule_t;
 typedef struct poldiff_type {} poldiff_type_t;
 %extend poldiff_type_t {
 	poldiff_type_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_type_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -1100,10 +1194,12 @@ typedef struct poldiff_type {} poldiff_type_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_type_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -1130,7 +1226,9 @@ typedef struct poldiff_type {} poldiff_type_t;
 typedef struct poldiff_user {} poldiff_user_t;
 %extend poldiff_user_t {
 	poldiff_user_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_user_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -1141,10 +1239,12 @@ typedef struct poldiff_user {} poldiff_user_t;
 	%newobject to_string(poldiff_t*);
 	char *to_string(poldiff_t *p) {
 		char *str;
+		BEGIN_EXCEPTION
 		str = poldiff_user_to_string(p, self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -1183,7 +1283,9 @@ typedef struct poldiff_user {} poldiff_user_t;
 typedef struct poldiff_type_remap_entry {} poldiff_type_remap_entry_t;
 %extend poldiff_type_remap_entry_t {
 	poldiff_type_remap_entry_t() {
+      BEGIN_EXCEPTION
       SWIG_exception(SWIG_RuntimeError, "Cannot directly create poldiff_type_remap_entry_t objects");
+      END_EXCEPTION
    fail:
       return NULL;
  	}
@@ -1194,20 +1296,24 @@ typedef struct poldiff_type_remap_entry {} poldiff_type_remap_entry_t;
 	%newobject get_original_types(poldiff_t*);
 	apol_string_vector_t *get_original_types(poldiff_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = poldiff_type_remap_entry_get_original_types(p, self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return (apol_string_vector_t*)v;
 	};
 	%newobject get_modified_types(poldiff_t*);
 	apol_string_vector_t *get_modified_types(poldiff_t *p) {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = poldiff_type_remap_entry_get_modified_types(p, self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return (apol_string_vector_t*)v;
 	};

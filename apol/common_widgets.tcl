@@ -634,7 +634,7 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
         set qpol_level_datum [new_qpol_level_t $::ApolTop::qpolicy $sens]
         set i [$qpol_level_datum get_cat_iter $::ApolTop::qpolicy]
         while {![$i end]} {
-            set qpol_cat_datum [qpol_cat_from_vector [$i get_item]]
+            set qpol_cat_datum [qpol_cat_from_void [$i get_item]]
             lappend vars($path:cats) [$qpol_cat_datum get_name $::ApolTop::qpolicy]
             $i next
         }

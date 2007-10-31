@@ -47,6 +47,8 @@
 #include <math.h>
 #endif
 
+#define OBJECT_R "object_r"
+
 #define QPOL_SYN_RULE_TABLE_BITS 16
 #define QPOL_SYN_RULE_TABLE_SIZE (1 << QPOL_SYN_RULE_TABLE_BITS)
 #define QPOL_SYN_RULE_TABLE_MASK (QPOL_SYN_RULE_TABLE_SIZE - 1)
@@ -54,7 +56,7 @@
 #define QPOL_SYN_RULE_TABLE_HASH(rule_key) \
 (((((rule_key->source_val & 0xff) << 8) | (rule_key->target_val & 0xff)) ^ \
  (rule_key->class_val & 0xf) ^ \
- ((int) rule_key->cond & 0xfff0)) & QPOL_SYN_RULE_TABLE_MASK)
+ ((int) ((size_t) rule_key->cond) & 0xfff0)) & QPOL_SYN_RULE_TABLE_MASK)
 
 typedef struct qpol_syn_rule_key
 {
@@ -89,6 +91,63 @@ typedef struct qpol_extended_image
 	struct qpol_syn_rule **syn_rule_master_list;
 	size_t master_list_sz;
 } qpol_extended_image_t;
+
+struct extend_bogus_alias_struct
+{
+	qpol_policy_t *q;
+	int num_bogus_aliases;
+};
+
+static int extend_find_bogus_alias(hashtab_key_t key __attribute__ ((unused)), hashtab_datum_t datum, void *args)
+{
+	struct extend_bogus_alias_struct *e = (struct extend_bogus_alias_struct *)args;
+	/* within libqpol, qpol_type_t is the same a libsepol's type_datum_t */
+	qpol_type_t *qtype = (qpol_type_t *) datum;
+	type_datum_t *type = (type_datum_t *) datum;
+	unsigned char isalias;
+	qpol_type_get_isalias(e->q, qtype, &isalias);
+	return isalias && type->s.value == 0;
+}
+
+static void extend_remove_bogus_alias(hashtab_key_t key, hashtab_datum_t datum, void *args)
+{
+	struct extend_bogus_alias_struct *e = (struct extend_bogus_alias_struct *)args;
+	free(key);
+	type_datum_t *type = (type_datum_t *) datum;
+	type_datum_destroy(type);
+	free(type);
+	e->num_bogus_aliases++;
+}
+
+/**
+ *  Search the policy for aliases that have a value of 0.  These come
+ *  from modular policies with disabled aliases, but end up being
+ *  written to the policy anyways due to a bug in libsepol.  These
+ *  bogus aliases are removed from the policy.
+ *  @param policy Policy that may contain broken aliases.  This policy
+ *  will be altered by this function.
+ *  @return 0 on success and < 0 on failure; if the call fails, errno
+ *  will be set.  On failure, the policy state may be inconsistent.
+ */
+static int qpol_policy_remove_bogus_aliases(qpol_policy_t * policy)
+{
+	policydb_t *db = NULL;
+
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p->p;
+	struct extend_bogus_alias_struct e = { policy, 0 };
+	hashtab_map_remove_on_error(db->p_types.table, extend_find_bogus_alias, extend_remove_bogus_alias, &e);
+
+	if (e.num_bogus_aliases > 0) {
+		WARN(policy, "%s", "This policy contained disabled aliases; they have been removed.");
+	}
+	return 0;
+}
 
 /**
  *  Builds data for the attributes and inserts them into the policydb.
@@ -340,6 +399,88 @@ static int qpol_policy_add_isid_names(qpol_policy_t * policy)
 			}
 		}
 	}
+
+	return 0;
+}
+
+static int extend_assign_role_to_user(hashtab_key_t k __attribute__ ((unused)), hashtab_datum_t d, void *args)
+{
+	user_datum_t *user = (user_datum_t *) d;
+	uint32_t *value = (uint32_t *) args;
+	if (ebitmap_set_bit(&user->roles.roles, *value - 1, 1)) {
+		return -1;
+	}
+	return 0;
+}
+
+/**
+ *  Modify the special role 'object_r' by assigning it to all users,
+ *  and all types to object_r.  This function modifies the policydb.
+ *  @param policy Policy containing object_r.  This policy will be
+ *  altered by this function.
+ *  @return 0 on success and < 0 on failure; if the call fails, errno
+ *  will be set.  On failure, the policy state may be inconsistent.
+ */
+static int qpol_policy_add_object_r(qpol_policy_t * policy)
+{
+	policydb_t *db = NULL;
+	int error = 0;
+
+	if (policy == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p->p;
+
+	hashtab_datum_t datum = hashtab_search(db->p_roles.table, (const hashtab_key_t)OBJECT_R);
+	if (datum == NULL) {
+		ERR(policy, "%s", OBJECT_R " not found in policy!");
+		errno = EIO;
+		assert(0);
+		return STATUS_ERR;
+	}
+
+	role_datum_t *role = (role_datum_t *) datum;
+
+	uint32_t value = role->s.value;
+
+	if (hashtab_map(db->p_users.table, extend_assign_role_to_user, &value) < 0) {
+		return STATUS_ERR;
+	}
+
+	qpol_iterator_t *iter;
+	if (qpol_policy_get_type_iter(policy, &iter) < 0) {
+		return STATUS_ERR;
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		const qpol_type_t *type;
+		unsigned char isattr, isalias;
+		if (qpol_iterator_get_item(iter, (void **)&type) < 0 ||
+		    qpol_type_get_isattr(policy, type, &isattr) < 0 || qpol_type_get_isalias(policy, type, &isalias) < 0) {
+			error = errno;
+			qpol_iterator_destroy(&iter);
+			errno = error;
+			return STATUS_ERR;
+		}
+		if (isattr || isalias) {
+			continue;
+		}
+		if (qpol_type_get_value(policy, type, &value) < 0) {
+			error = errno;
+			qpol_iterator_destroy(&iter);
+			errno = error;
+			return STATUS_ERR;
+		}
+		if (ebitmap_set_bit(&role->types.types, value - 1, 1)) {
+			error = errno;
+			qpol_iterator_destroy(&iter);
+			errno = error;
+			return STATUS_ERR;
+		}
+	}
+	qpol_iterator_destroy(&iter);
 
 	return 0;
 }
@@ -855,11 +996,6 @@ void qpol_extended_image_destroy(qpol_extended_image_t ** ext)
 	*ext = NULL;
 }
 
-int qpol_policy_extend(qpol_policy_t * policy)
-{
-	return policy_extend(policy);
-}
-
 int policy_extend(qpol_policy_t * policy)
 {
 	int retv, error;
@@ -872,6 +1008,12 @@ int policy_extend(qpol_policy_t * policy)
 	}
 
 	db = &policy->p->p;
+
+	retv = qpol_policy_remove_bogus_aliases(policy);
+	if (retv) {
+		error = errno;
+		goto err;
+	}
 	if (db->attr_type_map) {
 		retv = qpol_policy_build_attrs_from_map(policy);
 		if (retv) {
@@ -887,6 +1029,11 @@ int policy_extend(qpol_policy_t * policy)
 		}
 	}
 	retv = qpol_policy_add_isid_names(policy);
+	if (retv) {
+		error = errno;
+		goto err;
+	}
+	retv = qpol_policy_add_object_r(policy);
 	if (retv) {
 		error = errno;
 		goto err;

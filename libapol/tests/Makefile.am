@@ -6,7 +6,9 @@ libapol_tests_SOURCES = \
 	dta-tests.c dta-tests.h \
 	infoflow-tests.c infoflow-tests.h \
 	policy-21-tests.c policy-21-tests.h \
+	role-tests.c role-tests.h \
 	terule-tests.c terule-tests.h \
+	user-tests.c user-tests.h \
 	libapol-tests.c
 
 AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \

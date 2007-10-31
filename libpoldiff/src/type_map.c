@@ -315,7 +315,7 @@ static void type_map_dump(poldiff_t * diff)
 	const char *name;
 	printf("# type map debug dump (qpol_type_t -> pseudo-type):\norig:\n");
 	for (i = 0; i < diff->type_map->num_orig_types; i++) {
-		printf("%3d:%5d", i, diff->type_map->orig_to_pseudo[i]);
+		printf("%3zd:%5d", i, diff->type_map->orig_to_pseudo[i]);
 		if ((i + 1) % 5 == 0) {
 			printf("\n");
 		} else {
@@ -324,7 +324,7 @@ static void type_map_dump(poldiff_t * diff)
 	}
 	for (i = 0; i < apol_vector_get_size(diff->type_map->pseudo_to_orig); i++) {
 		v = apol_vector_get_element(diff->type_map->pseudo_to_orig, i);
-		printf("\n%3d->", i);
+		printf("\n%3zd->", i);
 		for (j = 0; j < apol_vector_get_size(v); j++) {
 			t = apol_vector_get_element(v, j);
 			qpol_type_get_name(diff->orig_qpol, t, &name);
@@ -333,7 +333,7 @@ static void type_map_dump(poldiff_t * diff)
 	}
 	printf("\nmod:\n");
 	for (i = 0; i < diff->type_map->num_mod_types; i++) {
-		printf("%3d:%5d", i, diff->type_map->mod_to_pseudo[i]);
+		printf("%3zd:%5d", i, diff->type_map->mod_to_pseudo[i]);
 		if ((i + 1) % 5 == 0) {
 			printf("\n");
 		} else {
@@ -342,7 +342,7 @@ static void type_map_dump(poldiff_t * diff)
 	}
 	for (i = 0; i < apol_vector_get_size(diff->type_map->pseudo_to_mod); i++) {
 		v = apol_vector_get_element(diff->type_map->pseudo_to_mod, i);
-		printf("\n%3d->", i);
+		printf("\n%3zd->", i);
 		for (j = 0; j < apol_vector_get_size(v); j++) {
 			t = apol_vector_get_element(v, j);
 			qpol_type_get_name(diff->mod_qpol, t, &name);
@@ -750,7 +750,7 @@ static void type_remap_vector_dump(poldiff_t * diff)
 	v = poldiff_type_remap_get_entries(diff);
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		e = apol_vector_get_element(v, i);
-		printf("%d\t%s\t", i, poldiff_type_remap_entry_get_is_enabled(e) ? "en" : "dis");
+		printf("%zd\t%s\t", i, poldiff_type_remap_entry_get_is_enabled(e) ? "en" : "dis");
 		w = poldiff_type_remap_entry_get_original_types(diff, e);
 		for (j = 0; j < apol_vector_get_size(w); j++) {
 			name = apol_vector_get_element(w, j);
