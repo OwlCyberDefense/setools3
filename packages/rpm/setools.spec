@@ -1,12 +1,12 @@
 Name: setools
-Version: 3.3.1
+Version: 3.3.2
 Release: 0
 Vendor: Tresys Technology, LLC
 Packager: Jason Tang <selinux@tresys.com>
 License: GPL
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: setools-3.3.1.tar.gz
+Source: setools-3.3.2.tar.gz
 AutoReqProv: no
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
@@ -38,7 +38,6 @@ BuildRequires: flex, bison, pkgconfig
 BuildRequires: glibc-devel libstdc++-devel
 BuildRequires: libselinux-devel >= 1.30 libsepol-devel >= 1.12.27
 BuildRequires: sqlite-devel >= 3.2.0 libxml2-devel
-BuildRequires: tcl-devel >= 8.4.9
 BuildRequires: libxml2-devel
 BuildRequires: autoconf >= 2.59 automake
 
@@ -106,7 +105,7 @@ Requires: setools-libs = %{version} tcl >= 8.4.9
 Provides: libqpol-tcl = %{libqpol_ver} libapol-tcl = %{libapol_ver}
 Provides: libpoldiff-tcl = %{libpoldiff_ver}
 Provides: libseaudit-tcl = %{libseaudit_ver} libsefs-tcl = %{libsefs_ver}
-BuildRequires: tcl-devel >= 8.4.9 swig >= 1.3.28
+BuildRequires: tcl-devel >= 8.4.9 tk-devel >= 8.4.9 swig >= 1.3.28
 
 %description libs-tcl
 SETools is a collection of graphical tools, command-line tools, and

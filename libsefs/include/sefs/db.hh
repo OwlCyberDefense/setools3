@@ -110,8 +110,10 @@ class sefs_db:public sefs_fclist
 	 * return 0.
 	 * @exception std::runtime_error Error while reading contexts
 	 * from the database.
+	 * @exception std::invalid_argument One or more query arguments
+	 * is invalid.
 	 */
-	int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error);
+	int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error, std::invalid_argument);
 
 	/**
 	 * Determine if the contexts stored in this database contain

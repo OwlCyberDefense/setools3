@@ -208,8 +208,10 @@ class sefs_query
 	 * object.  It is safe to call this function multiple times.
 	 *
 	 * @exception std::bad_alloc Out of memory.
+	 * @exception std::invalid_argument One or more invalid regular
+	 * expressions is invalid.
 	 */
-	void compile() throw(std::bad_alloc);
+	void compile() throw(std::bad_alloc, std::invalid_argument);
 
 	char *_user, *_role, *_type, *_range, *_path, *_dev;
 	uint32_t _objclass;
