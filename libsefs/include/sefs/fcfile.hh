@@ -116,8 +116,10 @@ class sefs_fcfile:public sefs_fclist
 	 * 0 on failure).  If the fcfile has no entries then return 0.
 	 * @exception std::runtime_error Error while reading contexts
 	 * from the fclist.
+	 * @exception std::invalid_argument One or more query arguments
+	 * is invalid.
 	 */
-	int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error);
+	int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error, std::invalid_argument);
 
 	/**
 	 * Determine if the contexts in the fcfile contain MLS fields.

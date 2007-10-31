@@ -186,7 +186,7 @@ int apol_common_get_by_query(const apol_policy_t * p, apol_common_query_t * c, a
 			}
 		}
 		if (apol_vector_append(*v, common_datum)) {
-			ERR(p, "%s", strerror(ENOMEM));
+			ERR(p, "%s", strerror(errno));
 			goto cleanup;
 		}
 	}

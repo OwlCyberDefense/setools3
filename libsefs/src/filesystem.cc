@@ -380,7 +380,8 @@ static int filesystem_ftw_handler(const char *fpath, const struct stat64 *sb, in
 	return 0;
 }
 
-int sefs_filesystem::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error)
+int sefs_filesystem::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error,
+												std::invalid_argument)
 {
 	struct filesystem_ftw_struct s;
 	s.dev_map = NULL;

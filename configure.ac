@@ -1,4 +1,4 @@
-AC_INIT(setools, 3.3.1, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.3.2, [Tresys Technology <setools@tresys.com>], [setools])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)

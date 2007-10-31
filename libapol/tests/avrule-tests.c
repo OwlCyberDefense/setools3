@@ -82,8 +82,42 @@ static void avrule_basic_syn(void)
 	apol_avrule_query_destroy(&aq);
 }
 
+static void avrule_default(void)
+{
+	apol_avrule_query_t *aq = apol_avrule_query_create();
+	CU_ASSERT_PTR_NOT_NULL_FATAL(aq);
+
+	int retval;
+	qpol_policy_t *sq = apol_policy_get_qpol(sp);
+
+	apol_vector_t *v = NULL;
+
+	retval = apol_avrule_get_by_query(sp, aq, &v);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT_PTR_NOT_NULL(v);
+	CU_ASSERT(apol_vector_get_size(v) == 396);
+	apol_vector_destroy(&v);
+
+	qpol_policy_rebuild(sq, QPOL_POLICY_OPTION_NO_NEVERALLOWS);
+	retval = apol_avrule_get_by_query(sp, aq, &v);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT_PTR_NOT_NULL(v);
+	CU_ASSERT(apol_vector_get_size(v) == 21);
+	apol_vector_destroy(&v);
+
+	retval = apol_avrule_get_by_query(bp, aq, &v);
+	CU_ASSERT_EQUAL_FATAL(retval, 0);
+	CU_ASSERT_PTR_NOT_NULL(v);
+	CU_ASSERT(apol_vector_get_size(v) == 21);
+	apol_vector_destroy(&v);
+
+	apol_avrule_query_destroy(&aq);
+}
+
 CU_TestInfo avrule_tests[] = {
 	{"basic syntactic search", avrule_basic_syn}
+	,
+	{"default query", avrule_default}
 	,
 	CU_TEST_INFO_NULL
 };

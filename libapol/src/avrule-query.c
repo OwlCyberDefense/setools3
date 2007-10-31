@@ -197,7 +197,10 @@ int apol_avrule_get_by_query(const apol_policy_t * p, const apol_avrule_query_t 
 	*v = NULL;
 	unsigned int flags = 0;
 
-	uint32_t rule_type = QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT;
+	uint32_t rule_type = QPOL_RULE_ALLOW | QPOL_RULE_AUDITALLOW | QPOL_RULE_DONTAUDIT;
+	if (qpol_policy_has_capability(apol_policy_get_qpol(p), QPOL_CAP_NEVERALLOW)) {
+		rule_type |= QPOL_RULE_NEVERALLOW;
+	}
 	if (a != NULL) {
 		if (a->rules != 0) {
 			rule_type &= a->rules;

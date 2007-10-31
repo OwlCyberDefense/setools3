@@ -190,7 +190,7 @@ void sefs_query::regex(bool r)
 
 /******************** private functions below ********************/
 
-void sefs_query::compile() throw(std::bad_alloc)
+void sefs_query::compile() throw(std::bad_alloc, std::invalid_argument)
 {
 	if (_recompiled)
 	{
@@ -228,35 +228,43 @@ void sefs_query::compile() throw(std::bad_alloc)
 			throw std::bad_alloc();
 		}
 	}
+	char errbuf[1024] = { '\0' };
+	int regretv;
 	const char *s = (_user == NULL ? "" : _user);
-	if (regcomp(_reuser, s, REG_EXTENDED | REG_NOSUB))
+	if ((regretv = regcomp(_reuser, s, REG_EXTENDED | REG_NOSUB)))
 	{
-		throw std::bad_alloc();
+		regerror(regretv, _reuser, errbuf, 1024);
+		throw std::invalid_argument(errbuf);
 	}
 	s = (_role == NULL ? "" : _role);
-	if (regcomp(_rerole, s, REG_EXTENDED | REG_NOSUB))
+	if ((regretv = regcomp(_rerole, s, REG_EXTENDED | REG_NOSUB)))
 	{
-		throw std::bad_alloc();
+		regerror(regretv, _reuser, errbuf, 1024);
+		throw std::invalid_argument(errbuf);
 	}
 	s = (_type == NULL ? "" : _type);
-	if (regcomp(_retype, s, REG_EXTENDED | REG_NOSUB))
+	if ((regretv = regcomp(_retype, s, REG_EXTENDED | REG_NOSUB)))
 	{
-		throw std::bad_alloc();
+		regerror(regretv, _reuser, errbuf, 1024);
+		throw std::invalid_argument(errbuf);
 	}
 	s = (_range == NULL ? "" : _range);
-	if (regcomp(_rerange, s, REG_EXTENDED | REG_NOSUB))
+	if ((regretv = regcomp(_rerange, s, REG_EXTENDED | REG_NOSUB)))
 	{
-		throw std::bad_alloc();
+		regerror(regretv, _reuser, errbuf, 1024);
+		throw std::invalid_argument(errbuf);
 	}
 	s = (_path == NULL ? "" : _path);
-	if (regcomp(_repath, s, REG_EXTENDED | REG_NOSUB))
+	if ((regretv = regcomp(_repath, s, REG_EXTENDED | REG_NOSUB)))
 	{
-		throw std::bad_alloc();
+		regerror(regretv, _reuser, errbuf, 1024);
+		throw std::invalid_argument(errbuf);
 	}
 	s = (_dev == NULL ? "" : _dev);
-	if (regcomp(_redev, s, REG_EXTENDED | REG_NOSUB))
+	if ((regretv = regcomp(_redev, s, REG_EXTENDED | REG_NOSUB)))
 	{
-		throw std::bad_alloc();
+		regerror(regretv, _reuser, errbuf, 1024);
+		throw std::invalid_argument(errbuf);
 	}
 	_recompiled = true;
 }

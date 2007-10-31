@@ -1,6 +1,15 @@
 VERS_4.0 {
 	global:
 		extern "C++" {
+			# typeinfo exports
+			*sefs_db;
+			*sefs_entry;
+			*sefs_fcfile;
+			*sefs_fclist;
+			*sefs_filesystem;
+			*sefs_query;
+			*std::invalid_argument;
+
 			sefs_db::*;
 			sefs_entry::*;
 			sefs_fcfile::*;

@@ -662,7 +662,7 @@ sefs_db::~sefs_db()
 	}
 }
 
-int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error)
+int sefs_db::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error, std::invalid_argument)
 {
 	// copy the query fields over to the C land struct; this is
 	// because the query members are private, and thus not accessible

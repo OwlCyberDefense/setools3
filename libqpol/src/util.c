@@ -51,7 +51,7 @@ static int search_policy_source_file(char **path)
 		*path = NULL;
 		return -1;
 	}
-	if (access(*path, F_OK) < 0) {
+	if (access(*path, R_OK) < 0) {
 		free(*path);
 		*path = NULL;
 		return 1;
