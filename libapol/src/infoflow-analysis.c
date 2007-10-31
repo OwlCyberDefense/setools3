@@ -435,7 +435,8 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(const apol_policy_t
 		}
 		return edge;
 	}
-	if ((edge = calloc(1, sizeof(*edge))) == NULL || (edge->rules = apol_vector_create(NULL)) == NULL || apol_vector_append(g->edges, edge) < 0) {
+	if ((edge = calloc(1, sizeof(*edge))) == NULL || (edge->rules = apol_vector_create(NULL)) == NULL ||
+	    apol_vector_append(g->edges, edge) < 0) {
 		ERR(p, "%s", strerror(errno));
 		apol_infoflow_edge_free(edge);
 		return NULL;

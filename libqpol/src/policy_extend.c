@@ -53,6 +53,16 @@
 #define QPOL_SYN_RULE_TABLE_SIZE (1 << QPOL_SYN_RULE_TABLE_BITS)
 #define QPOL_SYN_RULE_TABLE_MASK (QPOL_SYN_RULE_TABLE_SIZE - 1)
 
+/* original hashing function below */
+/*
+#define QPOL_SYN_RULE_TABLE_HASH(rule_key) \
+((rule_key->class_val + \
+ (rule_key->target_val << 2) +\
+ (rule_key->source_val << 9)) & \
+ QPOL_SYN_RULE_TABLE_MASK)
+*/
+
+/* new hashing function, introduced in SETools 3.3 */
 #define QPOL_SYN_RULE_TABLE_HASH(rule_key) \
 (((((rule_key->source_val & 0xff) << 8) | (rule_key->target_val & 0xff)) ^ \
  (rule_key->class_val & 0xf) ^ \
@@ -960,8 +970,9 @@ int qpol_policy_build_syn_rule_table(qpol_policy_t * policy)
 		}
 		o2 += (num_items - expected_value) * (num_items - expected_value);
 	}
-	float stddev = sqrtf(o2 / QPOL_SYN_RULE_TABLE_SIZE);
-	fprintf(stderr, "libqpol synrule table:  total entries %lu, expected %g\n", total_entries, expected_value);
+	float stddev = sqrtf(o2 / (QPOL_SYN_RULE_TABLE_SIZE - 1));
+	fprintf(stderr, "libqpol synrule table %d bits:  total entries %lu, expected %g\n", QPOL_SYN_RULE_TABLE_BITS, total_entries,
+		expected_value);
 	fprintf(stderr, "                        min %zd, max %zd, stddev %g\n", min_items, max_items, stddev);
 #endif
 

@@ -103,6 +103,7 @@ extern "C"
  * @return 0 on success, negative on error.
  */
 	extern int apol_class_query_set_common(const apol_policy_t * p, apol_class_query_t * c, const char *name);
+
 /**
  * Set a class query to use regular expression searching for all of
  * its fields.	Strings will be treated as regexes instead of
