@@ -28,6 +28,7 @@
 %import sefs.i
 %import apol.i
 %import qpol.i
+%include std_except.i
 
 %{
 #include <config.h>
@@ -429,7 +430,7 @@ sefs_db *apol_tcl_open_database(const char * filename, Tcl_Interp * interp);
 sefs_db *apol_tcl_open_database_from_dir(const char * filename, Tcl_Interp * interp);
 %newobject apol_tcl_open_database(const char*, Tcl_Interp*);
 %newobject apol_tcl_open_database_from_dir(const char*, Tcl_Interp*);
-int apol_tcl_query_database(sefs_fclist *fclist, sefs_query *query, Tcl_Interp * interp);
+int apol_tcl_query_database(sefs_fclist *fclist, sefs_query *query, Tcl_Interp * interp) throw (std::invalid_argument, std::runtime_error);
 void apol_tcl_entry_do_nothing(sefs_entry *e);
 
 // disable the exception handler, otherwise it will delete the error

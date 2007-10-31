@@ -153,7 +153,7 @@ static void fclist_entry_free(void *elem)
 	}
 }
 
-apol_vector_t *sefs_fclist::runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error)
+apol_vector_t *sefs_fclist::runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error, std::invalid_argument)
 {
 	apol_vector_t *v = NULL;
 	try

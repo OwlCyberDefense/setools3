@@ -152,7 +152,8 @@ sefs_fcfile::~sefs_fcfile()
 	apol_vector_destroy(&_entries);
 }
 
-int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error)
+int sefs_fcfile::runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error,
+											    std::invalid_argument)
 {
 	apol_vector_t *type_list = NULL;
 	apol_mls_range_t *range = NULL;

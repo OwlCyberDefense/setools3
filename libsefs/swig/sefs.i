@@ -36,6 +36,8 @@
 
 %import apol.i
 
+%include std_except.i
+
 %inline %{
 	typedef struct apol_string_vector apol_string_vector_t;
 %}

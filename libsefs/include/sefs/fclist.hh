@@ -141,8 +141,11 @@ class sefs_fclist
 	 * 0 on failure).  If the fclist has no entries then return 0.
 	 * @exception std::runtime_error Error while reading contexts
 	 * from the fclist.
+	 * @exception std::invalid_argument One or more query arguments
+	 * is invalid.
 	 */
-	virtual int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error) = 0;
+	virtual int runQueryMap(sefs_query * query, sefs_fclist_map_fn_t fn, void *data) throw(std::runtime_error,
+											       std::invalid_argument) = 0;
 
 	/**
 	 * Perform a sefs query on the given file context list object
@@ -157,8 +160,10 @@ class sefs_fclist
 	 * @exception std::bad_alloc Out of memory.
 	 * @exception std::runtime_error Error while reading contexts
 	 * from the fclist.
+	 * @exception std::invalid_argument One or more query arguments
+	 * is invalid.
 	 */
-	apol_vector_t *runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error);
+	apol_vector_t *runQuery(sefs_query * query) throw(std::bad_alloc, std::runtime_error, std::invalid_argument);
 
 	/**
 	 * Determine if the contexts in the fclist contain MLS fields.

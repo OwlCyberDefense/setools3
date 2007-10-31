@@ -266,7 +266,7 @@ extern "C"
  *  @param policy Policy handler, to report errors.
  *  @param rule The rule to render.
  *
- *  @return a newly malloc()'d string representation of the rule, or NULL on
+ *  @return A newly malloc()'d string representation of the rule, or NULL on
  *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
