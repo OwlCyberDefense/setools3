@@ -104,7 +104,8 @@ distclean-local:
 	-rm -r config.tcl
 
 indent:
-	find $(top_src_dir) -name '*.[ch]' -type f -exec indent $(C_INDENT_OPTS) '{}' \;
-	find $(top_src_dir) -regex '.*\.\(cc\|hh\)' -type f -exec indent $(CXX_INDENT_OPTS) '{}' \;
-	find $(top_src_dir) -name '*.cc' -type f -exec sed -i 's/const \?const/const/g' '{}' \;
-	find $(top_src_dir) -name '*.hh' -type f -exec sed -i 's/virtual ~ /virtual ~/g' '{}' \;
+	find $(top_srcdir) -name '*.[ch]' -type f -exec indent $(C_INDENT_OPTS) '{}' \;
+	find $(top_srcdir) -regex '.*\.\(cc\|hh\)' -type f -exec indent $(CXX_INDENT_OPTS) '{}' \;
+	find $(top_srcdir) -regex '.*\.\(cc\|hh\)' -type f -exec sed -i 's/\*>>/* > >/g' '{}' \;
+	find $(top_srcdir) -name '*.cc' -type f -exec sed -i 's/const \?const/const/g' '{}' \;
+	find $(top_srcdir) -name '*.hh' -type f -exec sed -i 's/virtual ~ /virtual ~/g' '{}' \;

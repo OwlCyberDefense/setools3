@@ -236,7 +236,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
 %{_libdir}/libapol.so.*
 %{_libdir}/libpoldiff.so.*
-%{_libdir}/libpolsearch.so.*
 %{_libdir}/libqpol.so.*
 %{_libdir}/libseaudit.so.*
 %{_libdir}/libsefs.so.*
@@ -253,7 +252,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %defattr(-,root,root,-)
 %{_libdir}/libjapol.so.*
 %{_libdir}/libjpoldiff.so.*
-%{_libdir}/libjpolsearch.so.*
 %{_libdir}/libjqpol.so.*
 %{_libdir}/libjseaudit.so.*
 %{_libdir}/libjsefs.so.*
@@ -264,7 +262,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %defattr(-,root,root,-)
 %{tcllibdir}/apol/
 %{tcllibdir}/poldiff/
-%{tcllibdir}/polsearch/
 %{tcllibdir}/qpol/
 %{tcllibdir}/seaudit/
 %{tcllibdir}/sefs/
@@ -275,7 +272,6 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/pkgconfig/*
 %{_includedir}/apol/
 %{_includedir}/poldiff/
-%{_includedir}/polsearch/
 %{_includedir}/qpol/
 %{_includedir}/seaudit/
 %{_includedir}/sefs/
@@ -344,6 +340,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun libs-tcl -p /sbin/ldconfig
 
 %changelog
+* Thu Nov 1 2007 Jason Tang <selinux@tresys.com> 3.3.2-0
+- Update to SETools 3.3.2 release.
+
 * Thu Oct 18 2007 Chris PeBenito <cpebenito@tresys.com> 3.3.1-7.fc8
 - Rebuild to fix ppc64 issue.
 
