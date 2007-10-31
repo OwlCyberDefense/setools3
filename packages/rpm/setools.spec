@@ -10,7 +10,7 @@ Release: %{setools_release}
 License: GPLv2
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: setools-%{setools_maj_ver}.tar.gz
+Source: setools-%{setools_maj_ver}.%{setools_min_ver}.tar.gz
 #Source: http://oss.tresys.com/projects/setools/chrome/site/dists/setools-%{setools_maj_ver}/setools-%{setools_maj_ver}.tar.gz
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
@@ -187,7 +187,7 @@ This package includes the following graphical tools:
 %define tcllibdir %{_libdir}/setools
 
 %prep
-%setup -q -n setools-%{setools_maj_ver}
+%setup -q -n setools-%{setools_maj_ver}.%{setools_min_ver}
 
 %build
 %configure --libdir=%{_libdir} --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java --enable-swig-tcl
