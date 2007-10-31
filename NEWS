@@ -1,3 +1,23 @@
+SETools 3.3.2:
+
+This release corrects a number of issues present in SETools 3.3.1:
+
+  * Fix to libqpol for policies lacking genfscon statements; for
+    policies containing disabled aliases; for
+    qpol_type_get_alias_iter() given certain policies; for the special
+    role object_r.
+
+  * Fix to libapol when running a default avrule query on policies
+    that have not had their neverallow rules loaded.
+
+  * Fix to libsefs and apol for invalid regular expressions.
+
+  * Fix to apol when validating empty levels.
+
+  * Fix to all SWIG generated wrappers for Java.
+
+==================================================
+
 SETools 3.3.1:
 
 This release corrects a number of issues present in SETools 3.3:

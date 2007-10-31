@@ -830,7 +830,7 @@ static void print_range_results(const apol_policy_t * policy, const options_t * 
 int main(int argc, char **argv)
 {
 	options_t cmd_opts;
-	int optc, rt;
+	int optc, rt = -1;
 
 	apol_policy_t *policy = NULL;
 	apol_vector_t *v = NULL;

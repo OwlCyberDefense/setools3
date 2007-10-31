@@ -15,6 +15,8 @@ pkgconfigdir = @libdir@/pkgconfig
 
 BUILT_SOURCES = $(pkgconfig_DATA)
 
+$(pkgconfig_DATA): $(top_builddir)/config.status
+
 install-data-local:
 	if test $(copy_bwidget) = "yes"; then \
 		tar jxf BWidget-1.8.0.tar.bz2; \
