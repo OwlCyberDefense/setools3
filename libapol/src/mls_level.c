@@ -436,6 +436,9 @@ int apol_mls_level_validate(const apol_policy_t * p, const apol_mls_level_t * le
 		errno = EINVAL;
 		return -1;
 	}
+	if (level->sens == NULL) {
+		return 0;
+	}
 	if (qpol_policy_get_level_by_name(p->p, level->sens, &level_datum) < 0 ||
 	    qpol_level_get_cat_iter(p->p, level_datum, &iter) < 0) {
 		return -1;

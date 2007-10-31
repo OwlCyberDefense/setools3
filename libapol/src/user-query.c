@@ -101,17 +101,6 @@ int apol_user_get_by_query(const apol_policy_t * p, apol_user_query_t * u, apol_
 						break;
 					}
 				}
-				/* special case: object_r is assigned
-				 * to all users */
-				compval = apol_compare(p, "object_r", u->role_name, u->flags, &(u->role_regex));
-				if (compval < 0) {
-					goto cleanup;
-				} else if (compval == 1) {
-					append_user = 1;
-				}
-				if (!append_user) {
-					continue;
-				}
 			}
 			if (apol_policy_is_mls(p)) {
 				if (qpol_user_get_dfltlevel(p->p, user, &mls_default_level) < 0 ||

@@ -50,9 +50,9 @@ SWIGEXPORT void * seaudit_swig_message_callback_arg = NULL;
 %javaconst(1);
 /* get the java environment so we can throw exceptions */
 %{
-	static JNIEnv *jenv;
+	static JNIEnv *seaudit_global_jenv;
 	jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-		(*vm)->AttachCurrentThread(vm, (void **)&jenv, NULL);
+		(*vm)->AttachCurrentThread(vm, (void **)&seaudit_global_jenv, NULL);
 		return JNI_VERSION_1_2;
 	}
 %}
@@ -62,7 +62,22 @@ SWIGEXPORT void * seaudit_swig_message_callback_arg = NULL;
 %include stdint.i
 %import apol.i
 
+%{
+#undef BEGIN_EXCEPTION
+#undef END_EXCEPTION
+%}
+
 #ifdef SWIGJAVA
+
+%exception {
+	seaudit_global_jenv = jenv;
+	$action
+}
+
+%{
+#define BEGIN_EXCEPTION JNIEnv *local_jenv = seaudit_global_jenv; {
+#define END_EXCEPTION }
+%}
 
 /* handle size_t correctly in java as architecture independent */
 %typemap(jni) size_t "jlong"
@@ -113,15 +128,19 @@ typedef uint64_t size_t;
 #else
 typedef uint32_t size_t;
 #endif
+%{
+#define BEGIN_EXCEPTION
+#define END_EXCEPTION
+%}
 #endif
 
 #ifdef SWIGJAVA
 /* if java, pass the new exception macro to C not just SWIG */
 #undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception(code, msg) {SWIG_JavaException(local_jenv, code, msg); goto fail;}
 %inline %{
 #undef SWIG_exception
-#define SWIG_exception(code, msg) {SWIG_JavaException(jenv, code, msg); goto fail;}
+#define SWIG_exception(code, msg) {SWIG_JavaException(local_jenv, code, msg); goto fail;}
 %}
 #endif
 
@@ -235,10 +254,12 @@ typedef struct tm {
 %extend tm_t {
 	tm_t() {
 		struct tm *t;
+		BEGIN_EXCEPTION
 		t = calloc(1, sizeof(struct tm));
 		if (!t) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return t;
 	};
@@ -261,10 +282,12 @@ typedef struct seaudit_log {} seaudit_log_t;
 %extend seaudit_log_t {
 	seaudit_log_t() {
 		seaudit_log_t *slog;
+		BEGIN_EXCEPTION
 		slog = seaudit_log_create(seaudit_swig_message_callback, seaudit_swig_message_callback_arg);
 		if (!slog) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return slog;
 	};
@@ -277,40 +300,48 @@ typedef struct seaudit_log {} seaudit_log_t;
 	%newobject get_users();
 	apol_string_vector_t *get_users() {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = seaudit_log_get_users(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return (apol_string_vector_t*)v;
 	};
 	%newobject get_roles();
 	apol_string_vector_t *get_roles() {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = seaudit_log_get_roles(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return (apol_string_vector_t*)v;
 	};
 	%newobject get_types();
 	apol_string_vector_t *get_types() {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = seaudit_log_get_types(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return (apol_string_vector_t*)v;
 	};
 	%newobject get_classes();
 	apol_string_vector_t *get_classes() {
 		apol_vector_t *v;
+		BEGIN_EXCEPTION
 		v = seaudit_log_get_classes(self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return (apol_string_vector_t*)v;
 	};
@@ -327,7 +358,9 @@ typedef enum seaudit_message_type
 typedef struct seaudit_message {} seaudit_message_t;
 %extend seaudit_message_t {
 	seaudit_message_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Canot directly create seaudit_message_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -353,30 +386,36 @@ typedef struct seaudit_message {} seaudit_message_t;
 	%newobject to_string();
 	char *to_string() {
 		char *str;
+		BEGIN_EXCEPTION
 		str = seaudit_message_to_string(self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	%newobject to_string_html();
 	char *to_string_html() {
 		char *str;
+		BEGIN_EXCEPTION
 		str = seaudit_message_to_string_html(self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
 	%newobject to_misc_string();
 	char *to_misc_string() {
 		char *str;
+		BEGIN_EXCEPTION
 		str = seaudit_message_to_misc_string(self);
 		if (!str) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return str;
 	};
@@ -391,7 +430,9 @@ typedef struct seaudit_message {} seaudit_message_t;
 typedef struct seaudit_load_message {} seaudit_load_message_t;
 %extend seaudit_load_message_t {
 	seaudit_load_message_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_load_message_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -410,7 +451,9 @@ typedef struct seaudit_load_message {} seaudit_load_message_t;
 typedef struct seaudit_bool_message {} seaudit_bool_message_t;
 %extend seaudit_bool_message_t {
 	seaudit_bool_message_t(void *msg) {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_bool_message_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -435,7 +478,9 @@ typedef enum seaudit_avc_message_type
 typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 %extend seaudit_avc_message_t {
 	seaudit_avc_message_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_avc_message_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
@@ -564,18 +609,24 @@ typedef enum seaudit_filter_date_match
 typedef struct seaudit_filter {} seaudit_filter_t;
 %extend seaudit_filter_t {
 	seaudit_filter_t(char *name = NULL) {
-		seaudit_filter_t *sf = seaudit_filter_create(name);
+		seaudit_filter_t *sf = NULL;
+		BEGIN_EXCEPTION
+		sf = seaudit_filter_create(name);
 		if (!sf) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return sf;
 	};
 	seaudit_filter_t(seaudit_filter_t *in) {
-		seaudit_filter_t *sf = seaudit_filter_create_from_filter(in);
+		seaudit_filter_t *sf = NULL;
+		BEGIN_EXCEPTION
+		sf = seaudit_filter_create_from_filter(in);
 		if (!sf) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return sf;
 	};
@@ -583,16 +634,20 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		seaudit_filter_destroy(&self);
 	};
 	void save(char *path) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_save_to_file(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not save filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_match(seaudit_filter_match_e match) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_match(self, match)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter matching method");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	}
@@ -600,9 +655,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_match(self);
 	};
 	void set_name(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_name(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter name");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -610,9 +667,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_name(self);
 	};
 	void set_description(char *description) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_description(self, description)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter description");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -626,9 +685,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_strict(self);
 	};
 	void set_source_user(apol_string_vector_t *v) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_source_user(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source user list for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -636,9 +697,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return (apol_string_vector_t*)seaudit_filter_get_source_user(self);
 	};
 	void set_source_role(apol_string_vector_t *v) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_source_role(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source role list for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -646,9 +709,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return (apol_string_vector_t*)seaudit_filter_get_source_role(self);
 	};
 	void set_source_type(apol_string_vector_t *v) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_source_type(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source type list for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -656,9 +721,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return (apol_string_vector_t*)seaudit_filter_get_source_type(self);
 	};
 	void set_target_user(apol_string_vector_t *v) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_user(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target user list for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -666,9 +733,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return (apol_string_vector_t*)seaudit_filter_get_target_user(self);
 	};
 	void set_target_role(apol_string_vector_t *v) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_role(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target role list for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -676,9 +745,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return (apol_string_vector_t*)seaudit_filter_get_target_role(self);
 	};
 	void set_target_type(apol_string_vector_t *v) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_type(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target type list for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -686,9 +757,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return (apol_string_vector_t*)seaudit_filter_get_target_type(self);
 	};
 	void set_target_class(apol_string_vector_t *v) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_class(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target class list for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -696,9 +769,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return (apol_string_vector_t*)seaudit_filter_get_target_class(self);
 	};
 	void set_permission(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_permission(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set permission for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -706,9 +781,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_permission(self);
 	};
 	void set_executable(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_executable(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set executable for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -716,9 +793,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_executable(self);
 	};
 	void set_host(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_host(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set host for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -726,9 +805,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_host(self);
 	};
 	void set_path(char *path) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_path(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set path for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -736,9 +817,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_path(self);
 	};
 	void set_command(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_command(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set command for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -758,9 +841,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_command(self);
 	};
 	void set_anyaddr(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_anyaddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set ip address for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -774,9 +859,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_anyport(self);
 	};
 	void set_laddr(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_laddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set local address for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -790,9 +877,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_lport(self);
 	};
 	void set_faddr(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_faddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set foreign address for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -806,9 +895,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_fport(self);
 	};
 	void set_saddr(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_saddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source address for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -822,9 +913,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_sport(self);
 	};
 	void set_daddr(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_daddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set destination address for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -844,9 +937,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_port(self);
 	};
 	void set_netif(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_netif(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set network interface for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -866,9 +961,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_cap(self);
 	};
 	void set_message_type(seaudit_avc_message_type_e mtype) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_message_type(self, mtype)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set message type for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -876,9 +973,11 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 		return seaudit_filter_get_message_type(self);
 	};
 	void set_date(struct tm *start, struct tm *end, seaudit_filter_date_match_e match) {
+		BEGIN_EXCEPTION
 		if (seaudit_filter_set_date(self, start, end, match)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set date for filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -916,15 +1015,20 @@ apol_vector_t *seaudit_filter_create_from_file(const char *filename);
 typedef struct seaudit_sort {} seaudit_sort_t;
 %extend seaudit_sort_t {
 	seaudit_sort_t() {
+		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_sort_t objects");
+		END_EXCEPTION
 	fail:
 		return NULL;
 	};
 	seaudit_sort_t(seaudit_sort_t *in) {
-		seaudit_sort_t *ss = seaudit_sort_create_from_sort(in);
+		seaudit_sort_t *ss = NULL;
+		BEGIN_EXCEPTION
+		ss = seaudit_sort_create_from_sort(in);
 		if (!ss) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return ss;
 	};
@@ -1011,28 +1115,34 @@ typedef struct seaudit_model {} seaudit_model_t;
 %extend seaudit_model_t {
 	seaudit_model_t(char *name = NULL, seaudit_log_t *slog = NULL) {
 		seaudit_model_t *smod;
+		BEGIN_EXCEPTION
 		smod = seaudit_model_create(name, slog);
 		if (!smod) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return smod;
 	};
 	seaudit_model_t(seaudit_model_t *in) {
 		seaudit_model_t *smod;
+		BEGIN_EXCEPTION
 		smod = seaudit_model_create_from_model(in);
 		if (!smod) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return smod;
 	};
 	seaudit_model_t(char *path) {
 		seaudit_model_t *smod;
+		BEGIN_EXCEPTION
 		smod = seaudit_model_create_from_file(path);
 		if (!smod) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return smod;
 	}
@@ -1040,9 +1150,11 @@ typedef struct seaudit_model {} seaudit_model_t;
 		seaudit_model_destroy(&self);
 	};
 	void save(char *path) {
+		BEGIN_EXCEPTION
 		if (seaudit_model_save_to_file(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not save seaudit model");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	}
@@ -1050,20 +1162,25 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return seaudit_model_get_name(self);
 	};
 	void set_name(char *name) {
+		BEGIN_EXCEPTION
 		if (seaudit_model_set_name(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set model name");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_log(seaudit_log_t *slog) {
+		BEGIN_EXCEPTION
 		if (seaudit_model_append_log(self, slog)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append log to model");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void append_filter(seaudit_filter_t *filter) {
+		BEGIN_EXCEPTION
 #ifdef SWIGJAVA /* duplicate so the garbage collector does not double free */
 		seaudit_filter_t *tmp = seaudit_filter_create_from_filter(filter);
 		if (seaudit_model_append_filter(self, tmp)) {
@@ -1075,6 +1192,7 @@ typedef struct seaudit_model {} seaudit_model_t;
 			SWIG_exception(SWIG_RuntimeError, "Could not append filter to model");
 		}
 #endif
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1083,16 +1201,20 @@ typedef struct seaudit_model {} seaudit_model_t;
 	};
 	%delobject remove_filter();
 	void remove_filter(seaudit_filter_t *filter) {
+		BEGIN_EXCEPTION
 		if (seaudit_model_remove_filter(self, filter)) {
 			SWIG_exception(SWIG_ValueError, "Could not remove filter");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_filter_match(seaudit_filter_match_e match) {
+		BEGIN_EXCEPTION
 		if (seaudit_model_set_filter_match(self, match)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter matching method for model");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1100,9 +1222,11 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return seaudit_model_get_filter_match(self);
 	};
 	void set_filter_visible(seaudit_filter_visible_e vis) {
+		BEGIN_EXCEPTION
 		if (seaudit_model_set_filter_visible(self, vis)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter visibility for model");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1110,6 +1234,7 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return seaudit_model_get_filter_visible(self);
 	};
 	void append_sort(seaudit_sort_t *ssort) {
+		BEGIN_EXCEPTION
 #ifdef SWIGJAVA
 		seaudit_sort_t *tmp = seaudit_sort_create_from_sort(ssort);
 		if (seaudit_model_append_sort(self, tmp)) {
@@ -1121,13 +1246,16 @@ typedef struct seaudit_model {} seaudit_model_t;
 			SWIG_exception(SWIG_RuntimeError, "Could not append sort to model");
 		}
 #endif
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void clear_sorts() {
+		BEGIN_EXCEPTION
 		if (seaudit_model_clear_sorts(self)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not clear model sorting criteria");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
@@ -1136,19 +1264,25 @@ typedef struct seaudit_model {} seaudit_model_t;
 	};
 	%newobject get_messages(seaudit_log_t*);
 	apol_vector_t *get_messages(seaudit_log_t *slog) {
-		apol_vector_t *v = seaudit_model_get_messages(slog, self);
+		apol_vector_t *v = NULL;
+		BEGIN_EXCEPTION
+		v = seaudit_model_get_messages(slog, self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
 	%newobject get_malformed_messages(seaudit_log_t*);
 	apol_vector_t *get_malformed_messages(seaudit_log_t *slog) {
-		apol_vector_t *v = seaudit_model_get_malformed_messages(slog, self);
+		apol_vector_t *v = NULL;
+		BEGIN_EXCEPTION
+		v = seaudit_model_get_malformed_messages(slog, self);
 		if (!v) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return v;
 	};
@@ -1179,10 +1313,12 @@ typedef struct seaudit_report {} seaudit_report_t;
 %extend seaudit_report_t {
 	seaudit_report_t(seaudit_model_t *m) {
 		seaudit_report_t *sr;
+		BEGIN_EXCEPTION
 		sr = seaudit_report_create(m);
 		if (!sr) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
 		}
+		END_EXCEPTION
 	fail:
 		return sr;
 	};
@@ -1190,37 +1326,47 @@ typedef struct seaudit_report {} seaudit_report_t;
 		seaudit_report_destroy(&self);
 	};
 	void write(seaudit_log_t *slog, char *path) {
+		BEGIN_EXCEPTION
 		if (seaudit_report_write(slog, self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not write report to file");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_format(seaudit_log_t *slog, seaudit_report_format_e format) {
+		BEGIN_EXCEPTION
 		if (seaudit_report_set_format(slog, self, format)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report format");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_configuration(seaudit_log_t *slog, char *path) {
+		BEGIN_EXCEPTION
 		if (seaudit_report_set_configuration(slog, self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report configuration file");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_stylesheet(seaudit_log_t *slog, char *path, int use_stylesheet) {
+		BEGIN_EXCEPTION
 		if (seaudit_report_set_stylesheet(slog, self, path, use_stylesheet)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report stylesheet");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};
 	void set_malformed(seaudit_log_t *slog, int do_malformed) {
+		BEGIN_EXCEPTION
 		if (seaudit_report_set_malformed(slog, self, do_malformed)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report malformed flag");
 		}
+		END_EXCEPTION
 	fail:
 		return;
 	};

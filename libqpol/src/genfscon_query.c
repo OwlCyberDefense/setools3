@@ -217,7 +217,8 @@ int qpol_policy_get_genfscon_iter(const qpol_policy_t * policy, qpol_iterator_t 
 	}
 
 	gs->head = gs->cur = db->genfs;
-	gs->cur_path = gs->head->head;
+	if (gs->head)
+		gs->cur_path = gs->head->head;
 
 	if (qpol_iterator_create(policy, (void *)gs, genfs_state_get_cur,
 				 genfs_state_next, genfs_state_end, genfs_state_size, free, iter)) {

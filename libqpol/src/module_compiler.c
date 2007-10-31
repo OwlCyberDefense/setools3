@@ -141,7 +141,12 @@ int declare_symbol(uint32_t symbol_type, hashtab_key_t key, hashtab_datum_t datu
 		symtab_datum_t *s = (symtab_datum_t *) hashtab_search(policydbp->symtab[symbol_type].table,
 								      key);
 		assert(s != NULL);
-		*dest_value = s->value;
+
+		if (symbol_type == SYM_LEVELS) {
+			*dest_value = ((level_datum_t *) s)->level->sens;
+		} else {
+			*dest_value = s->value;
+		}
 	} else if (retval == -2) {
 		return -2;
 	} else if (retval < 0) {
@@ -496,7 +501,12 @@ int require_symbol(uint32_t symbol_type, hashtab_key_t key, hashtab_datum_t datu
 		symtab_datum_t *s = (symtab_datum_t *) hashtab_search(policydbp->symtab[symbol_type].table,
 								      key);
 		assert(s != NULL);
-		*dest_value = s->value;
+
+		if (symbol_type == SYM_LEVELS) {
+			*dest_value = ((level_datum_t *) s)->level->sens;
+		} else {
+			*dest_value = s->value;
+		}
 	} else if (retval == -2) {
 		/* ignore require statements if that symbol was
 		 * previously declared and is in current scope */

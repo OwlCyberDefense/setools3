@@ -27,6 +27,7 @@ $(wrappedso_DATA): $(BUILT_SOURCES)
 
 $(package_SCRIPTS): $(wrappedso_DATA)
 	echo "pkg_mkIndex . $^" | LD_LIBRARY_PATH=$(top_builddir)/libqpol/src:$(top_builddir)/libapol/src $(TCLSH_PROG)
+	chmod 644 $@
 	$(mkdir_p) apol
 	cp $(wrappedso_DATA) $@ apol
 

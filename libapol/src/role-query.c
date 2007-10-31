@@ -91,14 +91,6 @@ int apol_role_get_by_query(const apol_policy_t * p, apol_role_query_t * r, apol_
 				}
 			}
 			qpol_iterator_destroy(&type_iter);
-			/* special case: object_r has all types
-			 * assigned to it */
-			compval = apol_compare(p, "object_r", r->role_name, r->flags, &(r->type_regex));
-			if (compval < 0) {
-				goto cleanup;
-			} else if (compval == 1 && r->role_name != NULL) {
-				append_role = 1;
-			}
 		}
 	      end_of_query:
 		if (append_role && apol_vector_append(*v, role)) {

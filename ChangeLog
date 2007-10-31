@@ -1,7 +1,50 @@
-2007-08-22  J. Tang  <jtang@tresys.com>
+2007-10-31  J. Mowery  <jmowery@tresys.com>
+
+	* Fix to libqpol when querying policies with no genfscon statements.
+
+	* Fix to SWIG wrappers to correctly report exceptions in multi-threaded
+	  Java environments.
+
+2007-10-31  J. Tang  <jtang@tresys.com>
+
+	* Modifed libqpol to explicitly ignore disabled aliases.
+
+	* Merged RedHat's spec file changes.
+
+2007-10-08  J. Tang  <jtang@tresys.com>
+
+	* Fix to libqpol when qpol_type_get_alias_iter() could erroneously
+	be set to an initially wrong position for certain primary types.
+
+2007-10-02  J. Tang  <jtang@tresys.com>
+
+	* Fix to libqpol to synthesize object_r.  This was previously
+	(erroneously) handled in libapol.
+
+2007-09-26  J. Tang  <jtang@tresys.com>
+
+	* Fix to apol where empty levels would throw an error during
+	validation.
+
+2007-09-04  J. Mowery  <jmowery@tresys.com>
+
+	* Fixes to libsefs and apol if an invalid regular expression is
+	given.
+
+2007-08-30  J. Mowery  <jmowery@tresys.com>
+
+	* Do not look for neverallow rules on default avrule query if not
+	available.
+
+2007-08-22  J. Mowery  <jmowery@tresys.com>
 
 	* Ported bug fixes in branches/setools-devel to trunk.  This is
 	the official release of SETools 3.3.1.
+
+2007-08-21  J. Tang  <jtang@tresys.com>
+
+	* Official release of SETools 3.3.1.  This encompasses only bug
+	fixes since 3.3; no new features are present.
 
 2007-08-20  J. Tang  <jtang@tresys.com>
 
