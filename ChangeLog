@@ -1,3 +1,11 @@
+2007-11-02  J. Tang  <jtang@tresys.com>
+
+	* Ported bug fixes in branches/setools-devel to trunk.  This is
+	the official release of SETools 3.3.2.
+
+	* Fixed error in libsefs/Java where the library has not been built
+	correctly since version 4 of libsefs.
+
 2007-10-31  J. Mowery  <jmowery@tresys.com>
 
 	* Fix to libqpol when querying policies with no genfscon statements.

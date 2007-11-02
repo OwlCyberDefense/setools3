@@ -69,7 +69,7 @@ dependencies.  SETools requires the following development packages for
 compilation:
   flex
   bison
-  pkg-config-0.20
+  pkg-config 0.20 or greater
   libselinux 1.30.27 or greater
   libsepol 1.12.27 or greater, but NOT libsepol 2.0.2
   libxml2

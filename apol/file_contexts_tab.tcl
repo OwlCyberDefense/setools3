@@ -348,7 +348,7 @@ proc Apol_File_Contexts::_create_database {dialog} {
                         $db save $opts(new_filename)
                         set db
                     } \
-                } db]} {
+                } db] || $db == "NULL"} {
         tk_messageBox -icon error -type ok -title "Create Database" \
             -message [apol_tcl_get_info_string]
         return
@@ -376,11 +376,12 @@ proc Apol_File_Contexts::_open_database {} {
     }
     if {[catch {Apol_Progress_Dialog::wait "Open Database" "Opening $f" \
                     {apol_tcl_open_database $f} \
-                } db]} {
+                } db] || $db == "NULL"} {
         tk_messageBox -icon error -type ok -title "Open Database" \
             -message [apol_tcl_get_info_string]
         return
     }
+
     if {$opts(db) != {}} {
         delete_sefs_fclist $opts(db)
     }
