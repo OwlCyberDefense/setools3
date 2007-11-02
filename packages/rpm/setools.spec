@@ -13,9 +13,9 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 %{?TRESYS_LOCAL_BUILD: %define local_build 1}
 %{!?TRESYS_LOCAL_BUILD: %define local_build 0}
 %if %{local_build}
-  Source: setools-%{setools_maj_ver}.tar.gz
+Source: setools-%{setools_maj_ver}.%{setools_min_ver}.tar.gz
 %else
-  Source: http://oss.tresys.com/projects/setools/chrome/site/dists/setools-%{setools_maj_ver}/setools-%{setools_maj_ver}.tar.gz
+Source: http://oss.tresys.com/projects/setools/chrome/site/dists/setools-%{setools_maj_ver}.%{setools_min_ver}/setools-%{setools_maj_ver}.%{setools_min_ver}.tar.gz
 %endif
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
