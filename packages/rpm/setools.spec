@@ -1,6 +1,6 @@
 %define setools_maj_ver 3.3
 %define setools_min_ver 2
-%define setools_release pre2007103100
+%define setools_release 0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
@@ -10,8 +10,13 @@ Release: %{setools_release}
 License: GPLv2
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: setools-%{setools_maj_ver}.%{setools_min_ver}.tar.gz
-#Source: http://oss.tresys.com/projects/setools/chrome/site/dists/setools-%{setools_maj_ver}/setools-%{setools_maj_ver}.tar.gz
+%{?TRESYS_LOCAL_BUILD: %define local_build 1}
+%{!?TRESYS_LOCAL_BUILD: %define local_build 0}
+%if %{local_build}
+  Source: setools-%{setools_maj_ver}.tar.gz
+%else
+  Source: http://oss.tresys.com/projects/setools/chrome/site/dists/setools-%{setools_maj_ver}/setools-%{setools_maj_ver}.tar.gz
+%endif
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
 Requires: setools-libs = %{version}-%{release} setools-libs-tcl = %{version}-%{release} setools-gui = %{version}-%{release} setools-console = %{version}-%{release}

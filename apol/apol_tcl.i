@@ -28,7 +28,6 @@
 %import sefs.i
 %import apol.i
 %import qpol.i
-%include std_except.i
 
 %{
 #include <config.h>
@@ -43,7 +42,6 @@
 #include <sefs/fcfile.hh>
 %}
 
-/* implement a custom non thread-safe error handler */
 %{
 /* Note that these must be placed in a different file rather than
  * being inlined directly into this SWIG interface file.  The reason
@@ -278,6 +276,10 @@ static char *tcl_get_error(void)
 	fail:
 		return 0;
 	}
+
+	char *apol_tcl_get_error_string(void) {
+		return tcl_get_error();
+	}
 %}
 
 %rename(apol_tcl_rule_render) apol_tcl_avrule_render;
@@ -328,6 +330,7 @@ char *apol_tcl_syn_terule_render(apol_policy_t *policy, qpol_syn_terule_t *rule)
 void apol_tcl_avrule_sort(apol_policy_t *policy, apol_vector_t *v);
 void apol_tcl_terule_sort(apol_policy_t *policy, apol_vector_t *v);
 unsigned int apol_tcl_get_policy_version(apol_policy_t *policy);
+char *apol_tcl_get_error_string(void);
 
 %{
 	/**

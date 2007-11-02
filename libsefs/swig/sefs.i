@@ -36,7 +36,14 @@
 
 %import apol.i
 
+%exception;
+
 %include std_except.i
+
+%{
+#undef BEGIN_EXCEPTION
+#undef END_EXCEPTION
+%}
 
 %inline %{
 	typedef struct apol_string_vector apol_string_vector_t;
@@ -97,22 +104,6 @@ typedef uint32_t size_t;
 #endif  // end of Java specific code
 
 #ifdef SWIGTCL
-
-/* implement a custom non thread-safe error handler */
-%{
-static char *message = NULL;
-static void tcl_clear_error(void)
-{
-        free(message);
-        message = NULL;
-}
-static char *tcl_get_error(void)
-{
-	return message;
-}
-#undef SWIG_exception
-#define SWIG_exception(code, msg) {tcl_throw_error(msg); goto fail;}
-%}
 
 %wrapper %{
 /* Tcl module's initialization routine is expected to be named

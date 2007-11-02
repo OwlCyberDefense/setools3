@@ -126,9 +126,9 @@ proc ApolTop::openPolicyPath {ppath} {
                     {
                         apol_tcl_open_policy $ppath
                     } \
-                } p]} {
+                } p] || $p == "NULL"} {
         tk_messageBox -icon error -type ok -title "Open Policy" \
-            -message "The selected file does not appear to be a valid SELinux Policy.\n\n$p"
+            -message "The selected file does not appear to be a valid SELinux Policy.\n\n[apol_tcl_get_error_string]"
         return -1  ;# indicates failed to open policy
     }
 
