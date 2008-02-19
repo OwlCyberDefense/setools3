@@ -51,6 +51,7 @@
 #include <sepol/policydb/conditional.h>
 #include <sepol/policydb/flask.h>
 #include <sepol/policydb/hierarchy.h>
+#include <sepol/policydb/polcaps.h>
 #include "queue.h"
 #include <qpol/policy.h>
 #include "module_compiler.h"
@@ -77,6 +78,7 @@ static int load_rules;
 static unsigned int num_rules = 0;
 char *curfile = 0;
 int mlspol = 0;
+int handle_unknown = 0;
 
 extern unsigned long policydb_lineno;
 extern unsigned long source_lineno;
@@ -138,8 +140,9 @@ static int define_genfs_context(int has_type);
 static int define_fs_context(unsigned int major, unsigned int minor);
 static int define_port_context(unsigned int low, unsigned int high);
 static int define_netif_context(void);
-static int define_ipv4_node_context(unsigned int addr, unsigned int mask);
+static int define_ipv4_node_context(void);
 static int define_ipv6_node_context(void);
+static int define_polcap(void);
 
 typedef int (* require_func_t)();
 
@@ -211,8 +214,10 @@ typedef int (* require_func_t)();
 %token NUMBER
 %token EQUALS
 %token NOTEQUAL
+%token IPV4_ADDR
 %token IPV6_ADDR
 %token MODULE VERSION_IDENTIFIER REQUIRE OPTIONAL
+%token POLICYCAP
 
 %left OR
 %left XOR
@@ -323,6 +328,7 @@ te_rbac_decl		: te_decl
 			| rbac_decl
                         | cond_stmt_def
 			| optional_block
+			| policycap_def
 			| ';'
                         ;
 rbac_decl		: role_type_def
@@ -670,7 +676,7 @@ node_contexts		: node_context_def
 			| node_contexts node_context_def
 			;
 node_context_def	: NODECON ipv4_addr_def ipv4_addr_def security_context_def
-			{if (define_ipv4_node_context($2,$3)) return -1;}
+			{if (define_ipv4_node_context()) return -1;}
 			| NODECON ipv6_addr ipv6_addr security_context_def
 			{if (define_ipv6_node_context()) return -1;}
 			;
@@ -702,18 +708,9 @@ genfs_context_def	: GENFSCON identifier path '-' identifier security_context_def
                         | GENFSCON identifier path security_context_def
 			{if (define_genfs_context(0)) return -1;}
 			;
-ipv4_addr_def		: number '.' number '.' number '.' number
-			{ 
-			  unsigned int addr;
-	  		  unsigned char *p = ((unsigned char *)&addr);
-
-			  p[0] = $1 & 0xff;				
-			  p[1] = $3 & 0xff;
-			  p[2] = $5 & 0xff;
-			  p[3] = $7 & 0xff;
-			  $$ = addr;
-			}
-    			;
+ipv4_addr_def		: IPV4_ADDR
+			{ if (insert_id(yytext,0)) return -1; }
+			;
 security_context_def	: identifier ':' identifier ':' identifier opt_mls_range_def
 	                ;
 opt_mls_range_def	: ':' mls_range_def
@@ -790,6 +787,9 @@ number			: NUMBER
 			;
 ipv6_addr		: IPV6_ADDR
 			{ if (insert_id(yytext,0)) return -1; }
+			;
+policycap_def		: POLICYCAP identifier ';'
+			{if (define_polcap()) return -1;}
 			;
 
 /*********** module grammar below ***********/
@@ -936,6 +936,12 @@ static int insert_check_type_rule(avrule_t *rule, avtab_t *avtab, cond_av_list_t
 	if (num_rules && !load_rules)
 		return 2;
 
+#ifdef SEPOL_DYNAMIC_AVTAB
+	if (!avtab->htable)
+		if (avtab_alloc(avtab, MAX_AVTAB_SIZE))
+			return -1;
+#endif
+
 	ret = expand_rule(NULL, policydbp, rule, avtab, list, other, 0);
 	if (ret < 0) {
 		yyerror("Failed on expanding rule");
@@ -1007,6 +1013,44 @@ static int define_class(void)
 		free(id);
 	if (datum)
 		free(datum);
+	return -1;
+}
+
+static int define_polcap(void)
+{
+	char *id = 0;
+	int capnum;
+
+	if (pass == 2) {
+		id = queue_remove(id_queue);
+		free(id);
+		return 0;
+	}
+
+	id = (char *)queue_remove(id_queue);
+	if (!id) {
+		yyerror("no capability name for policycap definition?");
+		goto bad;
+	}
+
+	/* Check for valid cap name -> number mapping */
+	capnum = sepol_polcap_getnum(id);
+	if (capnum < 0) {
+		yyerror2("invalid policy capability name %s", id);
+		goto bad;
+	}
+
+	/* Store it */
+	if (ebitmap_set_bit(&policydbp->policycaps, capnum, TRUE)) {
+		yyerror("out of memory");
+		goto bad;
+	}
+
+	free(id);
+	return 0;
+
+      bad:
+	free(id);
 	return -1;
 }
 
@@ -2599,6 +2643,8 @@ static role_datum_t *define_role_dom(role_datum_t * r)
 		free(role_id);
 		return (role_datum_t *) 1;	/* any non-NULL value */
 	}
+
+	yywarn("Role dominance has been deprecated");
 
 	role_id = queue_remove(id_queue);
 	if (!is_id_in_scope(SYM_ROLES, role_id)) {
@@ -4354,26 +4400,62 @@ static int define_netif_context(void)
 	return 0;
 }
 
-static int define_ipv4_node_context(unsigned int addr, unsigned int mask)
-{
+static int define_ipv4_node_context()
+{	
+	char *id;
+	int rc = 0;
+	struct in_addr addr, mask;
 	ocontext_t *newc, *c, *l, *head;
 
 	if (pass == 1) {
+		free(queue_remove(id_queue));
+		free(queue_remove(id_queue));
 		parse_security_context(NULL);
-		if (mlspol)
-			free(queue_remove(id_queue));
-		return 0;
+		goto out;
+	}
+
+	id = queue_remove(id_queue);
+	if (!id) {
+		yyerror("failed to read ipv4 address");
+		rc = -1;
+		goto out;
+	}
+
+	rc = inet_pton(AF_INET, id, &addr);
+	free(id);
+	if (rc < 1) {
+		yyerror("failed to parse ipv4 address");
+		if (rc == 0)
+			rc = -1;
+		goto out;
+	}
+
+	id = queue_remove(id_queue);
+	if (!id) {
+		yyerror("failed to read ipv4 address");
+		rc = -1;
+		goto out;
+	}
+
+	rc = inet_pton(AF_INET, id, &mask);
+	free(id);
+	if (rc < 1) {
+		yyerror("failed to parse ipv4 mask");
+		if (rc == 0)
+			rc = -1;
+		goto out;
 	}
 
 	newc = malloc(sizeof(ocontext_t));
 	if (!newc) {
 		yyerror("out of memory");
-		return -1;
+		rc = -1;
+		goto out;
 	}
-	memset(newc, 0, sizeof(ocontext_t));
 
-	newc->u.node.addr = addr;
-	newc->u.node.mask = mask;
+	memset(newc, 0, sizeof(ocontext_t));
+	newc->u.node.addr = addr.s_addr;
+	newc->u.node.mask = mask.s_addr;
 
 	if (parse_security_context(&newc->context[0])) {
 		free(newc);
@@ -4394,8 +4476,9 @@ static int define_ipv4_node_context(unsigned int addr, unsigned int mask)
 		l->next = newc;
 	else
 		policydbp->ocontexts[OCON_NODE] = newc;
-
-	return 0;
+	rc = 0;
+out:
+	return rc;
 }
 
 static int define_ipv6_node_context(void)

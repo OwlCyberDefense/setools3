@@ -29,6 +29,7 @@
 
 %{
 #include <sys/types.h>
+#include <limits.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -39,9 +40,10 @@ typedef int (* require_func_t)();
 static char linebuf[2][255];
 static unsigned int lno = 0;
 int yywarn(char *msg);
-static int is_valid_identifier(char *id);
 
-char source_file[255];
+void set_source_file(const char *name);
+
+char source_file[PATH_MAX];
 unsigned long source_lineno = 1;
 
 unsigned long policydb_lineno = 1;
@@ -63,8 +65,8 @@ int qpol_src_yyinput(char *buf, int max_size);
 %array
 letter  [A-Za-z]
 digit   [0-9]
+alnum   [a-zA-Z0-9]
 hexval	[0-9A-Fa-f]
-version [0-9]+(\.[A-Za-z0-9_.]*)?
 
 %%
 \n.*				{ strncpy(linebuf[lno], yytext+1, 255);
@@ -218,17 +220,16 @@ h1 |
 H1				{ return(H1); }
 h2 |
 H2				{ return(H2); }
-"/"({letter}|{digit}|_|"."|"-"|"/")*	{ return(PATH); }
-{letter}({letter}|{digit}|_|"."|"-")*	{ if (is_valid_identifier(yytext)) 
-						return(IDENTIFIER); 
-					  else 
-					  	REJECT;
-					}
-{digit}{digit}*                 { return(NUMBER); }
-{hexval}{0,4}":"{hexval}{0,4}":"({hexval}|":"|".")*	{ return(IPV6_ADDR); }
-{version}/([ \t\f]*;)           { return(VERSION_IDENTIFIER); }
-#line[ ]1[ ]\"[^\n]*\"		{ source_lineno = 1; strncpy(source_file, yytext+9, 255); source_file[strlen(source_file)-1] = '\0'; }
-#line[ ]{digit}{digit}*		{ source_lineno = atoi(yytext+6)-1; }
+policycap |
+POLICYCAP			{ return(POLICYCAP);}
+"/"({alnum}|[_.-/])*	        { return(PATH); }
+{letter}({alnum}|[_-])*([.]?({alnum}|[_-]))*	{ return(IDENTIFIER); }
+{digit}+                        { return(NUMBER); }
+{digit}{1,3}(\.{digit}{1,3}){3}    { return(IPV4_ADDR); }
+{hexval}{0,4}":"{hexval}{0,4}":"({hexval}|[:.])*  { return(IPV6_ADDR); }
+{digit}+(\.({alnum}|[_.])*)?    { return(VERSION_IDENTIFIER); }
+#line[ ]1[ ]\"[^\n]*\"		{ set_source_file(yytext+9); }
+#line[ ]{digit}+	        { source_lineno = atoi(yytext+6)-1; }
 #[^\n]*                         { /* delete comments */ }
 [ \t\f]+			{ /* delete whitespace */ }
 "==" 				{ return(EQUALS); }
@@ -283,18 +284,11 @@ int yywarn(char *msg)
 	return 0;
 }
 
-static int is_valid_identifier(char *id) {
-        if ((strrchr(id, '.')) != NULL) {
-                if (strstr(id, "..") != NULL) {
-                        /* identifier has consecutive '.' */
-                        return 0;
-                }
-		if (id[strlen(id) - 1] == '.') {
-			/* identifier ends in '.' */
-			return 0;
-		}
-        }
-        return 1;
+void set_source_file(const char *name)
+{
+	source_lineno = 1;
+	strncpy(source_file, name, sizeof(source_file)-1); 
+	source_file[sizeof(source_file)-1] = '\0';
 }
 
 int qpol_src_yyinput(char *buf, int max_size)

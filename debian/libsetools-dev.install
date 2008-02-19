@@ -1,0 +1,8 @@
+/usr/lib/*.so
+/usr/lib/pkgconfig/*
+/usr/include/apol/*
+/usr/include/poldiff/*
+/usr/include/polsearch/*
+/usr/include/qpol/*
+/usr/include/seaudit/*
+/usr/include/sefs/*

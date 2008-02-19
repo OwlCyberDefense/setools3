@@ -8,7 +8,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang jtang@tresys.com
  *
- * Copyright (C) 2006-2007 Tresys Technology, LLC
+ * Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -57,6 +57,20 @@ struct qpol_iterator
 	 size_t(*size) (const qpol_iterator_t * iter);
 	void (*free_fn) (void *x);
 };
+
+/**
+ * The number of buckets in sepol's av tables was statically set in
+ * libsepol < 2.0.20.  With libsepol 2.0.20, this size was dynamically
+ * calculated based upon the number of rules.
+ */
+static uint32_t iterator_get_avtab_size(const avtab_t * avtab)
+{
+#ifdef SEPOL_DYNAMIC_AVTAB
+	return avtab->nslot;
+#else
+	return AVTAB_SIZE;
+#endif
+}
 
 int qpol_iterator_create(const qpol_policy_t * policy, void *state,
 			 void *(*get_cur) (const qpol_iterator_t * iter),
@@ -257,7 +271,7 @@ int avtab_state_next(qpol_iterator_t * iter)
 	state = iter->state;
 	avtab = (state->which == QPOL_AVTAB_STATE_AV ? state->ucond_tab : state->cond_tab);
 
-	if (state->bucket >= AVTAB_SIZE && state->which == QPOL_AVTAB_STATE_COND) {
+	if ((!avtab->htable || state->bucket >= iterator_get_avtab_size(avtab)) && state->which == QPOL_AVTAB_STATE_COND) {
 		errno = ERANGE;
 		return STATUS_ERR;
 	}
@@ -269,7 +283,7 @@ int avtab_state_next(qpol_iterator_t * iter)
 			/* find the next bucket */
 			do {
 				state->bucket++;
-				if (state->bucket >= AVTAB_SIZE) {
+				if (!avtab->htable || state->bucket >= iterator_get_avtab_size(avtab)) {
 					if (state->which == QPOL_AVTAB_STATE_AV) {
 						state->bucket = 0;
 						avtab = state->cond_tab;
@@ -279,13 +293,14 @@ int avtab_state_next(qpol_iterator_t * iter)
 						break;
 					}
 				}
-				if (avtab->htable[state->bucket] != NULL) {
+				if (avtab->htable && avtab->htable[state->bucket] != NULL) {
 					state->node = avtab->htable[state->bucket];
 					break;
 				}
-			} while (state->bucket < AVTAB_SIZE);
+			} while (avtab->htable && state->bucket < iterator_get_avtab_size(avtab));
 		}
-	} while (state->bucket < AVTAB_SIZE && state->node ? !(state->rule_type_mask & state->node->key.specified) : 0);
+	} while (avtab->htable && state->bucket < iterator_get_avtab_size(avtab) &&
+		 state->node ? !(state->rule_type_mask & state->node->key.specified) : 0);
 
 	return STATUS_SUCCESS;
 }
@@ -351,8 +366,8 @@ int avtab_state_end(const qpol_iterator_t * iter)
 		return STATUS_ERR;
 	}
 	state = iter->state;
-	avtab = &iter->policy->te_avtab;
-	if (state->bucket >= AVTAB_SIZE && state->which == QPOL_AVTAB_STATE_COND)
+	avtab = (state->which == QPOL_AVTAB_STATE_AV ? state->ucond_tab : state->cond_tab);
+	if ((!avtab->htable || state->bucket >= iterator_get_avtab_size(avtab)) && state->which == QPOL_AVTAB_STATE_COND)
 		return 1;
 	return 0;
 }
@@ -426,7 +441,7 @@ size_t avtab_state_size(const qpol_iterator_t * iter)
 	state = iter->state;
 	avtab = state->ucond_tab;
 
-	for (bucket = 0; bucket < AVTAB_SIZE; bucket++) {
+	for (bucket = 0; avtab->htable && bucket < iterator_get_avtab_size(avtab); bucket++) {
 		for (node = avtab->htable[bucket]; node; node = node->next) {
 			if (node->key.specified & state->rule_type_mask)
 				count++;
@@ -435,7 +450,7 @@ size_t avtab_state_size(const qpol_iterator_t * iter)
 
 	avtab = state->cond_tab;
 
-	for (bucket = 0; bucket < AVTAB_SIZE; bucket++) {
+	for (bucket = 0; avtab->htable && bucket < iterator_get_avtab_size(avtab); bucket++) {
 		for (node = avtab->htable[bucket]; node; node = node->next) {
 			if (node->key.specified & state->rule_type_mask)
 				count++;

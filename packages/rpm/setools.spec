@@ -1,5 +1,5 @@
 %define setools_maj_ver 3.3
-%define setools_min_ver 2
+%define setools_min_ver 3
 %define setools_release 0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
@@ -48,7 +48,7 @@ Group: System Environment/Libraries
 Requires: libselinux >= %{selinux_ver} libsepol >= %{sepol_ver} sqlite >= %{sqlite_ver}
 BuildRequires: flex bison pkgconfig
 BuildRequires: glibc-devel libstdc++-devel gcc gcc-c++
-BuildRequires: libselinux-devel >= %{selinux_ver} libsepol-devel >= %{sepol_ver}
+BuildRequires: libselinux-devel >= %{selinux_ver} libsepol-devel >= %{sepol_ver} libsepol-static >= %{sepol_ver}
 BuildRequires: sqlite-devel >= %{sqlite_ver} libxml2-devel
 BuildRequires: autoconf >= %{autoconf_ver} automake
 

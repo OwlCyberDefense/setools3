@@ -1,0 +1,7 @@
+/usr/lib/libapol.so.*
+/usr/lib/libpoldiff.so.*
+/usr/lib/libpolsearch.so.*
+/usr/lib/libqpol.so.*
+/usr/lib/libseaudit.so.*
+/usr/lib/libsefs.so.*
+/usr/share/setools-3.4/apol_perm_mapping*

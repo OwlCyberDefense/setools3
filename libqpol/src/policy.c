@@ -6,7 +6,7 @@
  *  @author Jason Tang jtang@tresys.com
  *  @author Brandon Whalen bwhalen@tresys.com
  *
- *  Copyright (C) 2006-2007 Tresys Technology, LLC
+ *  Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,8 @@
 #include <sepol/policydb.h>
 #include <sepol/module.h>
 #include <sepol/policydb/module.h>
+
+#include <selinux/selinux.h>
 
 #include <stdbool.h>
 #include <qpol/iterator.h>
@@ -395,6 +397,16 @@ static int infer_policy_version(qpol_policy_t * policy)
 	}
 	qpol_iterator_destroy(&iter);
 
+	/* 22 : there exists at least one policy capability */
+	ebitmap_node_t *node = NULL;
+	unsigned int i = 0;
+	ebitmap_for_each_bit(&db->policycaps, node, i) {
+		if (ebitmap_get_bit(&db->policycaps, i)) {
+			db->policyvers = 22;
+			return STATUS_SUCCESS;
+		}
+	}
+
 	/* 21 : object classes other than process for range_transitions */
 	qpol_policy_get_range_trans_iter(policy, &iter);
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -408,6 +420,7 @@ static int infer_policy_version(qpol_policy_t * policy)
 		}
 	}
 	qpol_iterator_destroy(&iter);
+
 	/* 19 & 20 : mls and validatetrans statements added */
 	qpol_policy_get_validatetrans_iter(policy, &iter);
 	qpol_iterator_get_size(iter, &nvtrans);
@@ -415,22 +428,27 @@ static int infer_policy_version(qpol_policy_t * policy)
 	if (db->mls || nvtrans) {
 		db->policyvers = 19;
 	}
+
 	/* 18 : the netlink_audit_socket class added */
 	else if (hashtab_search(db->p_classes.table, (const hashtab_key_t)"netlink_audit_socket")) {
 		db->policyvers = 18;
 	}
+
 	/* 17 : IPv6 nodecon statements added */
 	else if (db->ocontexts[OCON_NODE6]) {
 		db->policyvers = 17;
 	}
+
 	/* 16 : conditional policy added */
 	else if (db->p_bool_val_to_name && db->p_bool_val_to_name[0]) {
 		db->policyvers = 16;
+
 	}
 	/* 15 */
 	else if (fsusexattr) {
 		db->policyvers = 15;
 	}
+
 	/* 12 */
 	else {
 		db->policyvers = 12;
@@ -560,6 +578,23 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	if (infer_policy_version(policy)) {
 		error = errno;
 		goto err;
+	}
+	if (options & QPOL_POLICY_OPTION_MATCH_SYSTEM) {
+		int kernvers = security_policyvers();
+		int currentvers = policy->p->p.policyvers;
+		if (kernvers < 0) {
+			error = errno;
+			ERR(policy, "%s", "Could not determine running system's policy version.");
+			goto err;
+		}
+		if (policy->p->p.policyvers > kernvers) {
+			if (sepol_policydb_set_vers(policy->p, kernvers)) {
+				error = errno;
+				ERR(policy, "Could not downgrade policy to version %d.", kernvers);
+				goto err;
+			}
+			WARN(policy, "Policy has been downgraded from version %d to %d.", currentvers, kernvers);
+		}
 	}
 
 	if (policy_extend(policy)) {
@@ -1212,6 +1247,12 @@ int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e c
 	case QPOL_CAP_MODULES:
 	{
 		if (policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
+	case QPOL_CAP_POLCAPS:
+	{
+		if (version >= 22 && policy->type != QPOL_POLICY_MODULE_BINARY)
 			return 1;
 		break;
 	}

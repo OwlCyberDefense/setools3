@@ -6,7 +6,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2005-2007 Tresys Technology, LLC
+ *  Copyright (C) 2005-2008 Tresys Technology, LLC
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -399,7 +399,7 @@ int sechk_lib_load_policy(apol_policy_path_t * policy_mods, sechk_lib_t * lib)
 			return -1;
 		}
 		policy_mods = apol_policy_path_create(APOL_POLICY_PATH_TYPE_MONOLITHIC, default_policy_path, NULL);
-		lib->policy = apol_policy_create_from_policy_path(policy_mods, 0, NULL, NULL);
+		lib->policy = apol_policy_create_from_policy_path(policy_mods, QPOL_POLICY_OPTION_MATCH_SYSTEM, NULL, NULL);
 		if (lib->policy == NULL) {
 			fprintf(stderr, "Error: failed opening default policy\n");
 			return -1;

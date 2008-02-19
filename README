@@ -1,4 +1,4 @@
-SETools - Policy analysis tools for SELinux (C) 2001-2007
+SETools - Policy analysis tools for SELinux (C) 2001-2008
 Tresys Technology
 setools@tresys.com, http://oss.tresys.com/projects/setools
 
@@ -106,7 +106,7 @@ The official, stable source distribution is available from
 http://oss.tresys.com/projects/setools/.  Untar and uncompress the
 distribution, and perform the following.
 
-  $ cd setools-3.3.2
+  $ cd setools-3.3.3
   $ ./configure
   $ make
   $ make install

@@ -1,3 +1,25 @@
+2008-02-19  J. Tang  <jtang@tresys.com>
+
+	* Added QPOL_POLICY_OPTION_MATCH_SYSTEM as a policy load option to
+	qpol_policy_open_from_file().  The tools seinfo, sesearch, and
+	sechecker will now use this flag when loading the system's default
+	policy.
+
+	* Modified libqpol to understand version 22 policy.  Added
+	QPOL_CAP_POLCAPS to qpol_capability enum.
+
+2008-02-15  J. Tang  <jtang@tresys.com>
+
+	* Synced libqpol to libsepol version 2.0.20.  The configure script
+	will check if dynamic avtabs exist (introduced in libsepol 2.0.20)
+	and will adjust policy loading as necessary.
+
+2008-01-09  J. Tang  <jtang@tresys.com>
+
+	* Added initial attempt at Debian-izing SETools.  The Debian
+	control files are only present in the SVN checkout of SETools, not
+	in the distributed tarball.
+
 2007-11-02  J. Tang  <jtang@tresys.com>
 
 	* Ported bug fixes in branches/setools-devel to trunk.  This is

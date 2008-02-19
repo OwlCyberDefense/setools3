@@ -267,7 +267,7 @@ proc Apol_Types::_popupTypeInfo {which ta} {
             $fc_text insert end "No files found."
         }
     } else {
-        $fc_text insert 0.0 "No index file is loaded.  Load an index file through the File Context tab."
+        $fc_text insert 0.0 "No index file is loaded.  Load an index file through the File Contexts tab."
     }
     $fc_text configure -state disabled
 
