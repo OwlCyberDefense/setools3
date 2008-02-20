@@ -9,7 +9,6 @@
 /usr/bin/sediff
 /usr/bin/seinfo
 /usr/bin/sesearch
-/usr/lib/setools/sechecker/*
 /usr/share/man/man1/findcon.1
 /usr/share/man/man1/indexcon.1
 /usr/share/man/man1/replcon.1
@@ -18,8 +17,8 @@
 /usr/share/man/man1/seinfo.1
 /usr/share/man/man1/sesearch.1
 /usr/share/man/man8/seaudit-report.8
-/usr/share/setools-3.4/seaudit-report-service
-/usr/share/setools-3.4/seaudit-report.conf
-/usr/share/setools-3.4/seaudit-report.css
-/usr/share/setools-3.4/sechecker/*
-/usr/share/setools-3.4/sechecker_help.txt
+/usr/share/setools-3.3/seaudit-report-service
+/usr/share/setools-3.3/seaudit-report.conf
+/usr/share/setools-3.3/seaudit-report.css
+/usr/share/setools-3.3/sechecker-profiles/*
+/usr/share/setools-3.3/sechecker_help.txt

@@ -1,6 +1,5 @@
 /usr/lib/setools/apol/*
 /usr/lib/setools/poldiff/*
-/usr/lib/setools/polsearch/*
 /usr/lib/setools/qpol/*
 /usr/lib/setools/seaudit/*
 /usr/lib/setools/sefs/*
