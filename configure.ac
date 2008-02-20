@@ -504,7 +504,7 @@ else
 fi
 
 dnl check for policycap, added in libsepol version
-AC_CHECK_MEMBER([struct policydb_t.policycaps],
+AC_CHECK_MEMBER([struct policydb.policycaps.node],
                 sepol_new_policycaps="yes",
                 sepol_new_policycaps="no",
                 [#include <sepol/policydb/policydb.h>])
