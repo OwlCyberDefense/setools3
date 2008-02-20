@@ -813,6 +813,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  seaudit/Makefile \
                  sediff/Makefile \
                  man/Makefile \
+                 debian/Makefile \
                  packages/Makefile packages/rpm/Makefile \
                  packages/libqpol.pc packages/libapol.pc packages/libpoldiff.pc packages/libseaudit.pc packages/libsefs.pc])
 

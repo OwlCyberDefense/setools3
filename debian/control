@@ -17,8 +17,8 @@ Package: setools
 Section: utils
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
- libsetools (= ${Source-Version}), libsetools-tcl (= ${Source-Version}),
- wish, bwidget (>= 1.8)
+ libsetools-tcl (= ${Source-Version}),
+ tk8.4 (>= 8.4.9) | wish, bwidget (>= 1.8), menu
 Recommends: setools-console
 Suggests: logwatch
 Provides: setools-gui
@@ -70,7 +70,7 @@ Description: SETools Python bindings
 Package: libsetools-java
 Section: libs
 Architecture: any
-Depends: java2-runtime, libsetools-jni (= ${binary:Version})
+Depends: java-gcj-compat | java2-runtime, libsetools-jni (= ${binary:Version})
 Description: SETools Java bindings (architecture-independent)
  SETools is a collection of graphical tools, command-line tools, and
  libraries designed to facilitate SELinux policy analysis.

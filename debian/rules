@@ -9,6 +9,14 @@ DEB_CONFIGURE_EXTRA_FLAGS = \
 	--enable-swig-java --enable-swig-python --enable-swig-tcl \
 	--disable-bwidget-check
 
+DEB_DH_INSTALL_SOURCEDIR = $(CURDIR)/debian/tmp
+
+install/libsetools-jni::
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/jni
+	for i in libjapol libjpoldiff libjqpol libjseaudit libjsefs; do \
+		mv $(CURDIR)/debian/tmp/usr/lib/$${i}* $(CURDIR)/debian/tmp/usr/lib/jni; \
+	done
+
 install/python-setools::
 	chmod 0644 $(CURDIR)/debian/tmp/usr/lib/setools/*/pkgIndex.tcl
 
