@@ -21,5 +21,4 @@ dist_noinst_DATA = \
 	setools.menu \
 	setools.postinst \
 	setools.postrm \
-	stamp-autotools-files \
 	watch

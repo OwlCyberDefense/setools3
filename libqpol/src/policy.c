@@ -398,6 +398,7 @@ static int infer_policy_version(qpol_policy_t * policy)
 	qpol_iterator_destroy(&iter);
 
 	/* 22 : there exists at least one policy capability */
+#ifdef HAVE_SEPOL_POLICYCAPS
 	ebitmap_node_t *node = NULL;
 	unsigned int i = 0;
 	ebitmap_for_each_bit(&db->policycaps, node, i) {
@@ -406,6 +407,7 @@ static int infer_policy_version(qpol_policy_t * policy)
 			return STATUS_SUCCESS;
 		}
 	}
+#endif
 
 	/* 21 : object classes other than process for range_transitions */
 	qpol_policy_get_range_trans_iter(policy, &iter);

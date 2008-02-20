@@ -51,7 +51,10 @@
 #include <sepol/policydb/conditional.h>
 #include <sepol/policydb/flask.h>
 #include <sepol/policydb/hierarchy.h>
-#include <sepol/policydb/polcaps.h>
+#ifdef HAVE_SEPOL_POLCAPS
+	#include <sepol/policydb/polcaps.h>
+#endif
+
 #include "queue.h"
 #include <qpol/policy.h>
 #include "module_compiler.h"
@@ -1033,6 +1036,7 @@ static int define_polcap(void)
 		goto bad;
 	}
 
+#ifdef HAVE_SEPOL_POLICYCAPS
 	/* Check for valid cap name -> number mapping */
 	capnum = sepol_polcap_getnum(id);
 	if (capnum < 0) {
@@ -1045,6 +1049,9 @@ static int define_polcap(void)
 		yyerror("out of memory");
 		goto bad;
 	}
+#else
+	yyerror("This version of SETools does not have policycap enabled.");
+#endif
 
 	free(id);
 	return 0;
