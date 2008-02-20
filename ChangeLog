@@ -1,3 +1,7 @@
+2008-02-20  J. Tang  <jtang@tresys.com>
+
+	* This is the official release of SETools 3.3.3.
+
 2008-02-19  J. Tang  <jtang@tresys.com>
 
 	* Added QPOL_POLICY_OPTION_MATCH_SYSTEM as a policy load option to

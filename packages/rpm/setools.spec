@@ -48,7 +48,7 @@ Group: System Environment/Libraries
 Requires: libselinux >= %{selinux_ver} libsepol >= %{sepol_ver} sqlite >= %{sqlite_ver}
 BuildRequires: flex bison pkgconfig
 BuildRequires: glibc-devel libstdc++-devel gcc gcc-c++
-BuildRequires: libselinux-devel >= %{selinux_ver} libsepol-devel >= %{sepol_ver} libsepol-static >= %{sepol_ver}
+BuildRequires: libselinux-devel >= %{selinux_ver} libsepol-devel >= %{sepol_ver}
 BuildRequires: sqlite-devel >= %{sqlite_ver} libxml2-devel
 BuildRequires: autoconf >= %{autoconf_ver} automake
 
@@ -339,6 +339,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun libs-tcl -p /sbin/ldconfig
 
 %changelog
+* Wed Feb 20 2008 Jason Tang <selinux@tresys.com> 3.3.3-0
+- Update to SETools 3.3.3 release.
+
 * Thu Nov 1 2007 Jason Tang <selinux@tresys.com> 3.3.2-0
 - Update to SETools 3.3.2 release.
 

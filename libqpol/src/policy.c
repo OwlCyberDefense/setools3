@@ -595,7 +595,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 				ERR(policy, "Could not downgrade policy to version %d.", kernvers);
 				goto err;
 			}
-			WARN(policy, "Policy has been downgraded from version %d to %d.", currentvers, kernvers);
+			WARN(policy, "Policy would be downgraded from version %d to %d.", currentvers, kernvers);
 		}
 	}
 
