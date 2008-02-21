@@ -51,7 +51,7 @@
 #include <sepol/policydb/conditional.h>
 #include <sepol/policydb/flask.h>
 #include <sepol/policydb/hierarchy.h>
-#ifdef HAVE_SEPOL_POLCAPS
+#ifdef HAVE_SEPOL_POLICYCAPS
 	#include <sepol/policydb/polcaps.h>
 #endif
 

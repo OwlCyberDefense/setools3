@@ -1,6 +1,9 @@
-2008-02-20  J. Tang  <jtang@tresys.com>
+2008-02-21  J. Tang  <jtang@tresys.com>
 
 	* This is the official release of SETools 3.3.3.
+
+	* Fixes to qpol_default_policy_find() to properly return policies
+	whose versions are greater than the currently running system.
 
 2008-02-19  J. Tang  <jtang@tresys.com>
 

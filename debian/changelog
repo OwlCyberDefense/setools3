@@ -2,7 +2,7 @@ setools (3.3.3-0ubuntu1) hardy; urgency=low
 
   * Merged SETools 3.3.3 release into this package. 
 
- -- J. Tang <jtang@tresys.com>  Wed, 20 Feb 2008 12:00:00 -0500
+ -- J. Tang <jtang@tresys.com>  Thu, 21 Feb 2008 12:00:00 -0500
 
 setools (3.3.2-0ubuntu3) hardy; urgency=low
 
