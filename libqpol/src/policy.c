@@ -46,8 +46,6 @@
 #include <sepol/module.h>
 #include <sepol/policydb/module.h>
 
-#include <selinux/selinux.h>
-
 #include <stdbool.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
@@ -580,23 +578,6 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	if (infer_policy_version(policy)) {
 		error = errno;
 		goto err;
-	}
-	if (options & QPOL_POLICY_OPTION_MATCH_SYSTEM) {
-		int kernvers = security_policyvers();
-		int currentvers = policy->p->p.policyvers;
-		if (kernvers < 0) {
-			error = errno;
-			ERR(policy, "%s", "Could not determine running system's policy version.");
-			goto err;
-		}
-		if (policy->p->p.policyvers > kernvers) {
-			if (sepol_policydb_set_vers(policy->p, kernvers)) {
-				error = errno;
-				ERR(policy, "Could not downgrade policy to version %d.", kernvers);
-				goto err;
-			}
-			WARN(policy, "Policy would be downgraded from version %d to %d.", currentvers, kernvers);
-		}
 	}
 
 	if (policy_extend(policy)) {
