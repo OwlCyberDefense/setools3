@@ -6,7 +6,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006-2007 Tresys Technology, LLC
+ * Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -47,164 +47,112 @@ const char *libqpol_get_version(void)
 
 static int search_policy_source_file(char **path)
 {
-	if (asprintf(path, "%s/src/policy/policy.conf", selinux_policy_root()) < 0) {
-		*path = NULL;
+	int error;
+	char *source_path;
+	if (asprintf(&source_path, "%s/src/policy/policy.conf", selinux_policy_root()) < 0) {
 		return -1;
 	}
-	if (access(*path, R_OK) < 0) {
-		free(*path);
-		*path = NULL;
+	if (access(source_path, R_OK) < 0) {
+		error = errno;
+		free(source_path);
+		errno = error;
 		return 1;
 	}
+	*path = source_path;
 	return 0;
 }
 
-static int is_binpol_valid(const char *policy_fname, const int version)
+static int get_binpol_version(const char *policy_fname)
 {
 	FILE *policy_fp = NULL;
-	int ret_version;
+	int ret_version, error;
 
 	policy_fp = fopen(policy_fname, "r");
 	if (policy_fp == NULL) {
-		return 0;
+		return -1;
 	}
 	if (!qpol_is_file_binpol(policy_fp)) {
+		error = errno;
 		fclose(policy_fp);
-		return 0;
+		errno = error;
+		return -1;
 	}
 	ret_version = qpol_binpol_version(policy_fp);
 	fclose(policy_fp);
-	return (ret_version == version);
+	return ret_version;
 }
 
-static int search_for_policyfile_with_ver(const char *binary_path, const int version, char **path)
+static int search_policy_binary_file(char **path)
 {
-	glob_t glob_buf;
-	struct stat fs;
-	int rt;
-	size_t i;
-	char *pattern = NULL;
-
-	*path = NULL;
-	/* Call glob() to get a list of filenames matching pattern. */
-	if (asprintf(&pattern, "%s.*", binary_path) < 0) {
-		return -1;
-	}
-	glob_buf.gl_offs = 1;
-	glob_buf.gl_pathc = 0;
-	rt = glob(pattern, GLOB_DOOFFS, NULL, &glob_buf);
-	free(pattern);
-	if (rt != 0 && rt != GLOB_NOMATCH) {
-		errno = EIO;
-		return -1;
-	}
-	for (i = 0; i < glob_buf.gl_pathc; i++) {
-		char *p = glob_buf.gl_pathv[i + glob_buf.gl_offs];
-		if (stat(p, &fs) != 0) {
-			globfree(&glob_buf);
-			return -1;
-		}
-		if (S_ISDIR(fs.st_mode))
-			continue;
-		if (is_binpol_valid(p, version)) {
-			if ((*path = strdup(p)) == NULL) {
-				globfree(&glob_buf);
-				return -1;
-			}
-			globfree(&glob_buf);
-			return 1;
-		}
-	}
-	globfree(&glob_buf);
-	return 0;
-}
-
-static int search_for_policyfile_with_highest_ver(const char *binary_path, char **path)
-{
-	glob_t glob_buf;
-	struct stat fs;
-	int rt;
-	size_t i;
-	char *pattern = NULL;
-
-	*path = NULL;
-	/* Call glob() to get a list of filenames matching pattern. */
-	if (asprintf(&pattern, "%s.*", binary_path) < 0) {
-		return -1;
-	}
-	glob_buf.gl_offs = 1;
-	glob_buf.gl_pathc = 0;
-	rt = glob(pattern, GLOB_DOOFFS, NULL, &glob_buf);
-	free(pattern);
-	if (rt != 0 && rt != GLOB_NOMATCH) {
-		errno = EIO;
+	const char *binary_path;
+	if ((binary_path = selinux_binary_policy_path()) == NULL) {
 		return -1;
 	}
 
-	for (i = 0; i < glob_buf.gl_pathc; i++) {
-		char *p = glob_buf.gl_pathv[i + glob_buf.gl_offs];
-		if (stat(*path, &fs) != 0) {
-			globfree(&glob_buf);
-			free(*path);
-			*path = NULL;
-			return -1;
-		}
-		if (S_ISDIR(fs.st_mode))
-			continue;
-
-		/* define "latest" version as lexigraphical order */
-		if (*path != NULL) {
-			if (strcmp(p, *path) > 0) {
-				free(*path);
-			} else {
-				continue;
-			}
-		}
-
-		if ((*path = strdup(p)) == NULL) {
-			globfree(&glob_buf);
-			return -1;
-		}
-	}
-
-	globfree(&glob_buf);
-	if (*path != NULL) {
-		return 1;
-	}
-	return 0;
-}
-
-static int search_binary_policy_file(char **path)
-{
-	const char *bin_path;
-	if ((bin_path = selinux_binary_policy_path()) == NULL) {
-		*path = NULL;
-		return -1;
-	}
+	int expected_version = -1, latest_version = -1;
 #ifdef LIBSELINUX
-	int current_version, rt;
-	/* try loading a binary policy that matches the system's
-	 * currently loaded policy */
-	if ((current_version = security_policyvers()) < 0 || asprintf(path, "%s.%d", bin_path, current_version) < 0) {
-		*path = NULL;
+	/* if the system has SELinux enabled, prefer the policy whose
+	   name matches the current policy version */
+	if ((expected_version = security_policyvers()) < 0) {
 		return -1;
-	}
-	/* make sure the actual binary policy version matches the
-	 * policy version.  If it does not, then search the policy
-	 * install directory for a binary file of the correct
-	 * version. */
-	if (is_binpol_valid(*path, current_version)) {
-		return 0;
-	}
-	free(*path);
-	if ((rt = search_for_policyfile_with_ver(bin_path, current_version, path)) != 0) {
-		return rt;
 	}
 #endif
 
-	/* if a valid binary policy file has not yet been found, try
-	 * the highest version */
-	return search_for_policyfile_with_highest_ver(bin_path, path);
+	glob_t glob_buf;
+	struct stat fs;
+	int rt, error = 0, retval = -1;
+	size_t i;
+	char *pattern = NULL;
+	if (asprintf(&pattern, "%s.*", binary_path) < 0) {
+		return -1;
+	}
+	glob_buf.gl_offs = 1;
+	glob_buf.gl_pathc = 0;
+	rt = glob(pattern, GLOB_DOOFFS, NULL, &glob_buf);
+	if (rt != 0 && rt != GLOB_NOMATCH) {
+		errno = EIO;
+		return -1;
+	}
+
+	for (i = 0; i < glob_buf.gl_pathc; i++) {
+		char *p = glob_buf.gl_pathv[i + glob_buf.gl_offs];
+		if (stat(p, &fs) != 0) {
+			error = errno;
+			goto cleanup;
+		}
+		if (S_ISDIR(fs.st_mode))
+			continue;
+
+		if ((rt = get_binpol_version(p)) < 0) {
+			error = errno;
+			goto cleanup;
+		}
+
+		if (rt > latest_version || rt == expected_version) {
+			free(*path);
+			if ((*path = strdup(p)) == NULL) {
+				error = errno;
+				goto cleanup;
+			}
+			if (rt == expected_version) {
+				break;
+			}
+			latest_version = rt;
+		}
+	}
+
+	if (*path == NULL) {
+		retval = 1;
+	} else {
+		retval = 0;
+	}
+      cleanup:
+	free(pattern);
+	globfree(&glob_buf);
+	if (retval == -1) {
+		errno = error;
+	}
+	return retval;
 }
 
 int qpol_default_policy_find(char **path)
@@ -221,5 +169,5 @@ int qpol_default_policy_find(char **path)
 		return rt;
 	}
 	/* Try a binary policy */
-	return search_binary_policy_file(path);
+	return search_policy_binary_file(path);
 }

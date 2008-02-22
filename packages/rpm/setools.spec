@@ -1,5 +1,5 @@
 %define setools_maj_ver 3.3
-%define setools_min_ver 2
+%define setools_min_ver 3
 %define setools_release 0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
@@ -339,6 +339,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun libs-tcl -p /sbin/ldconfig
 
 %changelog
+* Thu Feb 21 2008 Jason Tang <selinux@tresys.com> 3.3.3-0
+- Update to SETools 3.3.3 release.
+
 * Thu Nov 1 2007 Jason Tang <selinux@tresys.com> 3.3.2-0
 - Update to SETools 3.3.2 release.
 

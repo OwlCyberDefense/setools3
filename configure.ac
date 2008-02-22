@@ -1,39 +1,27 @@
-AC_INIT(setools, 3.3.2, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.3.3, [Tresys Technology <setools@tresys.com>], [setools])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([-Wno-portability])
 
 dnl *** update these variables as versions change; also update AC_INIT ***
-libqpol_version=1.3.1
-libqpol_soname=libqpol.so.1
-libqpol_pyswig_soname=_qpol.so.1
-libqpol_jswig_soname=libjqpol.so.1
-libqpol_tswig_soname=libtqpol.so.1
+libqpol_soversion=1
+libqpol_version=1.3.2
 
+libapol_soversion=4
 libapol_version=4.1.2
-libapol_soname=libapol.so.4
-libapol_pyswig_soname=_apol.so.4
-libapol_jswig_soname=libjapol.so.4
-libapol_tswig_soname=libtapol.so.4
 
+libpoldiff_soversion=1
 libpoldiff_version=1.3.1
-libpoldiff_soname=libpoldiff.so.1
-libpoldiff_pyswig_soname=_poldiff.so.1
-libpoldiff_jswig_soname=libjpoldiff.so.1
-libpoldiff_tswig_soname=libtpoldiff.so.1
 
+libpolsearch_soversion=1
+libpolsearch_version=1.0
+
+libsefs_soversion=4
 libsefs_version=4.0.2
-libsefs_soname=libsefs.so.4
-libsefs_pyswig_soname=_sefs.so.4
-libsefs_jswig_soname=libjsefs.so.4
-libsefs_tswig_soname=libtsefs.so.4
 
+libseaudit_soversion=4
 libseaudit_version=4.2.1
-libseaudit_soname=libseaudit.so.4
-libseaudit_pyswig_soname=_seaudit.so.4
-libseaudit_jswig_soname=libjseaudit.so.4
-libseaudit_tswig_soname=libtseaudit.so.4
 
 setoolsdir='${prefix}/share/setools-3.3'
 javadir='${prefix}/share/java'
@@ -43,6 +31,31 @@ version_min_sepol_minor=12
 version_min_sepol_patch=27
 
 dnl *** end of tunable values ***
+
+libqpol_soname=libqpol.so.${libqpol_soversion}
+libqpol_pyswig_soname=_qpol.so.${libqpol_soversion}
+libqpol_jswig_soname=libjqpol.so.${libqpol_soversion}
+libqpol_tswig_soname=libtqpol.so.${libqpol_soversion}
+
+libapol_soname=libapol.so.${libapol_soversion}
+libapol_pyswig_soname=_apol.so.${libapol_soversion}
+libapol_jswig_soname=libjapol.so.${libapol_soversion}
+libapol_tswig_soname=libtapol.so.${libapol_soversion}
+
+libpoldiff_soname=libpoldiff.so.${libpoldiff_soversion}
+libpoldiff_pyswig_soname=_poldiff.so.${libpoldiff_soversion}
+libpoldiff_jswig_soname=libjpoldiff.so.${libpoldiff_soversion}
+libpoldiff_tswig_soname=libtpoldiff.so.${libpoldiff_soversion}
+
+libsefs_soname=libsefs.so.${libsefs_soversion}
+libsefs_pyswig_soname=_sefs.so.${libsefs_soversion}
+libsefs_jswig_soname=libjsefs.so.${libsefs_soversion}
+libsefs_tswig_soname=libtsefs.so.${libsefs_soversion}
+
+libseaudit_soname=libseaudit.so.${libseaudit_soversion}
+libseaudit_pyswig_soname=_seaudit.so.${libseaudit_soversion}
+libseaudit_jswig_soname=libjseaudit.so.${libseaudit_soversion}
+libseaudit_tswig_soname=libtseaudit.so.${libseaudit_soversion}
 
 AC_GNU_SOURCE
 AC_PROG_CC_C99
@@ -490,6 +503,18 @@ else
   sepol_new_expand_boolmap="no"
 fi
 
+dnl check for policycap, added in libsepol version
+AC_CHECK_MEMBER([struct policydb.policycaps.node],
+                sepol_new_policycaps="yes",
+                sepol_new_policycaps="no",
+                [#include <sepol/policydb/policydb.h>])
+
+dnl check for modified AV tab behavior, introduced in libsepol version 2.0.20
+AC_CHECK_DECL([avtab_alloc],
+              sepol_new_avtab="yes",
+              sepol_new_avtab="no",
+              [#include <sepol/policydb/conditional.h>])
+
 AC_RUN_IFELSE(
    [AC_LANG_SOURCE([
 #include <sepol/policydb/policydb.h>
@@ -677,26 +702,31 @@ profile_install_dir='${setoolsdir}/sechecker-profiles'
 AC_SUBST(VERSION)
 AC_SUBST(javadir)
 AC_SUBST(sepol_srcdir)
+AC_SUBST(libqpol_soversion)
 AC_SUBST(libqpol_version)
 AC_SUBST(libqpol_soname)
 AC_SUBST(libqpol_pyswig_soname)
 AC_SUBST(libqpol_jswig_soname)
 AC_SUBST(libqpol_tswig_soname)
+AC_SUBST(libapol_soversion)
 AC_SUBST(libapol_version)
 AC_SUBST(libapol_soname)
 AC_SUBST(libapol_pyswig_soname)
 AC_SUBST(libapol_jswig_soname)
 AC_SUBST(libapol_tswig_soname)
+AC_SUBST(libpoldiff_soversion)
 AC_SUBST(libpoldiff_version)
 AC_SUBST(libpoldiff_soname)
 AC_SUBST(libpoldiff_pyswig_soname)
 AC_SUBST(libpoldiff_jswig_soname)
 AC_SUBST(libpoldiff_tswig_soname)
+AC_SUBST(libsefs_soversion)
 AC_SUBST(libsefs_version)
 AC_SUBST(libsefs_soname)
 AC_SUBST(libsefs_pyswig_soname)
 AC_SUBST(libsefs_jswig_soname)
 AC_SUBST(libsefs_tswig_soname)
+AC_SUBST(libseaudit_soversion)
 AC_SUBST(libseaudit_version)
 AC_SUBST(libseaudit_soname)
 AC_SUBST(libseaudit_pyswig_soname)
@@ -718,9 +748,14 @@ if test ${sepol_new_defines} != "yes" ; then
    AC_DEFINE(SEPOL_ENOMEM, HASHTAB_OVERFLOW, [remap of libsepol 1.x.x define to 2.x.x])
    AC_DEFINE(SEPOL_EEXIST, HASHTAB_PRESENT, [remap of libsepol 1.x.x define to 2.x.x])
 fi
-
 if test ${sepol_new_expand_boolmap} == "yes" ; then
    AC_DEFINE(HAVE_SEPOL_BOOLMAP, 1, [sepol's new expand boolmap behavior])
+fi
+if test ${sepol_new_policycaps} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_POLICYCAPS, 1, [if libsepol has policycaps])
+fi
+if test ${sepol_new_avtab} == "yes"; then
+   AC_DEFINE(SEPOL_DYNAMIC_AVTAB, 1, [if avtab sizes are calculated dynamically by loader or are hardcoded])
 fi
 
 if test ${use_shared} == "yes"; then
@@ -790,6 +825,7 @@ AC_CONFIG_FILES([Makefile VERSION \
                  seaudit/Makefile \
                  sediff/Makefile \
                  man/Makefile \
+                 debian/Makefile \
                  packages/Makefile packages/rpm/Makefile \
                  packages/libqpol.pc packages/libapol.pc packages/libpoldiff.pc packages/libseaudit.pc packages/libsefs.pc])
 

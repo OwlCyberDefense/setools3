@@ -1,0 +1,350 @@
+setools (3.3.3-0ubuntu1) hardy; urgency=low
+
+  * Merged SETools 3.3.3 release into this package. 
+
+ -- J. Tang <jtang@tresys.com>  Thu, 21 Feb 2008 12:00:00 -0500
+
+setools (3.3.2-0ubuntu3) hardy; urgency=low
+
+  * debian/control
+    - Changed from java2-compiler to java2-sdk in build depends
+  * debian/rules
+    - Set JAVA_HOME environment variable for icedtea
+    - Set the --with-java-prefix configure flag
+
+ -- Joseph Jackson IV <jjacksoniv@fluxbuntu.org>  Sat, 02 Feb 2008 20:44:56 -0500
+
+setools (3.3.2-0ubuntu2) hardy; urgency=low
+
+  * debian/control
+    - Update Debian Maintainer field
+
+ -- Joseph Jackson IV <jjacksoniv@fluxbuntu.org>  Sat, 02 Feb 2008 19:04:33 -0500
+
+setools (3.3.2-0ubuntu1) hardy; urgency=low
+
+  * Merged SETools 3.3.2 release into this package. 
+
+ -- J. Tang <jtang@tresys.com>  Tue, 29 Jan 2008 12:00:00 -0500
+
+setools (2.4-3) unstable; urgency=low
+
+  * Bug fix: "symlink error on /usr/share/setools/seaudit-report.conf",
+    thanks to Kevin Mark                                 (Closes: #396495).
+
+ -- Manoj Srivastava <srivasta@debian.org>  Mon,  6 Nov 2006 10:12:40 -0600
+
+setools (2.4-2) unstable; urgency=low
+
+  * Since we have flex scanners built into our libapol shared libraries,
+    and that needs to link with the flex library, which is static;
+    therefore we need to explicitly link with libfl_pic, which has the
+    position independent code required for all components of a shared
+    library.  
+  * Split up setools into multiple packages, so that the shared libraries
+    and devel tools can be provided separately. Split up the single
+    package setools into several library packages, since it was pointed
+    out to me that the package was in violation of §8.2 of the Debian
+    policy.  Now each library has a runtime and a dev package, so each
+    library can develop at its own pace.
+  * Bug fix: "setools: FTBFS (amd64): libfl.a(libyywrap.o): relocation
+    R_X86_64_32 against `a local symbol' can not be used when making a
+    shared object; recompile with -fPIC", thanks to Andreas Jochens
+                                                        (Closes: #373170).
+  * Bug fix: "setools: Please adjust SELinux spelling to that of other
+    SELinux-related packages", thanks to Sven Mueller   (Closes: #376613).
+  * Provide md5sums
+  * Also, tweak some file paths to better reflect a default Debian
+    installation. 
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu,  7 Sep 2006 19:54:50 -0500
+
+setools (2.4-1) unstable; urgency=low
+
+  * New upstream release
+    apol:
+     File contexts tab now allows for MLS range searching if 
+     the loaded database is from a MLS filesystem.
+     Policy statistics dialog now shows MLS and ocontexts
+     summaries.
+    libapol:
+     Added support for loading base policies containing optionals.
+     Added support for searching range transitions containing
+     attributes.
+    libseaudit:
+      Bugfix to support parsing FC5-style audit logs.
+    seaudit:
+      Added date filters.
+    secmds:
+      Added support to indexcon and searchcon for MLS filesytems.
+      Added support to findcon and replcon for MLS filesystems.
+    sechecker:
+      Added incomplete network access (inc_net_access) module.
+      Added unreachable domains (unreachable_doms) module.
+      Added impossible range transitions (imp_range_trans) module.
+    sesearch:
+      Allow user to search range transitions by attributes and
+      indirect matching.
+      Added RBAC searching.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun,  7 May 2006 00:16:22 -0500
+
+setools (2.3-1) unstable; urgency=low
+
+  * New upstream release
+    apol:
+      - added new MLS components tab for sensitivities, levels, and
+        categories.
+      - changed users tab to support ranges and default levels.
+      - added range transition tab for searching range transition rules.
+      - added new tab for network context components.
+      - added new tab for file system context components.
+   libapol:
+      - added binpol support for MLS, network contexts, and file system
+        contexts. 
+   seinfo:
+      - added command line options for MLS components.
+      - added command line options for network contexts and file system contexts.
+   sesearch:
+      - added command line option for searching for rules by conditional boolean name.
+   seaudit:
+      - added new column in the log view for the 'comm' 
+      - field found in auditd log files.
+      - added filters for the 'comm' field and 'message' field.
+   manpages:
+      -added manpages for all tools.	
+
+ -- Manoj Srivastava <srivasta@debian.org>  Tue,  7 Feb 2006 11:54:03 -0600
+
+setools (2.2-2) unstable; urgency=low
+
+  * Added a preinst check to see if we should remove the obsolete conffile 
+     /etc/setools/seuser.conf
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sat, 31 Dec 2005 14:51:20 -0600
+
+setools (2.2-1) unstable; urgency=low
+
+  * New upstream release
+    libapol:
+     replaced the original dta algorithm with a new one to properly
+     support complements in rules.  added new structures to support the
+     separation of diff elements.  added support for parsing additional
+     policy components in source policies.
+    sediff:
+     enhanced the GUI for display and separation of diff elements.  added
+     the ability to rename types.
+    sechecker:
+      added a new tool - a commandline modular and extensible policy
+      checker program 
+    seuser:	removed - deprecated
+    sepcut:	removed - deprecated
+
+ -- Manoj Srivastava <srivasta@debian.org>  Fri, 30 Dec 2005 01:32:46 -0600
+
+setools (2.1.3-1) unstable; urgency=low
+
+  * New upstream release, fixed a mls bug in the source parser.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 16 Oct 2005 23:58:07 -0500
+
+setools (2.1.2-1) unstable; urgency=low
+
+  * New upstream release
+  
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 15 Sep 2005 02:00:01 -0500
+
+setools (2.1.1-1) unstable; urgency=low
+
+  * New upstream release. Excerpted changes:
+  * Version 2.1.1
+        libseaudit: updated code to compile with gcc-4.0.0
+                    minor bug fixes
+        sediff:     updated code to compile with gcc-4.0.0
+        seaudit:    updated code to compile with gcc-4.0.0
+        libsefs:    updated code to compile with gcc-4.0.0
+        libapol:    updated code to compile with gcc-4.0.0
+                    minor bug fixes
+        seuser:     updated code to compile with gcc-4.0.0
+  * Version 2.1.0
+        apol:    improved direct relabel analysis algorithm
+        libapol: added policy version 19 support
+        sediff:  added role transitions, improved role allow
+                 added conditional expression differences
+
+ -- Manoj Srivastava <srivasta@debian.org>  Wed,  1 Jun 2005 23:51:27 -0500
+
+setools (2.0-1) unstable; urgency=low
+
+  * New upstream release
+      * libsefs:
+        Converted to use an on-disk SQLite database backend and 
+          re-designed API to provide the functionality to other 
+          applications, such as apol.
+      * libapol:
+        Added support for analyzing direct file relabels.
+        Added support for analyzing relationship between two types.
+        Integrated use of hashtable structures for easily analyzing
+          differences between policies.
+        Minor bug fixes.
+      * libseuser:
+        Minor bug fixes.
+      * apol:
+        New analysis module for performing direct file relabel
+          analysis.
+        New analysis module for analyzing the relationship be-
+          tween two types.
+        New interface added for viewing file contexts from an
+          SELinux filesystem.
+        Improvements to domain transition analysis interface.
+        Minor bug fixes and GUI tweaks.
+      * secmds:
+        Updated indexcon/searchcon to use an on-disk SQLite database 
+          in order to decrease memory use. These changes are not
+          backwards-compatible.
+      * seaudit:
+        Integrated reporting functionality into GUI.
+        Minor GUI tweaks.
+      * sediff:
+        New gtk GUI and command-line tools for analyzing the semantic 
+          differences between two policies. The semantic difference 
+          of a policy is different from the syntactic difference in 
+          that it shows the cumulative effect of rules rather than 
+          doing a line-by-line comparison.
+
+ -- Manoj Srivastava <srivasta@debian.org>  Sun, 13 Mar 2005 00:40:06 -0600
+
+setools (1.5.1-1) unstable; urgency=low
+
+  * New upstream release.
+     *apol:    Fixed compatibility with tcl 8.3.
+     *libsefs: Fixed compile problem on PPC.
+     *secmds:  Fixed fatal error in replcon.
+     *setools: Reverted to static linking and fixed various small bugs.
+
+     * apol: 
+        Advanced options added to forward domain
+         transition analysis module for performing 
+         more granular searching of transitions to 
+         domains using specified classes, permissions 
+         and target types.
+        Minor bug fixes and improvements.
+        
+     * libapol: 
+        Fixed to handle new libapol user structs.
+        Enhanced forward domain transition analysis to
+          perform more granular searching using specified
+          classes, permissions and target types.
+        Minor bug fixes.
+                
+     * libseuser: 
+        General clean up of the policy components.
+        Fixed handling of users to be consistent with rest.
+        
+     * seaudit:
+        New tool (seaudit-report) for generating customized
+         reports on SE Linux audit messages using saved 
+         seaudit view files. This tool is highly configurable
+         and can effectively integrate with the LogWatch 
+         application for automating SE Linux audit log reporting. 
+        Added feature for exporting audit messages to a 
+          file, as well as viewing all components of an audit 
+          message within a text view.
+        
+     * libseaudit:
+        Updated library to store audit header information, such as
+         the system call timestamp and serial number.
+        Fixed parse errors for new logs.  
+
+     *  New tool (indexcon) for creating a snapshot of security 
+         contexts for SE Linux filesystem entities.
+     * New tool (searchcon) for searching the SE Linux filesystem 
+         database that was created using indexcon.
+        
+
+ -- Manoj Srivastava <srivasta@debian.org>  Thu, 13 Jan 2005 01:25:23 -0600
+
+setools (1.4.1-2) unstable; urgency=low
+
+  * Added build-depends libselinux1-dev, thanks for the NMU LaMont.
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 13 Jul 2004 19:35:00 +1000
+
+setools (1.4.1-1) unstable; urgency=low
+
+  * New upstream.
+
+ -- Russell Coker <russell@coker.com.au>  Thu,  8 Jul 2004 12:54:00 +1000
+
+setools (1.4-1) unstable; urgency=low
+
+  * New upstream.
+
+ -- Russell Coker <russell@coker.com.au>  Thu,  3 Jun 2004 12:49:00 +1000
+
+setools (1.3-1) unstable; urgency=low
+
+  * New upstream.
+
+ -- Russell Coker <russell@coker.com.au>  Fri, 16 Apr 2004 20:16:00 +1000
+
+setools (1.2.1-1) unstable; urgency=low
+
+  * New upstream.
+
+  * Make it build-depend on tk8.4-dev.
+    Closes: 231876
+
+ -- Russell Coker <russell@coker.com.au>  Thu, 26 Feb 2004 22:07:00 +1100
+
+setools (1.2-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Russell Coker <russell@coker.com.au>  Fri,  6 Feb 2004 15:16:00 +1100
+
+setools (1.1.1-3) unstable; urgency=low
+
+  * Fixed build-depends.
+    Closes: #230830
+
+ -- Russell Coker <russell@coker.com.au>  Tue,  3 Feb 2004 10:16:00 +1100
+
+setools (1.1.1-2) unstable; urgency=low
+
+  * Fixed build-depends.
+    Closes: #229170
+
+ -- Russell Coker <russell@coker.com.au>  Sun, 25 Jan 2004 15:48:00 +1100
+
+setools (1.1.1-1) unstable; urgency=low
+
+  * New upstream.
+
+ -- Russell Coker <russell@coker.com.au>  Tue,  6 Jan 2004 12:50:00 +1100
+
+setools (1.1-3) unstable; urgency=low
+
+  * Upload again with orig archive.
+
+ -- Russell Coker <russell@coker.com.au>  Fri,  2 Jan 2004 21:48:00 +1100
+
+setools (1.1-2) unstable; urgency=low
+
+  * Added copyright file.
+
+ -- Russell Coker <russell@coker.com.au>  Fri,  2 Jan 2004 18:24:00 +1100
+
+setools (1.1-1) unstable; urgency=low
+
+  * New upstream.
+
+ -- Russell Coker <russell@coker.com.au>  Tue, 23 Dec 2003 16:35:00 +1100
+
+setools (1.0.1-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Russell Coker <russell@coker.com.au>  Wed, 19 Nov 2003 21:45:00 +1100
+

@@ -7,7 +7,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2007 Tresys Technology, LLC
+ *  Copyright (C) 2007-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -43,6 +43,7 @@ struct capability_answer
 	bool has_line_numbers;
 	bool has_conditionals;
 	bool has_mls;
+	bool has_polcaps;
 	bool has_source;
 	bool has_modules;
 };
@@ -77,6 +78,9 @@ static void capability_test(const struct capability_answer *ca)
 	cap = (bool) qpol_policy_has_capability(q, QPOL_CAP_MLS);
 	CU_ASSERT_EQUAL(cap, ca->has_mls);
 
+	cap = (bool) qpol_policy_has_capability(q, QPOL_CAP_POLCAPS);
+	CU_ASSERT_EQUAL(cap, ca->has_polcaps);
+
 	cap = (bool) qpol_policy_has_capability(q, QPOL_CAP_SOURCE);
 	CU_ASSERT_EQUAL(cap, ca->has_source);
 
@@ -97,6 +101,7 @@ static void capability_v12_source()
 		true,		       // has line numbers
 		false,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		true,		       // has source
 		false		       // has modules
 	};
@@ -114,6 +119,7 @@ static void capability_v15_source()
 		true,		       // has line numbers
 		false,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		true,		       // has source
 		false		       // has modules
 	};
@@ -131,6 +137,7 @@ static void capability_v15_binary()
 		false,		       // has line numbers
 		false,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -148,6 +155,7 @@ static void capability_v16_source()
 		true,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		true,		       // has source
 		false		       // has modules
 	};
@@ -165,6 +173,7 @@ static void capability_v16_binary()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -182,6 +191,7 @@ static void capability_v17_source()
 		true,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		true,		       // has source
 		false		       // has modules
 	};
@@ -199,6 +209,7 @@ static void capability_v17_binary()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -216,6 +227,7 @@ static void capability_v18_source()
 		true,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		true,		       // has source
 		false		       // has modules
 	};
@@ -233,6 +245,7 @@ static void capability_v18_binary()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -250,6 +263,7 @@ static void capability_v19_binary()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -267,6 +281,7 @@ static void capability_v19_binary_mls()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		true,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -284,6 +299,7 @@ static void capability_v20_binary()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		false,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -301,6 +317,7 @@ static void capability_v20_binary_mls()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		true,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -318,6 +335,7 @@ static void capability_v21_source()
 		true,		       // has line numbers
 		true,		       // has conditionals
 		true,		       // has mls
+		false,		       // has policy capabilities
 		true,		       // has source
 		false		       // has modules
 	};
@@ -335,6 +353,43 @@ static void capability_v21_binary()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		true,		       // has mls
+		false,		       // has policy capabilities
+		false,		       // has source
+		false		       // has modules
+	};
+	capability_test(&cap);
+}
+
+static void capability_v22_source()
+{
+	struct capability_answer cap = {
+		POLICY_ROOT "/policy-mls-22.conf",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		22U,		       // policy version
+		true,		       // has attributes
+		true,		       // has syntactic rules
+		true,		       // has line numbers
+		true,		       // has conditionals
+		true,		       // has mls
+		true,		       // has policy capabilities
+		true,		       // has source
+		false		       // has modules
+	};
+	capability_test(&cap);
+}
+
+static void capability_v22_binary()
+{
+	struct capability_answer cap = {
+		POLICY_ROOT "/policy-mls.22",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		22U,		       // policy version
+		false,		       // has attributes
+		false,		       // has syntactic rules
+		false,		       // has line numbers
+		true,		       // has conditionals
+		true,		       // has mls
+		true,		       // has policy capabilities
 		false,		       // has source
 		false		       // has modules
 	};
@@ -352,6 +407,7 @@ static void capability_modv6_base_binary()
 		false,		       // has line numbers
 		true,		       // has conditionals
 		true,		       // has mls
+		false,		       // has policy capabilities
 		false,		       // has source
 		true		       // has modules
 	};
@@ -374,6 +430,8 @@ CU_TestInfo capabilities_tests[] = {
 	{"v20, binary mls", capability_v20_binary_mls},
 	{"v21, source", capability_v21_source},
 	{"v21, binary", capability_v21_binary},
+	{"v22, source", capability_v22_source},
+	{"v22, binary", capability_v22_binary},
 	{"mod v6, base binary", capability_modv6_base_binary},
 	CU_TEST_INFO_NULL
 };

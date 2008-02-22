@@ -6,7 +6,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Paul Rosenfeld  prosenfeld@tresys.com
  *
- *  Copyright (C) 2003-2007 Tresys Technology, LLC
+ *  Copyright (C) 2003-2008 Tresys Technology, LLC
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -995,6 +995,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	int pol_opt = 0;
+	if (!(cmd_opts.nallow || cmd_opts.all))
+		pol_opt |= QPOL_POLICY_OPTION_NO_NEVERALLOWS;
+
 	if (argc - optind < 1) {
 		rt = qpol_default_policy_find(&policy_file);
 		if (rt < 0) {
@@ -1004,6 +1008,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
+		pol_opt |= QPOL_POLICY_OPTION_MATCH_SYSTEM;
 	} else {
 		if ((policy_file = strdup(argv[optind])) == NULL) {
 			fprintf(stderr, "%s\n", strerror(errno));
@@ -1046,9 +1051,6 @@ int main(int argc, char **argv)
 	free(policy_file);
 	apol_vector_destroy(&mod_paths);
 
-	int pol_opt = 0;
-	if (!(cmd_opts.nallow || cmd_opts.all))
-		pol_opt = QPOL_POLICY_OPTION_NO_NEVERALLOWS;
 	policy = apol_policy_create_from_policy_path(pol_path, pol_opt, NULL, NULL);
 	if (!policy) {
 		ERR(policy, "%s", strerror(errno));

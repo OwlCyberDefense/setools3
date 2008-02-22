@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/autotools.mk
+
+DEB_CONFIGURE_EXTRA_FLAGS = \
+	--with-tcl=/usr/lib/tcl8.4 --with-tk=/usr/lib/tk8.4 \
+	--with-tkinclude=/usr/include/tcl8.4 \
+	--enable-swig-java --enable-swig-python --enable-swig-tcl \
+	--disable-bwidget-check
+
+DEB_DH_INSTALL_SOURCEDIR = $(CURDIR)/debian/tmp
+
+install/libsetools-jni::
+	mkdir -p $(CURDIR)/debian/tmp/usr/lib/jni
+	for i in libjapol libjpoldiff libjqpol libjseaudit libjsefs; do \
+		mv $(CURDIR)/debian/tmp/usr/lib/$${i}* $(CURDIR)/debian/tmp/usr/lib/jni; \
+	done
+
+install/python-setools::
+	chmod 0644 $(CURDIR)/debian/tmp/usr/lib/setools/*/pkgIndex.tcl
+
+install/setools-console::
+	$(MAKE) DESTDIR=$(CURDIR)/debian/tmp install-logwatch
+	chmod 0755 $(CURDIR)/debian/tmp/usr/share/setools-3.3/seaudit-report-service
