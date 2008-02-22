@@ -8,7 +8,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author David Windsor dwindsor@tresys.com
  *
- * Copyright (C) 2003-2007 Tresys Technology, LLC
+ * Copyright (C) 2003-2008 Tresys Technology, LLC
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1343,10 +1343,13 @@ int main(int argc, char **argv)
 		fprintf(stderr, "The --protocol flag requires either --portcon or --ALL.\n");
 		exit(1);
 	}
+
 	/* if no options, then show stats */
 	if (classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + all < 1) {
 		stats = 1;
 	}
+
+	int policy_load_options = ((stats || all) ? 0 : QPOL_POLICY_OPTION_NO_RULES);
 
 	if (argc - optind < 1) {
 		rt = qpol_default_policy_find(&policy_file);
@@ -1357,6 +1360,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "No default policy found.\n");
 			exit(1);
 		}
+		policy_load_options |= QPOL_POLICY_OPTION_MATCH_SYSTEM;
 	} else {
 		policy_file = strdup(argv[optind]);
 		if (!policy_file) {
@@ -1400,7 +1404,7 @@ int main(int argc, char **argv)
 	}
 	apol_vector_destroy(&mod_paths);
 
-	policydb = apol_policy_create_from_policy_path(pol_path, ((stats || all) ? 0 : QPOL_POLICY_OPTION_NO_RULES), NULL, NULL);
+	policydb = apol_policy_create_from_policy_path(pol_path, policy_load_options, NULL, NULL);
 	if (!policydb) {
 		ERR(policydb, "%s", strerror(errno));
 		free(policy_file);

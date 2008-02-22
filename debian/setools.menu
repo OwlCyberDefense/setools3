@@ -1,0 +1,6 @@
+?package(setools):needs="X11" section="Apps/System"\
+  title="apol" command="/usr/bin/apol"
+?package(setools):needs="X11" section="Apps/System"\
+  title="sediff" command="/usr/bin/sediff"
+?package(setools):needs="X11" section="Apps/System/Monitoring"\
+  title="seaudit" command="/usr/sbin/seaudit"

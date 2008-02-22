@@ -1,3 +1,18 @@
+SETools 3.3.3:
+
+This release builds upon SETools 3.3.2:
+
+  * Changes to libqpol to allow compiling against libsepol >= 2.0.20.
+
+  * Support for reading policy version 22.
+
+  * Clarification to default policy loading for seinfo, sesearch, and
+    sechecker.
+
+  * Build scripts for Debian and Ubuntu.
+
+==================================================
+
 SETools 3.3.2:
 
 This release corrects a number of issues present in SETools 3.3.1:

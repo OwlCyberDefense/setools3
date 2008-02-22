@@ -33,6 +33,7 @@ If no policy file is provided,
 .B
 sechecker
 will search for the system default policy: checking first for a source policy, next for a binary policy matching the running kernel's preferred version, and finally for the highest version that can be found.
+In the latter case, the policy will be downgraded to match the running system.
 If no policy can be found,
 .B
 sechecker
@@ -128,7 +129,7 @@ To check what options are available for a module use --help=MODULE, where MODULE
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
-Copyright(C) 2005-2007 Tresys Technology, LLC
+Copyright(C) 2005-2008 Tresys Technology, LLC
 .SH BUGS
 Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO

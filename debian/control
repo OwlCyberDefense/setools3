@@ -1,0 +1,142 @@
+Source: setools
+Priority: optional
+Maintainer: Ubuntu Hardened Developers <ubuntu-hardened@lists.ubuntu.com>
+XSBC-Original-Maintainer: J. Tang <jtang@tresys.com>
+Build-Depends: cdbs, debhelper (>= 5), autotools-dev, pkg-config,
+ g++ (>= 4.0), libstdc++-dev,flex, bison,
+ libselinux1-dev (>= 1.30), libsepol1-dev (>= 1.13),
+ libxml2-dev, libsqlite3-dev (>= 3.2),
+ swig (>= 1.3.28), python-dev (>= 2.3), python-central, java-gcj-compat-dev,
+ tcl8.4-dev (>= 8.4.9) | tcl-dev (>= 8.4.9),
+ tk8.4-dev (>= 8.4.9) | tk-dev (>= 8.4.9),
+ libglib2.0-dev, libgtk2.0-dev (>= 2.8), libglade2-dev
+Standards-Version: 3.7.2
+Section: utils
+
+Package: setools
+Section: utils
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ libsetools-tcl (= ${Source-Version}),
+ tk8.4 (>= 8.4.9) | wish, bwidget (>= 1.8), menu
+Recommends: setools-console
+Suggests: logwatch
+Provides: setools-gui
+Description: Collection of graphical tools for SELinux policy analysis
+ SETools is a collection of graphical tools, command-line tools, and
+ libraries designed to facilitate SELinux policy analysis.
+ .
+ This package includes the following graphical tools:
+ .
+  * apol          policy analysis tool
+  * seaudit       audit log analysis tool
+  * sediffx       semantic policy difference tool
+
+Package: libsetools
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: doxygen
+Description: SELinux policy analysis libraries
+ SETools is a collection of graphical tools, command-line tools, and
+ libraries designed to facilitate SELinux policy analysis.
+ .
+ This package includes the following run-time libraries:
+ .
+  * libapol       policy analysis library
+  * libpoldiff    semantic policy difference library
+  * libqpol       library that abstracts policy internals
+  * libseaudit    parse and filter SELinux audit messages in log files
+  * libsefs       SELinux file contexts library
+
+Package: libsetools-python
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, python (>= 2.3)
+XS-Python-Version: current
+XB-Python-Version: current
+Description: SETools Python bindings
+ SETools is a collection of graphical tools, command-line tools, and
+ libraries designed to facilitate SELinux policy analysis.
+ .
+ This package includes Python bindings for the following libraries:
+ .
+  * libapol       policy analysis library
+  * libpoldiff    semantic policy difference library
+  * libqpol       library that abstracts policy internals
+  * libseaudit    parse and filter SELinux audit messages in log files
+  * libsefs       SELinux file contexts library
+
+Package: libsetools-java
+Section: libs
+Architecture: any
+Depends: java-gcj-compat | java2-runtime, libsetools-jni (= ${binary:Version})
+Description: SETools Java bindings (architecture-independent)
+ SETools is a collection of graphical tools, command-line tools, and
+ libraries designed to facilitate SELinux policy analysis.
+ .
+ This package includes Java bindings for the following libraries:
+ .
+  * libapol       policy analysis library
+  * libpoldiff    semantic policy difference library
+  * libqpol       library that abstracts policy internals
+  * libseaudit    parse and filter SELinux audit messages in log files
+  * libsefs       SELinux file contexts library
+ 
+Package: libsetools-jni
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: SETools Java bindings (architecture-dependent)
+ This package includes the architecture-dependent library files needed
+ for libsetools-java.
+ 
+Package: libsetools-tcl
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: SETools Tcl bindings
+ SETools is a collection of graphical tools, command-line tools, and
+ libraries designed to facilitate SELinux policy analysis.
+ .
+ This package includes Tcl bindings for the following libraries:
+ .
+  * libapol       policy analysis library
+  * libpoldiff    semantic policy difference library
+  * libqpol       library that abstracts policy internals
+  * libseaudit    parse and filter SELinux audit messages in log files
+  * libsefs       SELinux file contexts library
+
+Package: libsetools-dev
+Section: libdevel
+Architecture: any
+Depends: libsetools (= ${Source-Version})
+Description: SETools development files
+ SETools is a collection of graphical tools, command-line tools, and
+ libraries designed to facilitate SELinux policy analysis.
+ .
+ This package includes header files and archives for the following
+ libraries:
+ .
+  * libapol       policy analysis library
+  * libpoldiff    semantic policy difference library
+  * libqpol       library that abstracts policy internals
+  * libseaudit    parse and filter SELinux audit messages in log files
+  * libsefs       SELinux file contexts library
+
+Package: setools-console
+Section: utils
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: setools
+Description: Collection of console tools for SELinux policy analysis
+ SETools is a collection of graphical tools, command-line tools, and
+ libraries designed to facilitate SELinux policy analysis.
+ .
+ This package includes the following console tools:
+ .
+  * seaudit-report  audit log analysis tool
+  * sechecker       SELinux policy checking tool
+  * secmds          command line tools: seinfo, sesearch, findcon,
+                      replcon, and indexcon
+  * sediff          semantic policy difference tool

@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2007 Tresys Technology, LLC
+# Copyright (C) 2001-2008 Tresys Technology, LLC
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 2 of the License, or
@@ -13,7 +13,7 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-set COPYRIGHT_INFO "Copyright (C) 2001-2007 Tresys Technology, LLC"
+set COPYRIGHT_INFO "Copyright (C) 2001-2008 Tresys Technology, LLC"
 
 namespace eval ApolTop {
     variable policy {} ;# handle to an apol_policy, or {} if none opened
