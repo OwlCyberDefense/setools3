@@ -1,0 +1,5 @@
+/usr/lib/libapol.so.*
+/usr/lib/libpoldiff.so.*
+/usr/lib/libqpol.so.*
+/usr/lib/libseaudit.so.*
+/usr/lib/libsefs.so.*

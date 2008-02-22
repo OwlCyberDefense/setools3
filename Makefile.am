@@ -10,7 +10,7 @@ if BUILD_GUI
 endif
 # sediffx is also built conditionally, from sediffx/Makefile.am
 
-SUBDIRS = libqpol libapol libsefs libpoldiff libseaudit secmds sechecker sediff man packages $(MAYBE_APOL) $(MAYBE_GUI)
+SUBDIRS = libqpol libapol libsefs libpoldiff libseaudit secmds sechecker sediff man packages debian $(MAYBE_APOL) $(MAYBE_GUI)
 
 #old indent opts
 #INDENT_OPTS = -npro -nbad -bap -sob -ss -l132 -di1 -nbc -br -nbbb -c40 -cd40 -ncdb -ce -cli0 -cp40 -ncs -d0 -nfc1 -nfca -i8 -ts8 -ci8 -lp -ip0 -npcs -npsl -sc
@@ -37,7 +37,7 @@ libsefs:
 libseaudit:
 	$(MAKE) -C $(top_srcdir)/libseaudit
 
-apol: libqpol libapol libsefs
+apol: libqpol libapol libsefs packages
 	$(MAKE) -C $(top_srcdir)/apol
 
 secmds: libqpol libapol libsefs
@@ -80,7 +80,8 @@ install-logwatch:
 .PHONY: libqpol libapol libpoldiff libsefs libseaudit \
 	apol secmds seaudit sediff sediffx sechecker \
 	install-logwatch help \
-	seinfo sesearch indexcon findcon replcon searchcon
+	seinfo sesearch indexcon findcon replcon searchcon \
+	packages
 
 seinfo: libqpol libapol
 	$(MAKE) -C $(top_srcdir)/secmds seinfo
@@ -100,11 +101,15 @@ replcon: libqpol libapol libsefs
 searchcon: libqpol libapol libsefs
 	$(MAKE) -C $(top_srcdir)/secmds searchcon
 
+packages:
+	$(MAKE) -C $(top_srcdir)/packages
+
 distclean-local:
 	-rm -r config.tcl
 
 indent:
-	find $(top_srcdir) -name '*.[ch]' -type f -exec indent $(C_INDENT_OPTS) '{}' \;
+	find $(top_srcdir) \( -wholename '*/packages/*' -prune \) , \
+		\( -name '*.[ch]' -type f -exec indent $(C_INDENT_OPTS) '{}' \; \)
 	find $(top_srcdir) -regex '.*\.\(cc\|hh\)' -type f -exec indent $(CXX_INDENT_OPTS) '{}' \;
 	find $(top_srcdir) -regex '.*\.\(cc\|hh\)' -type f -exec sed -i 's/\*>>/* > >/g' '{}' \;
 	find $(top_srcdir) -name '*.cc' -type f -exec sed -i 's/const \?const/const/g' '{}' \;

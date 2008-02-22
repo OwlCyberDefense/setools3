@@ -6,7 +6,7 @@
  *  @author Jason Tang jtang@tresys.com
  *  @author Brandon Whalen bwhalen@tresys.com
  *
- *  Copyright (C) 2006-2007 Tresys Technology, LLC
+ *  Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -395,6 +395,18 @@ static int infer_policy_version(qpol_policy_t * policy)
 	}
 	qpol_iterator_destroy(&iter);
 
+	/* 22 : there exists at least one policy capability */
+#ifdef HAVE_SEPOL_POLICYCAPS
+	ebitmap_node_t *node = NULL;
+	unsigned int i = 0;
+	ebitmap_for_each_bit(&db->policycaps, node, i) {
+		if (ebitmap_get_bit(&db->policycaps, i)) {
+			db->policyvers = 22;
+			return STATUS_SUCCESS;
+		}
+	}
+#endif
+
 	/* 21 : object classes other than process for range_transitions */
 	qpol_policy_get_range_trans_iter(policy, &iter);
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -408,6 +420,7 @@ static int infer_policy_version(qpol_policy_t * policy)
 		}
 	}
 	qpol_iterator_destroy(&iter);
+
 	/* 19 & 20 : mls and validatetrans statements added */
 	qpol_policy_get_validatetrans_iter(policy, &iter);
 	qpol_iterator_get_size(iter, &nvtrans);
@@ -415,22 +428,27 @@ static int infer_policy_version(qpol_policy_t * policy)
 	if (db->mls || nvtrans) {
 		db->policyvers = 19;
 	}
+
 	/* 18 : the netlink_audit_socket class added */
 	else if (hashtab_search(db->p_classes.table, (const hashtab_key_t)"netlink_audit_socket")) {
 		db->policyvers = 18;
 	}
+
 	/* 17 : IPv6 nodecon statements added */
 	else if (db->ocontexts[OCON_NODE6]) {
 		db->policyvers = 17;
 	}
+
 	/* 16 : conditional policy added */
 	else if (db->p_bool_val_to_name && db->p_bool_val_to_name[0]) {
 		db->policyvers = 16;
+
 	}
 	/* 15 */
 	else if (fsusexattr) {
 		db->policyvers = 15;
 	}
+
 	/* 12 */
 	else {
 		db->policyvers = 12;
@@ -1212,6 +1230,12 @@ int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e c
 	case QPOL_CAP_MODULES:
 	{
 		if (policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
+	case QPOL_CAP_POLCAPS:
+	{
+		if (version >= 22 && policy->type != QPOL_POLICY_MODULE_BINARY)
 			return 1;
 		break;
 	}

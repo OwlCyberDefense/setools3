@@ -58,9 +58,8 @@ static void policy_features_invalid_alias(void)
 	unsigned char isalias = 0;
 	const char *name;
 
-	int policy_type =
-		qpol_policy_open_from_file(NOT_BROKEN_ALIAS_POLICY, &qp, policy_features_alias_count,
-					   &policy_features_removed_aliases, QPOL_POLICY_OPTION_NO_RULES);
+	int policy_type = qpol_policy_open_from_file(NOT_BROKEN_ALIAS_POLICY, &qp, policy_features_alias_count,
+						     &policy_features_removed_aliases, QPOL_POLICY_OPTION_NO_RULES);
 	CU_ASSERT_FATAL(policy_type == QPOL_POLICY_KERNEL_BINARY);
 	CU_ASSERT(policy_features_removed_aliases == 0)
 
@@ -132,7 +131,7 @@ CU_TestInfo policy_features_tests[] = {
 	,
 	{"No genfscon", policy_features_nogenfscon_iter}
 	,
- CU_TEST_INFO_NULL
+	CU_TEST_INFO_NULL
 };
 
 int policy_features_init()

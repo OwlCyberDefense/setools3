@@ -4,7 +4,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006-2007 Tresys Technology, LLC
+ * Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -309,6 +309,7 @@ typedef struct qpol_module {} qpol_module_t;
 /* qpol_policy */
 #define QPOL_POLICY_OPTION_NO_NEVERALLOWS 0x00000001
 #define QPOL_POLICY_OPTION_NO_RULES       0x00000002
+#define QPOL_POLICY_OPTION_MATCH_SYSTEM   0x00000004
 typedef struct qpol_policy {} qpol_policy_t;
 typedef void (*qpol_callback_fn_t) (void *varg, struct qpol_policy * policy, int level, const char *fmt, va_list va_args);
 #define QPOL_POLICY_UNKNOWN       -1
