@@ -5,6 +5,7 @@ AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE([-Wno-portability])
 
 dnl *** update these variables as versions change; also update AC_INIT ***
+
 libqpol_soversion=1
 libqpol_version=1.3.2
 
@@ -13,9 +14,6 @@ libapol_version=4.1.2
 
 libpoldiff_soversion=1
 libpoldiff_version=1.3.1
-
-libpolsearch_soversion=1
-libpolsearch_version=1.0
 
 libsefs_soversion=4
 libsefs_version=4.0.2
@@ -293,14 +291,10 @@ if test ${build_apol} = "yes"; then
    else
       AC_MSG_ERROR([setools requires Tk 8.4 or greater])
    fi
+   TEA_PUBLIC_TK_HEADERS
+   TEA_PATH_X
+   TEA_PROG_WISH
 fi
-
-if test "x${enable_debug}" = xyes; then
-   TCL_AUTOPATH='$(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl $(top_builddir)/libsefs/swig/tcl $(top_builddir)/apol'
-else
-   TCL_AUTOPATH='$(libdir)/setools'
-fi
-AC_SUBST(TCL_AUTOPATH)
 
 AC_ARG_ENABLE(bwidget-check,
               AC_HELP_STRING([--disable-bwidget-check],
@@ -309,14 +303,22 @@ AC_ARG_ENABLE(bwidget-check,
               enable_bwidget="yes")
 if test ${build_apol} = "no"; then
     enable_bwidget=no
-fi
-if test "x${enable_bwidget}" = "xyes"; then
+else
     AC_MSG_CHECKING([for BWidget 1.7 or greater])
+fi
+
+TCL_AUTOPATH=''
+if test "x${enable_bwidget}" = "xyes"; then
+    # certain distributions do not properly set the auto_path to point
+    # to Tk, so try to detect it here
     changequote(<<<,>>>)dnl
-    cat > ./conftest.tcl <<EOF
+    (echo "if {[catch {package require Tk}]} {exit 1} ; exit 0" | ${TCLSH_PROG}) || \
+        TCL_AUTOPATH=$(find ${TK_EXEC_PREFIX}  -maxdepth 3 -name pkgIndex.tcl -path '*tk*' -printf %h)
+    echo "lappend auto_path ${TCL_AUTOPATH}" > ./conftest.tcl
+    cat >> ./conftest.tcl <<EOF
 if {[catch {package require Tk}]} {
-   puts stderr "Could not load Tk."
-   exit 1
+    puts stderr "Could not load Tk."
+    exit 1
 }
 if {![catch {package require BWidget} bwidget_version]} {
     if {[package vcompare \$bwidget_version 1.8] >= 0} {
@@ -357,9 +359,21 @@ EOF
         AC_SUBST(BWIDGET_DESTDIR)
     fi
 else
+    AC_MSG_RESULT([skipped, assuming 1.8+ is installed])
     copy_bwidget=no
     bwidget_ver=1.8
 fi
+
+if test "x${enable_debug}" = xyes; then
+   TCL_AUTOPATH+=' $(top_builddir)/libqpol/swig/tcl $(top_builddir)/libapol/swig/tcl $(top_builddir)/libsefs/swig/tcl $(top_builddir)/libpolsearch/swig/tcl $(top_builddir)/apol'
+   if test ${install_tkhtml} = yes; then
+      TCL_AUTOPATH+=' $(top_builddir)/packages/tkhtml3/htmlwidget'
+   fi
+else
+   TCL_AUTOPATH+=' $(libdir)/setools'
+fi
+AC_SUBST(TCL_AUTOPATH)
+
 
 dnl ** look for selinuxfs mount point
 

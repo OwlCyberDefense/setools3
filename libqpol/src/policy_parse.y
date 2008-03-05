@@ -64,9 +64,7 @@
  * when we have a parse error for a conditional rule.  We can't check 
  * for NULL (ie 0) because that is a potentially valid return.
  */
-static avrule_t *conditional_unused_error_code;
-#define COND_ERR (avrule_t *)&conditional_unused_error_code
-
+#define COND_ERR (avrule_t *)-1
 #define TRUE 1
 #define FALSE 0
 
@@ -81,7 +79,6 @@ static int load_rules;
 static unsigned int num_rules = 0;
 char *curfile = 0;
 int mlspol = 0;
-int handle_unknown = 0;
 
 extern unsigned long policydb_lineno;
 extern unsigned long source_lineno;
@@ -884,8 +881,6 @@ void yyerror2(char *fmt, ...)
 	va_end(ap);
 }
 
-#define DEBUG 1
-
 static int insert_separator(int push)
 {
 	int error;
@@ -1089,8 +1084,7 @@ static int define_initial_sid(void)
 
 	for (c = head; c; c = c->next) {
 		if (!strcmp(newc->u.name, c->u.name)) {
-			sprintf(errormsg, "duplicate initial SID %s", id);
-			yyerror(errormsg);
+			yyerror2("duplicate initial SID %s", id);
 			goto bad;
 		}
 	}
@@ -1133,9 +1127,7 @@ static int define_common_perms(void)
 	}
 	comdatum = hashtab_search(policydbp->p_commons.table, id);
 	if (comdatum) {
-		snprintf(errormsg, ERRORMSG_LEN,
-			 "duplicate declaration for common %s\n", id);
-		yyerror(errormsg);
+		yyerror2("duplicate declaration for common %s\n", id);
 		return -1;
 	}
 	comdatum = (common_datum_t *) malloc(sizeof(common_datum_t));
@@ -1180,10 +1172,8 @@ static int define_common_perms(void)
 				     (hashtab_datum_t) perdatum);
 
 		if (ret == SEPOL_EEXIST) {
-			sprintf(errormsg,
-				"duplicate permission %s in common %s", perm,
-				id);
-			yyerror(errormsg);
+			yyerror2("duplicate permission %s in common %s", perm,
+				 id);
 			goto bad_perm;
 		}
 		if (ret == SEPOL_ENOMEM) {
@@ -1232,8 +1222,7 @@ static int define_av_perms(int inherits)
 	cladatum = (class_datum_t *) hashtab_search(policydbp->p_classes.table,
 						    (hashtab_key_t) id);
 	if (!cladatum) {
-		sprintf(errormsg, "class %s is not defined", id);
-		yyerror(errormsg);
+		yyerror2("class %s is not defined", id);
 		goto bad;
 	}
 	free(id);
@@ -1259,8 +1248,7 @@ static int define_av_perms(int inherits)
 						      (hashtab_key_t) id);
 
 		if (!comdatum) {
-			sprintf(errormsg, "common %s is not defined", id);
-			yyerror(errormsg);
+			yyerror2("common %s is not defined", id);
 			goto bad;
 		}
 		cladatum->comkey = id;
@@ -1297,10 +1285,8 @@ static int define_av_perms(int inherits)
 							    permissions.table,
 							    (hashtab_key_t) id);
 			if (perdatum2) {
-				sprintf(errormsg,
-					"permission %s conflicts with an inherited permission",
-					id);
-				yyerror(errormsg);
+				yyerror2("permission %s conflicts with an "
+					 "inherited permission", id);
 				goto bad;
 			}
 		}
@@ -1309,8 +1295,7 @@ static int define_av_perms(int inherits)
 				     (hashtab_datum_t) perdatum);
 
 		if (ret == SEPOL_EEXIST) {
-			sprintf(errormsg, "duplicate permission %s", id);
-			yyerror(errormsg);
+			yyerror2("duplicate permission %s", id);
 			goto bad;
 		}
 		if (ret == SEPOL_ENOMEM) {
@@ -1488,18 +1473,14 @@ static int define_dominance(void)
 		    (level_datum_t *) hashtab_search(policydbp->p_levels.table,
 						     (hashtab_key_t) id);
 		if (!datum) {
-			sprintf(errormsg,
-				"unknown sensitivity %s used in dominance definition",
-				id);
-			yyerror(errormsg);
+			yyerror2("unknown sensitivity %s used in dominance "
+				 "definition", id);
 			free(id);
 			return -1;
 		}
 		if (datum->level->sens != 0) {
-			sprintf(errormsg,
-				"sensitivity %s occurs multiply in dominance definition",
-				id);
-			yyerror(errormsg);
+			yyerror2("sensitivity %s occurs multiply in dominance "
+				 "definition", id);
 			free(id);
 			return -1;
 		}
@@ -1684,17 +1665,13 @@ static int define_level(void)
 	levdatum = (level_datum_t *) hashtab_search(policydbp->p_levels.table,
 						    (hashtab_key_t) id);
 	if (!levdatum) {
-		sprintf(errormsg,
-			"unknown sensitivity %s used in level definition", id);
-		yyerror(errormsg);
+		yyerror2("unknown sensitivity %s used in level definition", id);
 		free(id);
 		return -1;
 	}
 	if (ebitmap_length(&levdatum->level->cat)) {
-		sprintf(errormsg,
-			"sensitivity %s used in multiple level definitions",
-			id);
-		yyerror(errormsg);
+		yyerror2("sensitivity %s used in multiple level definitions",
+			 id);
 		free(id);
 		return -1;
 	}
@@ -1718,9 +1695,7 @@ static int define_level(void)
 							   (hashtab_key_t)
 							   id_start);
 			if (!cdatum) {
-				sprintf(errormsg, "unknown category %s",
-					id_start);
-				yyerror(errormsg);
+				yyerror2("unknown category %s", id_start);
 				free(id);
 				return -1;
 			}
@@ -1731,17 +1706,14 @@ static int define_level(void)
 							   (hashtab_key_t)
 							   id_end);
 			if (!cdatum) {
-				sprintf(errormsg, "unknown category %s",
-					id_end);
-				yyerror(errormsg);
+				yyerror2("unknown category %s", id_end);
 				free(id);
 				return -1;
 			}
 			range_end = cdatum->s.value - 1;
 
 			if (range_end < range_start) {
-				sprintf(errormsg, "category range is invalid");
-				yyerror(errormsg);
+				yyerror2("category range is invalid");
 				free(id);
 				return -1;
 			}
@@ -1864,10 +1836,8 @@ static int define_typealias(void)
 	}
 	t = hashtab_search(policydbp->p_types.table, id);
 	if (!t || t->flavor == TYPE_ATTRIB) {
-		sprintf(errormsg,
-			"unknown type %s, or it was already declared as an attribute",
-			id);
-		yyerror(errormsg);
+		yyerror2("unknown type %s, or it was already declared as an "
+			 "attribute", id);
 		free(id);
 		return -1;
 	}
@@ -1899,8 +1869,7 @@ static int define_typeattribute(void)
 	}
 	t = hashtab_search(policydbp->p_types.table, id);
 	if (!t || t->flavor == TYPE_ATTRIB) {
-		sprintf(errormsg, "unknown type %s", id);
-		yyerror(errormsg);
+		yyerror2("unknown type %s", id);
 		free(id);
 		return -1;
 	}
@@ -1914,16 +1883,14 @@ static int define_typeattribute(void)
 		}
 		attr = hashtab_search(policydbp->p_types.table, id);
 		if (!attr) {
-			sprintf(errormsg, "attribute %s is not declared", id);
 			/* treat it as a fatal error */
-			yyerror(errormsg);
+			yyerror2("attribute %s is not declared", id);
 			free(id);
 			return -1;
 		}
 
 		if (attr->flavor != TYPE_ATTRIB) {
-			sprintf(errormsg, "%s is a type, not an attribute", id);
-			yyerror(errormsg);
+			yyerror2("%s is a type, not an attribute", id);
 			free(id);
 			return -1;
 		}
@@ -1976,18 +1943,15 @@ static int define_type(int alias)
 		}
 		attr = hashtab_search(policydbp->p_types.table, id);
 		if (!attr) {
-			sprintf(errormsg, "attribute %s is not declared", id);
-
 			/* treat it as a fatal error */
-			yyerror(errormsg);
+			yyerror2("attribute %s is not declared", id);
 			return -1;
 		} else {
 			newattr = 0;
 		}
 
 		if (attr->flavor != TYPE_ATTRIB) {
-			sprintf(errormsg, "%s is a type, not an attribute", id);
-			yyerror(errormsg);
+			yyerror2("%s is a type, not an attribute", id);
 			return -1;
 		}
 
@@ -2054,8 +2018,7 @@ static int set_types(type_set_t * set, char *id, int *add, char starallowed)
 	}
 	t = hashtab_search(policydbp->p_types.table, id);
 	if (!t) {
-		snprintf(errormsg, ERRORMSG_LEN, "unknown type %s", id);
-		yyerror(errormsg);
+		yyerror2("unknown type %s", id);
 		free(id);
 		return -1;
 	}
@@ -2115,8 +2078,7 @@ static int define_compute_type_helper(int which, avrule_t ** rule)
 		}
 		cladatum = hashtab_search(policydbp->p_classes.table, id);
 		if (!cladatum) {
-			sprintf(errormsg, "unknown class %s", id);
-			yyerror(errormsg);
+			yyerror2("unknown class %s", id);
 			goto bad;
 		}
 		if (ebitmap_set_bit(&tclasses, cladatum->s.value - 1, TRUE)) {
@@ -2139,8 +2101,7 @@ static int define_compute_type_helper(int which, avrule_t ** rule)
 	datum = (type_datum_t *) hashtab_search(policydbp->p_types.table,
 						(hashtab_key_t) id);
 	if (!datum || datum->flavor == TYPE_ATTRIB) {
-		sprintf(errormsg, "unknown type %s", id);
-		yyerror(errormsg);
+		yyerror2("unknown type %s", id);
 		goto bad;
 	}
 	free(id);
@@ -2384,8 +2345,7 @@ static int define_te_avtab_helper(int which, avrule_t ** rule)
 		}
 		cladatum = hashtab_search(policydbp->p_classes.table, id);
 		if (!cladatum) {
-			sprintf(errormsg, "unknown class %s used in rule", id);
-			yyerror(errormsg);
+			yyerror2("unknown class %s used in rule", id);
 			ret = -1;
 			goto out;
 		}
@@ -2449,19 +2409,17 @@ static int define_te_avtab_helper(int which, avrule_t ** rule)
 				}
 			}
 			if (!perdatum) {
-				sprintf(errormsg,
-					"permission %s is not defined for class %s",
-					id, policydbp->p_class_val_to_name[i]);
 				if (!suppress)
-					yyerror(errormsg);
+					yyerror2("permission %s is not defined"
+					     " for class %s", id,
+					     policydbp->p_class_val_to_name[i]);
 				continue;
 			} else
 			    if (!is_perm_in_scope
 				(id, policydbp->p_class_val_to_name[i])) {
 				if (!suppress) {
-					yyerror2
-					    ("permission %s of class %s is not within scope",
-					     id,
+					yyerror2("permission %s of class %s is"
+					     " not within scope", id,
 					     policydbp->p_class_val_to_name[i]);
 				}
 				continue;
@@ -2857,9 +2815,7 @@ static int define_role_trans(void)
 	}
 	role = hashtab_search(policydbp->p_roles.table, id);
 	if (!role) {
-		sprintf(errormsg,
-			"unknown role %s used in transition definition", id);
-		yyerror(errormsg);
+		yyerror2("unknown role %s used in transition definition", id);
 		goto bad;
 	}
 	free(id);
@@ -2880,12 +2836,9 @@ static int define_role_trans(void)
 
 			for (tr = policydbp->role_tr; tr; tr = tr->next) {
 				if (tr->role == (i + 1) && tr->type == (j + 1)) {
-					sprintf(errormsg,
-						"duplicate role transition for (%s,%s)",
-						role_val_to_name(i + 1),
-						policydbp->
-						p_type_val_to_name[j]);
-					yyerror(errormsg);
+					yyerror2("duplicate role transition for (%s,%s)",
+					      role_val_to_name(i + 1),
+					      policydbp->p_type_val_to_name[j]);
 					goto bad;
 				}
 			}
@@ -3072,9 +3025,8 @@ static int define_constraint(constraint_expr_t * expr)
 		    (class_datum_t *) hashtab_search(policydbp->p_classes.table,
 						     (hashtab_key_t) id);
 		if (!cladatum) {
-			sprintf(errormsg, "class %s is not defined", id);
+			yyerror2("class %s is not defined", id);
 			ebitmap_destroy(&classmap);
-			yyerror(errormsg);
 			free(id);
 			return -1;
 		}
@@ -3132,10 +3084,8 @@ static int define_constraint(constraint_expr_t * expr)
 								   id);
 					}
 					if (!perdatum) {
-						sprintf(errormsg,
-							"permission %s is not defined",
-							id);
-						yyerror(errormsg);
+						yyerror2("permission %s is not"
+							 " defined", id);
 						free(id);
 						ebitmap_destroy(&classmap);
 						return -1;
@@ -3223,9 +3173,8 @@ static int define_validatetrans(constraint_expr_t * expr)
 		    (class_datum_t *) hashtab_search(policydbp->p_classes.table,
 						     (hashtab_key_t) id);
 		if (!cladatum) {
-			sprintf(errormsg, "class %s is not defined", id);
+			yyerror2("class %s is not defined", id);
 			ebitmap_destroy(&classmap);
-			yyerror(errormsg);
 			free(id);
 			return -1;
 		}
@@ -3355,9 +3304,7 @@ define_cexpr(uint32_t expr_type, uintptr_t arg1, uintptr_t arg2)
 								    (hashtab_key_t)
 								    id);
 				if (!user) {
-					sprintf(errormsg, "unknown user %s",
-						id);
-					yyerror(errormsg);
+					yyerror2("unknown user %s", id);
 					constraint_expr_destroy(expr);
 					return 0;
 				}
@@ -3376,9 +3323,7 @@ define_cexpr(uint32_t expr_type, uintptr_t arg1, uintptr_t arg2)
 								    (hashtab_key_t)
 								    id);
 				if (!role) {
-					sprintf(errormsg, "unknown role %s",
-						id);
-					yyerror(errormsg);
+					yyerror2("unknown role %s", id);
 					constraint_expr_destroy(expr);
 					return 0;
 				}
@@ -3693,10 +3638,8 @@ static cond_expr_t *define_cond_expr(uint32_t expr_type, void *arg1, void *arg2)
 							 table,
 							 (hashtab_key_t) id);
 		if (!bool_var) {
-			sprintf(errormsg,
-				"unknown boolean %s in conditional expression",
-				id);
-			yyerror(errormsg);
+			yyerror2("unknown boolean %s in conditional expression",
+				 id);
 			free(expr);
 			free(id);
 			return NULL;
@@ -3735,8 +3678,7 @@ static int set_user_roles(role_set_t * set, char *id)
 	}
 	r = hashtab_search(policydbp->p_roles.table, id);
 	if (!r) {
-		sprintf(errormsg, "unknown role %s", id);
-		yyerror(errormsg);
+		yyerror2("unknown role %s", id);
 		free(id);
 		return -1;
 	}
@@ -3770,31 +3712,27 @@ parse_categories(char *id, level_datum_t * levdatum, ebitmap_t * cats)
 							(hashtab_key_t)
 							id_start);
 		if (!cdatum) {
-			sprintf(errormsg, "unknown category %s", id_start);
-			yyerror(errormsg);
+			yyerror2("unknown category %s", id_start);
 			return -1;
 		}
 		range_start = cdatum->s.value - 1;
 		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
 							(hashtab_key_t) id_end);
 		if (!cdatum) {
-			sprintf(errormsg, "unknown category %s", id_end);
-			yyerror(errormsg);
+			yyerror2("unknown category %s", id_end);
 			return -1;
 		}
 		range_end = cdatum->s.value - 1;
 
 		if (range_end < range_start) {
-			sprintf(errormsg, "category range is invalid");
-			yyerror(errormsg);
+			yyerror2("category range is invalid");
 			return -1;
 		}
 	} else {
 		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
 							(hashtab_key_t) id);
 		if (!cdatum) {
-			sprintf(errormsg, "unknown category %s", id);
-			yyerror(errormsg);
+			yyerror2("unknown category %s", id);
 			return -1;
 		}
 		range_start = range_end = cdatum->s.value - 1;
@@ -3804,11 +3742,10 @@ parse_categories(char *id, level_datum_t * levdatum, ebitmap_t * cats)
 		if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
 			uint32_t level_value = levdatum->level->sens - 1;
 			policydb_index_others(NULL, policydbp, 0);
-			sprintf(errormsg, "category %s can not be associated "
-				"with level %s",
-				policydbp->p_cat_val_to_name[i],
-				policydbp->p_sens_val_to_name[level_value]);
-			yyerror(errormsg);
+			yyerror2("category %s can not be associated "
+				 "with level %s",
+				 policydbp->p_cat_val_to_name[i],
+				 policydbp->p_sens_val_to_name[level_value]);
 			return -1;
 		}
 		if (ebitmap_set_bit(cats, i, TRUE)) {
@@ -3838,8 +3775,7 @@ parse_semantic_categories(char *id, level_datum_t * levdatum,
 							(hashtab_key_t)
 							id_start);
 		if (!cdatum) {
-			sprintf(errormsg, "unknown category %s", id_start);
-			yyerror(errormsg);
+			yyerror2("unknown category %s", id_start);
 			return -1;
 		}
 		range_start = cdatum->s.value;
@@ -3847,8 +3783,7 @@ parse_semantic_categories(char *id, level_datum_t * levdatum,
 		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
 							(hashtab_key_t) id_end);
 		if (!cdatum) {
-			sprintf(errormsg, "unknown category %s", id_end);
-			yyerror(errormsg);
+			yyerror2("unknown category %s", id_end);
 			return -1;
 		}
 		range_end = cdatum->s.value;
@@ -3856,8 +3791,7 @@ parse_semantic_categories(char *id, level_datum_t * levdatum,
 		cdatum = (cat_datum_t *) hashtab_search(policydbp->p_cats.table,
 							(hashtab_key_t) id);
 		if (!cdatum) {
-			sprintf(errormsg, "unknown category %s", id);
-			yyerror(errormsg);
+			yyerror2("unknown category %s", id);
 			return -1;
 		}
 		range_start = range_end = cdatum->s.value;
@@ -3927,9 +3861,8 @@ static int define_user(void)
 		    hashtab_search(policydbp->p_levels.table,
 				   (hashtab_key_t) id);
 		if (!levdatum) {
-			sprintf(errormsg, "unknown sensitivity %s used in user"
-				" level definition", id);
-			yyerror(errormsg);
+			yyerror2("unknown sensitivity %s used in user"
+				 " level definition", id);
 			free(id);
 			return -1;
 		}
@@ -3953,10 +3886,8 @@ static int define_user(void)
 			    hashtab_search(policydbp->p_levels.table,
 					   (hashtab_key_t) id);
 			if (!levdatum) {
-				sprintf(errormsg,
-					"unknown sensitivity %s used in user range definition",
-					id);
-				yyerror(errormsg);
+				yyerror2("unknown sensitivity %s used in user"
+					 " range definition", id);
 				free(id);
 				return -1;
 			}
@@ -4037,8 +3968,7 @@ static int parse_security_context(context_struct_t * c)
 	usrdatum = (user_datum_t *) hashtab_search(policydbp->p_users.table,
 						   (hashtab_key_t) id);
 	if (!usrdatum) {
-		sprintf(errormsg, "user %s is not defined", id);
-		yyerror(errormsg);
+		yyerror2("user %s is not defined", id);
 		free(id);
 		goto bad;
 	}
@@ -4061,8 +3991,7 @@ static int parse_security_context(context_struct_t * c)
 	role = (role_datum_t *) hashtab_search(policydbp->p_roles.table,
 					       (hashtab_key_t) id);
 	if (!role) {
-		sprintf(errormsg, "role %s is not defined", id);
-		yyerror(errormsg);
+		yyerror2("role %s is not defined", id);
 		free(id);
 		return -1;
 	}
@@ -4085,9 +4014,7 @@ static int parse_security_context(context_struct_t * c)
 	typdatum = (type_datum_t *) hashtab_search(policydbp->p_types.table,
 						   (hashtab_key_t) id);
 	if (!typdatum || typdatum->flavor == TYPE_ATTRIB) {
-		sprintf(errormsg, "type %s is not defined or is an attribute",
-			id);
-		yyerror(errormsg);
+		yyerror2("type %s is not defined or is an attribute", id);
 		free(id);
 		return -1;
 	}
@@ -4111,9 +4038,7 @@ static int parse_security_context(context_struct_t * c)
 			    hashtab_search(policydbp->p_levels.table,
 					   (hashtab_key_t) id);
 			if (!levdatum) {
-				sprintf(errormsg, "Sensitivity %s is not "
-					"defined", id);
-				yyerror(errormsg);
+				yyerror2("Sensitivity %s is not defined", id);
 				free(id);
 				return -1;
 			}
@@ -4183,15 +4108,12 @@ static int define_initial_sid_context(void)
 	}
 
 	if (!c) {
-		sprintf(errormsg, "SID %s is not defined", id);
-		yyerror(errormsg);
+		yyerror2("SID %s is not defined", id);
 		free(id);
 		return -1;
 	}
 	if (c->context[0].user) {
-		sprintf(errormsg, "The context for SID %s is multiply defined",
-			id);
-		yyerror(errormsg);
+		yyerror2("The context for SID %s is multiply defined", id);
 		free(id);
 		return -1;
 	}
@@ -4244,9 +4166,8 @@ static int define_fs_context(unsigned int major, unsigned int minor)
 
 	for (c = head; c; c = c->next) {
 		if (!strcmp(newc->u.name, c->u.name)) {
-			sprintf(errormsg, "duplicate entry for file system %s",
-				newc->u.name);
-			yyerror(errormsg);
+			yyerror2("duplicate entry for file system %s",
+				 newc->u.name);
 			context_destroy(&newc->context[0]);
 			context_destroy(&newc->context[1]);
 			free(newc->u.name);
@@ -4291,8 +4212,7 @@ static int define_port_context(unsigned int low, unsigned int high)
 	} else if ((strcmp(id, "udp") == 0) || (strcmp(id, "UDP") == 0)) {
 		protocol = IPPROTO_UDP;
 	} else {
-		sprintf(errormsg, "unrecognized protocol %s", id);
-		yyerror(errormsg);
+		yyerror2("unrecognized protocol %s", id);
 		free(newc);
 		return -1;
 	}
@@ -4302,9 +4222,7 @@ static int define_port_context(unsigned int low, unsigned int high)
 	newc->u.port.high_port = high;
 
 	if (low > high) {
-		sprintf(errormsg, "low port %d exceeds high port %d", low,
-			high);
-		yyerror(errormsg);
+		yyerror2("low port %d exceeds high port %d", low, high);
 		free(newc);
 		return -1;
 	}
@@ -4325,15 +4243,13 @@ static int define_port_context(unsigned int low, unsigned int high)
 		if (protocol != prot2)
 			continue;
 		if (low == low2 && high == high2) {
-			sprintf(errormsg,
-				"duplicate portcon entry for %s %d-%d ", id,
-				low, high);
+			yyerror2("duplicate portcon entry for %s %d-%d ", id,
+				 low, high);
 			goto bad;
 		}
 		if (low2 <= low && high2 >= high) {
-			sprintf(errormsg,
-				"portcon entry for %s %d-%d hidden by earlier entry for %d-%d",
-				id, low, high, low2, high2);
+			yyerror2("portcon entry for %s %d-%d hidden by earlier "
+				 "entry for %d-%d", id, low, high, low2, high2);
 			goto bad;
 		}
 	}
@@ -4347,7 +4263,6 @@ static int define_port_context(unsigned int low, unsigned int high)
 	return 0;
 
       bad:
-	yyerror(errormsg);
 	free(newc);
 	return -1;
 }
@@ -4390,10 +4305,8 @@ static int define_netif_context(void)
 
 	for (c = head; c; c = c->next) {
 		if (!strcmp(newc->u.name, c->u.name)) {
-			sprintf(errormsg,
-				"duplicate entry for network interface %s",
-				newc->u.name);
-			yyerror(errormsg);
+			yyerror2("duplicate entry for network interface %s",
+				 newc->u.name);
 			context_destroy(&newc->context[0]);
 			context_destroy(&newc->context[1]);
 			free(newc->u.name);
@@ -4608,10 +4521,8 @@ static int define_fs_use(int behavior)
 
 	for (c = head; c; c = c->next) {
 		if (!strcmp(newc->u.name, c->u.name)) {
-			sprintf(errormsg,
-				"duplicate fs_use entry for filesystem type %s",
-				newc->u.name);
-			yyerror(errormsg);
+			yyerror2("duplicate fs_use entry for filesystem type %s",
+				 newc->u.name);
 			context_destroy(&newc->context[0]);
 			free(newc->u.name);
 			free(newc);
@@ -4679,8 +4590,7 @@ static int define_genfs_context_helper(char *fstype, int has_type)
 		if (!type)
 			goto fail;
 		if (type[1] != 0) {
-			sprintf(errormsg, "invalid type %s", type);
-			yyerror(errormsg);
+			yyerror2("invalid type %s", type);
 			goto fail;
 		}
 		switch (type[0]) {
@@ -4706,8 +4616,7 @@ static int define_genfs_context_helper(char *fstype, int has_type)
 			newc->v.sclass = SECCLASS_FILE;
 			break;
 		default:
-			sprintf(errormsg, "invalid type %s", type);
-			yyerror(errormsg);
+			yyerror2("invalid type %s", type);
 			goto fail;
 		}
 	}
@@ -4722,10 +4631,8 @@ static int define_genfs_context_helper(char *fstype, int has_type)
 		if (!strcmp(newc->u.name, c->u.name) &&
 		    (!newc->v.sclass || !c->v.sclass
 		     || newc->v.sclass == c->v.sclass)) {
-			sprintf(errormsg,
-				"duplicate entry for genfs entry (%s, %s)",
-				fstype, newc->u.name);
-			yyerror(errormsg);
+			yyerror2("duplicate entry for genfs entry (%s, %s)",
+				 fstype, newc->u.name);
 			goto fail;
 		}
 		len = strlen(newc->u.name);
@@ -4819,8 +4726,7 @@ static int define_range_trans(int class_specified)
 			cladatum = hashtab_search(policydbp->p_classes.table,
 			                          id);
 			if (!cladatum) {
-				sprintf(errormsg, "unknown class %s", id);
-				yyerror(errormsg);
+				yyerror2("unknown class %s", id);
 				goto out;
 			}
 
@@ -4832,9 +4738,8 @@ static int define_range_trans(int class_specified)
 		cladatum = hashtab_search(policydbp->p_classes.table,
 		                          "process");
 		if (!cladatum) {
-			sprintf(errormsg, "could not find process class for "
-			        "legacy range_transition statement\n");
-			yyerror(errormsg);
+			yyerror2("could not find process class for "
+			         "legacy range_transition statement");
 			goto out;
 		}
 
@@ -4849,10 +4754,8 @@ static int define_range_trans(int class_specified)
 	for (l = 0; l < 2; l++) {
 		levdatum = hashtab_search(policydbp->p_levels.table, id);
 		if (!levdatum) {
-			sprintf(errormsg,
-				"unknown level %s used in range_transition "
-			        "definition", id);
-			yyerror(errormsg);
+			yyerror2("unknown level %s used in range_transition "
+			         "definition", id);
 			free(id);
 			goto out;
 		}

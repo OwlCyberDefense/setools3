@@ -1,3 +1,17 @@
+2008-03-05  J. Tang  <jtang@tresys.com>
+
+	* Fixes to libapol and libqpol to allow SETools to compile under
+	gcc/g++ 4.3.
+
+	* Added autodetection of Tk, needed for Tk 8.5.
+
+	* Synced libqpol to policy parser to 2.0.13.
+
+2008-02-29  J. Tang  <jtang@tresys.com>
+
+	* Synced libqpol to libsepol version 2.0.23, policy parser to
+	2.0.10.
+
 2008-02-21  J. Tang  <jtang@tresys.com>
 
 	* This is the official release of SETools 3.3.3.
