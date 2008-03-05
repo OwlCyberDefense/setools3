@@ -107,8 +107,6 @@ init.tcl: Makefile
 	@echo "    package require apol @libapol_version@" >> $@
 	@echo "    print_init \"done.\nInitializing libsefs... \"" >> $@
 	@echo "    package require sefs @libsefs_version@" >> $@
-	@echo "    print_init \"done.\nInitializing libpolsearch... \"" >> $@
-	@echo "    package require polsearch @libpolsearch_version@" >> $@
 	@echo "    print_init \"done.\nInitializing libapol_tcl... \"" >> $@
 	@echo "    package require apol_tcl @libapol_version@" >> $@
 	@echo "    print_init \"done.\nInitializing Tk... \"" >> $@
