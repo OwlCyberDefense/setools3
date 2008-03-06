@@ -14,7 +14,7 @@ DEB_DH_INSTALL_SOURCEDIR = $(CURDIR)/debian/tmp
 install/libsetools-jni::
 	mkdir -p $(CURDIR)/debian/tmp/usr/lib/jni
 	for i in libjapol libjpoldiff libjqpol libjseaudit libjsefs; do \
-		mv $(CURDIR)/debian/tmp/usr/lib/$${i}* $(CURDIR)/debian/tmp/usr/lib/jni; \
+		mv $(CURDIR)/debian/tmp/usr/lib/$${i}* $(CURDIR)/debian/tmp/usr/lib/jni \
 	done
 
 install/python-setools::
