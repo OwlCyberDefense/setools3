@@ -140,3 +140,45 @@ Description: Collection of console tools for SELinux policy analysis
   * secmds          command line tools: seinfo, sesearch, findcon,
                       replcon, and indexcon
   * sediff          semantic policy difference tool
+
+Package: libapol1
+Architecture: all
+Depends: libsetools
+Description: transitional package to smooth renaming to libsetools
+ This package installs libsetools, and can be safely removed
+ afterwards.
+
+Package: libseaudit1
+Architecture: all
+Depends: libsetools
+Description: transitional package to smooth renaming to libsetools
+ This package installs libsetools, and can be safely removed
+ afterwards.
+
+Package: libsefs1
+Architecture: all
+Depends: libsetools
+Description: transitional package to smooth renaming to libsetools
+ This package installs libsetools, and can be safely removed
+ afterwards.
+
+Package: libapol-dev
+Architecture: all
+Depends: libsetools-dev
+Description: transitional package to smooth renaming to libsetools-dev
+ This package installs libsetools-dev, and can be safely removed
+ afterwards.
+
+Package: libseaudit-dev
+Architecture: all
+Depends: libsetools-dev
+Description: transitional package to smooth renaming to libsetools-dev
+ This package installs libsetools-dev, and can be safely removed
+ afterwards.
+
+Package: libsefs-dev
+Architecture: all
+Depends: libsetools-dev
+Description: transitional package to smooth renaming to libsetools-dev
+ This package installs libsetools-dev, and can be safely removed
+ afterwards.

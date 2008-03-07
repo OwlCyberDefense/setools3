@@ -33,6 +33,7 @@ Requires: setools-libs = %{version}-%{release} setools-libs-tcl = %{version}-%{r
 %define setools_desktop2 packages/rpm/seaudit.desktop
 %define setools_desktop3 packages/rpm/sediffx.desktop
 
+Patch0: fc9-compile.patch
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
@@ -187,6 +188,9 @@ This package includes the following graphical tools:
 
 %prep
 %setup -q -n setools-%{setools_maj_ver}.%{setools_min_ver}
+%if %{fc9}
+%patch0 -p0
+%endif
 
 %build
 %configure --libdir=%{_libdir} --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java --enable-swig-tcl
@@ -339,6 +343,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun libs-tcl -p /sbin/ldconfig
 
 %changelog
+* Fri Mar 7 2008 Jason Tang <selinux@tresys.com> 3.3.4-0
+- Update to SETools 3.3.4 release.
+
 * Thu Feb 21 2008 Jason Tang <selinux@tresys.com> 3.3.3-0
 - Update to SETools 3.3.3 release.
 

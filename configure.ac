@@ -7,10 +7,10 @@ AM_INIT_AUTOMAKE([-Wno-portability])
 dnl *** update these variables as versions change; also update AC_INIT ***
 
 libqpol_soversion=1
-libqpol_version=1.3.2
+libqpol_version=1.3.3
 
 libapol_soversion=4
-libapol_version=4.1.2
+libapol_version=4.1.3
 
 libpoldiff_soversion=1
 libpoldiff_version=1.3.1

@@ -1,3 +1,14 @@
+2008-03-07  J. Tang  <jtang@tresys.com>
+
+	* This is the official release of SETools 3.3.4.
+
+	* debian/control: Added transitional packages for libapol1,
+	libseaudit1, libsefs1, and their associated development package.
+
+	* packages/rpm/fc9-compile.diff: Added a patch to allow building
+	of SETools on Fedora 9, due to possible buggy gcc/glibc-header
+	interaction in libseaudit/swig/python.
+
 2008-03-05  J. Tang  <jtang@tresys.com>
 
 	* Fixes to libapol and libqpol to allow SETools to compile under
