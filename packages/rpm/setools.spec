@@ -210,7 +210,6 @@ install -p -m 644 apol/apol.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/apol.png
 install -p -m 644 seaudit/seaudit.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/seaudit.png
 install -p -m 644 sediff/sediffx.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/sediffx.png
 desktop-file-install --vendor=Tresys --dir ${RPM_BUILD_ROOT}%{_datadir}/applications %{setools_desktop1} %{setools_desktop2} %{setools_desktop3}
-ln -sf consolehelper ${RPM_BUILD_ROOT}/%{_bindir}/seaudit
 # replace absolute symlinks with relative symlinks
 ln -sf ../setools-%{setools_maj_ver}/qpol.jar ${RPM_BUILD_ROOT}/%{javajardir}/qpol.jar
 ln -sf ../setools-%{setools_maj_ver}/apol.jar ${RPM_BUILD_ROOT}/%{javajardir}/apol.jar
@@ -223,7 +222,10 @@ rm -f ${RPM_BUILD_ROOT}/%{_libdir}/*.a
 chmod 0755 ${RPM_BUILD_ROOT}/%{_libdir}/*.so.*
 chmod 0755 ${RPM_BUILD_ROOT}/%{_libdir}/%{name}/*/*.so.*
 chmod 0755 ${RPM_BUILD_ROOT}/%{pkg_py_arch}/*.so.*
+# coreutils version >= 6 changed chmod such that it generates an error if
+# the linked-to file does not exist, so the following order is important.
 chmod 0755 ${RPM_BUILD_ROOT}/%{_bindir}/*
+ln -sf consolehelper ${RPM_BUILD_ROOT}/%{_bindir}/seaudit
 chmod 0755 ${RPM_BUILD_ROOT}/%{_sbindir}/*
 chmod 0755 ${RPM_BUILD_ROOT}/%{setoolsdir}/seaudit-report-service
 chmod 0644 ${RPM_BUILD_ROOT}/%{tcllibdir}/*/pkgIndex.tcl
