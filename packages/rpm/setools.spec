@@ -188,9 +188,9 @@ This package includes the following graphical tools:
 
 %prep
 %setup -q -n setools-%{setools_maj_ver}.%{setools_min_ver}
-%if %{fc9}
+if test ! -z %{?fc9: 1}; then
 %patch0 -p0
-%endif
+fi
 
 %build
 %configure --libdir=%{_libdir} --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java --enable-swig-tcl
