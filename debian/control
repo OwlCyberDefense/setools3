@@ -3,7 +3,7 @@ Priority: optional
 Maintainer: Ubuntu Hardened Developers <ubuntu-hardened@lists.ubuntu.com>
 XSBC-Original-Maintainer: J. Tang <jtang@tresys.com>
 Build-Depends: cdbs, debhelper (>= 5), autotools-dev, pkg-config,
- g++ (>= 4.0), libstdc++-dev,flex, bison,
+ g++ (>= 4.0), libstdc++-dev, autoconf (>= 2.59), libtool, flex, bison,
  libselinux1-dev (>= 1.30), libsepol1-dev (>= 1.13),
  libxml2-dev, libsqlite3-dev (>= 3.2),
  swig (>= 1.3.28), python-dev (>= 2.3), python-central, java-gcj-compat-dev,
