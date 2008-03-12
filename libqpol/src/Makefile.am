@@ -31,17 +31,16 @@ libqpol_a_SOURCES = \
 	mls_query.c \
 	mlsrule_query.c \
 	module.c \
-	module_compiler.c \
-	module_compiler.h \
+	module_compiler.c module_compiler.h \
 	netifcon_query.c \
 	nodecon_query.c \
 	policy.c \
+	policy_define.c policy_define.h \
 	policy_extend.c \
 	policy_parse.h \
 	portcon_query.c \
 	qpol_internal.h \
-	queue.c \
-	queue.h \
+	queue.c queue.h \
 	rbacrule_query.c \
 	role_query.c \
 	syn_rule_internal.h \

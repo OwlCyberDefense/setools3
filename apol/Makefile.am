@@ -101,14 +101,17 @@ init.tcl: Makefile
 	@echo "proc tcl_config_init_libraries {} {" > $@
 	@echo "    global auto_path" >> $@
 	@echo "    lappend auto_path $(TCL_AUTOPATH)" >> $@
-	@echo "    puts \"Initializing libqpol.\"" >> $@
-	@echo "    package require qpol" >> $@
-	@echo "    puts \"Initializing libapol.\"" >> $@
-	@echo "    package require apol" >> $@
-	@echo "    puts \"Initializing libsefs.\"" >> $@
-	@echo "    package require sefs" >> $@
-	@echo "    puts \"Initializing libapol_tcl.\"" >> $@
-	@echo "    package require apol_tcl" >> $@
+	@echo "    print_init \"Initializing libqpol... \"" >> $@
+	@echo "    package require qpol @libqpol_version@" >> $@
+	@echo "    print_init \"done.\nInitializing libapol... \"" >> $@
+	@echo "    package require apol @libapol_version@" >> $@
+	@echo "    print_init \"done.\nInitializing libsefs... \"" >> $@
+	@echo "    package require sefs @libsefs_version@" >> $@
+	@echo "    print_init \"done.\nInitializing libapol_tcl... \"" >> $@
+	@echo "    package require apol_tcl @libapol_version@" >> $@
+	@echo "    print_init \"done.\nInitializing Tk... \"" >> $@
+	@echo "    package require Tk" >> $@
+	@echo "    print_init \"done.\n\"" >> $@
 	@echo "}" >> $@
 	@echo "proc tcl_config_get_install_dir {} {" >> $@
 	@echo "    return \"${setoolsdir}\"" >> $@
