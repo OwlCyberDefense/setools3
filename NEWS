@@ -1,3 +1,16 @@
+SETools 3.3.4:
+
+This release builds upon SETools 3.3.3:
+
+  * Update to policy loader to match checkpolicy 2.0.13 and libsepol
+    2.0.23.
+
+  * Fixes to apol for proper handling of Tk 8.5.
+
+  * Fixes to libapol, libqpol, and sechecker to build using GCC 4.3.
+
+==================================================
+
 SETools 3.3.3:
 
 This release builds upon SETools 3.3.2:

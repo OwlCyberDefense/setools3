@@ -1,0 +1,13 @@
+Index: libseaudit/swig/python/Makefile.am
+===================================================================
+--- libseaudit/swig/python/Makefile.am	(revision 4788)
++++ libseaudit/swig/python/Makefile.am	(working copy)
+@@ -23,7 +23,7 @@
+ 	-I$(top_srcdir)/libqpol/swig -I$(top_srcdir)/libapol/swig $<
+ 
+ $(wrappedso_DATA): $(BUILT_SOURCES)
+-	$(CC) -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
++	$(CC) -std=gnu89 -shared -o $@ $^ $(AM_CFLAGS) $(CFLAGS) $(SWIG_PYTHON_CPPFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(wrappedso_SONAME)
+ 	$(LN_S) -f $@ $(wrappedso_SONAME)
+ 	$(LN_S) -f $@ _seaudit.so
+ 
