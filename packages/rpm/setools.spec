@@ -1,5 +1,5 @@
 %define setools_maj_ver 3.3
-%define setools_min_ver 3
+%define setools_min_ver 4
 %define setools_release 0
 %{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
@@ -33,6 +33,7 @@ Requires: setools-libs = %{version}-%{release} setools-libs-tcl = %{version}-%{r
 %define setools_desktop2 packages/rpm/seaudit.desktop
 %define setools_desktop3 packages/rpm/sediffx.desktop
 
+Patch0: fc9-compile.patch
 
 %description
 SETools is a collection of graphical tools, command-line tools, and
@@ -187,6 +188,9 @@ This package includes the following graphical tools:
 
 %prep
 %setup -q -n setools-%{setools_maj_ver}.%{setools_min_ver}
+if test ! -z %{?fc9: 1}; then
+%patch0 -p0
+fi
 
 %build
 %configure --libdir=%{_libdir} --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java --enable-swig-tcl
@@ -206,7 +210,6 @@ install -p -m 644 apol/apol.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/apol.png
 install -p -m 644 seaudit/seaudit.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/seaudit.png
 install -p -m 644 sediff/sediffx.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/sediffx.png
 desktop-file-install --vendor=Tresys --dir ${RPM_BUILD_ROOT}%{_datadir}/applications %{setools_desktop1} %{setools_desktop2} %{setools_desktop3}
-ln -sf consolehelper ${RPM_BUILD_ROOT}/%{_bindir}/seaudit
 # replace absolute symlinks with relative symlinks
 ln -sf ../setools-%{setools_maj_ver}/qpol.jar ${RPM_BUILD_ROOT}/%{javajardir}/qpol.jar
 ln -sf ../setools-%{setools_maj_ver}/apol.jar ${RPM_BUILD_ROOT}/%{javajardir}/apol.jar
@@ -219,7 +222,10 @@ rm -f ${RPM_BUILD_ROOT}/%{_libdir}/*.a
 chmod 0755 ${RPM_BUILD_ROOT}/%{_libdir}/*.so.*
 chmod 0755 ${RPM_BUILD_ROOT}/%{_libdir}/%{name}/*/*.so.*
 chmod 0755 ${RPM_BUILD_ROOT}/%{pkg_py_arch}/*.so.*
+# coreutils version >= 6 changed chmod such that it generates an error if
+# the linked-to file does not exist, so the following order is important.
 chmod 0755 ${RPM_BUILD_ROOT}/%{_bindir}/*
+ln -sf consolehelper ${RPM_BUILD_ROOT}/%{_bindir}/seaudit
 chmod 0755 ${RPM_BUILD_ROOT}/%{_sbindir}/*
 chmod 0755 ${RPM_BUILD_ROOT}/%{setoolsdir}/seaudit-report-service
 chmod 0644 ${RPM_BUILD_ROOT}/%{tcllibdir}/*/pkgIndex.tcl
@@ -339,6 +345,9 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun libs-tcl -p /sbin/ldconfig
 
 %changelog
+* Fri Mar 7 2008 Jason Tang <selinux@tresys.com> 3.3.4-0
+- Update to SETools 3.3.4 release.
+
 * Thu Feb 21 2008 Jason Tang <selinux@tresys.com> 3.3.3-0
 - Update to SETools 3.3.3 release.
 

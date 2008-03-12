@@ -229,28 +229,29 @@ proc ApolTop::showPolicySourceLineNumber {line} {
 
 proc ApolTop::_create_toplevel {} {
     set menus {
-	"&File" {} file 0 {
-	    {command "&Open..." {} "Open a new policy" {Ctrl o} -command ApolTop::_open_policy}
-	    {command "&Close" {tag_policy_open} "Close current polocy" {Ctrl w} -command ApolTop::_close_policy}
-	    {separator}
-	    {cascade "&Recent Files" {} recent 0 {}}
-	    {separator}
+        "&File" {} file 0 {
+            {command "&Open..." {} "Open a new policy" {Ctrl o} -command ApolTop::_open_policy}
+            {command "&Close" {tag_policy_open} "Close current polocy" {Ctrl w} -command ApolTop::_close_policy}
+            {separator}
+            {cascade "&Recent Files" {} recent 0 {}}
+            {separator}
             {command "&Quit" {} "Quit policy analysis tool" {Ctrl q} -command ApolTop::_exit}
-	}
-	"&Edit" {} edit 0 {
+        }
+        "&Edit" {} edit 0 {
             {command "&Copy" {tag_policy_open} {} {Ctrl c} -command ApolTop::_copy}
             {command "Select &All" {tag_policy_open} {} {Ctrl a} -command ApolTop::_select_all}
             {separator}
-	    {command "&Find..." {tag_policy_open} "Find text in current buffer" {Ctrl f} -command ApolTop::_find}
-	    {command "&Goto Line..." {tag_policy_open} "Goto a line in current buffer" {Ctrl g} -command ApolTop::_goto}
-	}
-	"&Query" {} query 0 {
-	    {command "&Open Query..." {tag_policy_open} "Open query criteria file" {} -command ApolTop::_open_query_file}
-	    {command "&Save Query..." {tag_policy_open tag_query_saveable} "Save current query criteria to file" {} -command ApolTop::_save_query_file}
-	    {separator}
-	    {command "&Policy Summary" {tag_policy_open} "Display summary statistics" {} -command ApolTop::_show_policy_summary}
-	}
-	"&Tools" {} tools 0 {
+            {command "&Find..." {tag_policy_open} "Find text in current buffer" {Ctrl f} -command Apol_Find::find}
+            {command "&Goto Line..." {tag_policy_open} "Goto a line in current buffer" {Ctrl g} -command Apol_Goto::goto}
+            {separator}
+        }
+        "&Query" {} query 0 {
+            {command "&Open Query..." {tag_policy_open} "Open query criteria file" {} -command ApolTop::_open_query_file}
+            {command "&Save Query..." {tag_policy_open tag_query_saveable} "Save current query criteria to file" {} -command ApolTop::_save_query_file}
+            {separator}
+            {command "&Policy Summary" {tag_policy_open} "Display summary statistics" {} -command ApolTop::_show_policy_summary}
+        }
+        "&Tools" {} tools 0 {
             {command "&Open Perm Map..." {tag_policy_open} "Open a permission map from file" {} -command ApolTop::_open_perm_map_from_file}
             {command "Open &Default Perm Map" {tag_policy_open} "Open the default permission map" {} -command ApolTop::openDefaultPermMap}
             {command "&Save Perm Map..." {tag_policy_open tag_perm_map_open} "Save the permission map to a file" {} -command ApolTop::_save_perm_map}
@@ -258,15 +259,15 @@ proc ApolTop::_create_toplevel {} {
             {command "Save Perm Map as D&efault" {tag_policy_open tag_perm_map_open} "Save the permission map to default file" {} -command ApolTop::_save_perm_map_default}
             {command "&View Perm Map..." {tag_policy_open tag_perm_map_open} "Edit currently loaded permission map" {} -command Apol_Perms_Map::showPermMappings}
         }
-	"&Help" {} helpmenu 0 {
-	    {command "&General Help" {} "Show help on using apol" {} -command {ApolTop::_show_file Help apol_help.txt}}
-	    {command "&Domain Transition Analysis" {} "Show help on domain transitions" {} -command {ApolTop::_show_file "Domain Transition Analysis Help" domaintrans_help.txt}}
-	    {command "&Information Flow Analysis" {} "Show help on information flows" {} -command {ApolTop::_show_file "Information Flow Analysis Help" infoflow_help.txt}}
-	    {command "Direct &Relabel Analysis" {} "Show help on file relabeling" {} -command {ApolTop::_show_file "Relabel Analysis Help" file_relabel_help.txt}}
-	    {command "&Types Relationship Summary Analysis" {} "Show help on types relationships" {} -command {ApolTop::_show_file "Types Relationship Summary Analysis Help" types_relation_help.txt}}
-	    {separator}
-	    {command "&About apol" {} "Show copyright information" {} -command ApolTop::_about}
-	}
+        "&Help" {} helpmenu 0 {
+            {command "&General Help" {} "Show help on using apol" {} -command {ApolTop::_show_file Help apol_help.txt}}
+            {command "&Domain Transition Analysis" {} "Show help on domain transitions" {} -command {ApolTop::_show_file "Domain Transition Analysis Help" domaintrans_help.txt}}
+            {command "&Information Flow Analysis" {} "Show help on information flows" {} -command {ApolTop::_show_file "Information Flow Analysis Help" infoflow_help.txt}}
+            {command "Direct &Relabel Analysis" {} "Show help on file relabeling" {} -command {ApolTop::_show_file "Relabel Analysis Help" file_relabel_help.txt}}
+            {command "&Types Relationship Summary Analysis" {} "Show help on types relationships" {} -command {ApolTop::_show_file "Types Relationship Summary Analysis Help" types_relation_help.txt}}
+            {separator}
+            {command "&About apol" {} "Show copyright information" {} -command ApolTop::_about}
+        }
     }
     # Note that the name of the last menu is "helpmenu", not "help".
     # This is because Tk handles menus named "help" differently in X
@@ -528,7 +529,7 @@ proc ApolTop::_toplevel_update_stats {} {
     if {![is_capable "neverallow"]} {
         append num_te_rules "+"
     }
-    append policy_stats_summary "TE rules: $num_te_rules   "
+    append policy_stats_summary "AV + TE rules: $num_te_rules   "
     append policy_stats_summary "Roles: $policy_stats(roles)   "
     append policy_stats_summary "Users: $policy_stats(users)"
 }
@@ -834,9 +835,13 @@ proc ApolTop::_about {} {
             -modal none -parent . -separator 1 -title "About apol"
         set f [.apol_about getframe]
         set l1 [label $f.l1 -text "apol [tcl_config_get_version]" -height 2]
-        foreach {name size} [$l1 cget -font] {break}
-        incr size 6
-        $l1 configure -font [list $name $size bold]
+        set label_font [$l1 cget -font]
+        # Tk 8.4 differs from 8.5 in how fonts are handled
+        if {[llength $label_font] > 1} {
+            foreach {name size} [$l1 cget -font] {break}
+            incr size 6
+            $l1 configure -font [list $name $size bold]
+        }
         set l2 [label $f.l2 -text "Security Policy Analysis Tool for Security Enhanced Linux\n${::COPYRIGHT_INFO}\nhttp://oss.tresys.com/projects/setools"]
         pack $l1 $l2
         .apol_about add -text "Close" -command [list destroy .apol_about]
@@ -1168,14 +1173,16 @@ proc print_version_info {} {
     puts "apol [tcl_config_get_version]\n$::COPYRIGHT_INFO"
 }
 
+proc print_init {s} {
+    puts -nonewline $s
+    flush stdout
+}
+
 if {[catch {tcl_config_init_libraries}]} {
-    puts stderr "The SETools libraries could not be found in one of these subdirectories:\n$auto_path"
+    puts stderr "The SETools libraries could not be found in one of these subdirectories:\n\y[join $auto_path "\n\t"]"
     exit -1
 }
-if {[catch {package require Tk}]} {
-    puts stderr "This program requires Tk to run."
-    exit -1
-}
+
 set path [handle_args $argv0 $argv]
 ApolTop::main
 if {$path != {}} {
