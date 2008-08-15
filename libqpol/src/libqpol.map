@@ -1,4 +1,4 @@
-VERS_1.2{
+VERS_1.2 {
 	global:
 		qpol_avrule_*;
 		qpol_bool_*;
@@ -38,16 +38,28 @@ VERS_1.2{
 		qpol_syn_avrule_*;
 		qpol_syn_terule_*;
 		qpol_terule_*;
-		qpol_type_*;
+		qpol_type_get_alias_iter;
+		qpol_type_get_attr_iter;
+		qpol_type_get_isalias;
+		qpol_type_get_isattr;
+		qpol_type_get_name;
+		qpol_type_get_type_iter;
+		qpol_type_get_value;
+		qpol_type_set_*;
 		qpol_user_*;
 		qpol_validatetrans_*;
 		libqpol_get_version;
 	local: *;
 };
 
-VERS_1.3{
+VERS_1.3 {
 	global:
 		qpol_policy_open_from_file;
 		qpol_policy_open_from_memory;
 		qpol_policy_rebuild;
 } VERS_1.2;
+
+VERS_1.4 {
+	global:
+		qpol_type_get_ispermissive;
+} VERS_1.3;

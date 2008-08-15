@@ -6,7 +6,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *
- *  Copyright (C) 2006-2007 Tresys Technology, LLC
+ *  Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -94,6 +94,21 @@ extern "C"
  *  errno will be set and *isattr will be 0 (false).
  */
 	extern int qpol_type_get_isattr(const qpol_policy_t * policy, const qpol_type_t * datum, unsigned char *isattr);
+
+/**
+ *  Determine whether a given type has been marked as enforcing
+ *  (default) or as permissive.  If the policy does not support
+ *  permissive types, then all types are enforcing.  Attributes are
+ *  always enforcing.
+ *
+ *  @param policy The policy associated with the type.
+ *  @param datum The type to check.
+ *  @param ispermissive Pointer to be set to 1 (true) if the type is
+ *  permissive and 0 (false) otherwise.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *ispermissive will be 0 (false).
+ */
+	extern int qpol_type_get_ispermissive(const qpol_policy_t * policy, const qpol_type_t * datum, unsigned char *ispermissive);
 
 /**
  *  Get an iterator for the list of types in an attribute.

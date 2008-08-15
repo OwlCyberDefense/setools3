@@ -152,6 +152,7 @@ extern char *qpol_src_inputlim;/* end of data */
 %token IPV6_ADDR
 %token MODULE VERSION_IDENTIFIER REQUIRE OPTIONAL
 %token POLICYCAP
+%token PERMISSIVE
 
 %left OR
 %left XOR
@@ -278,6 +279,7 @@ te_decl			: attribute_def
                         | transition_def
                         | range_trans_def
                         | te_avtab_def
+                        | permissive_def
 			;
 attribute_def           : ATTRIBUTE identifier ';'
                         { if (define_attrib()) return -1;}
@@ -725,6 +727,8 @@ ipv6_addr		: IPV6_ADDR
 policycap_def		: POLICYCAP identifier ';'
 			{if (define_polcap()) return -1;}
 			;
+permissive_def		: PERMISSIVE identifier ';'
+			{if (define_permissive()) return -1;}
 
 /*********** module grammar below ***********/
 
@@ -738,6 +742,7 @@ module_def              : MODULE identifier version_identifier ';'
                         ;
 version_identifier      : VERSION_IDENTIFIER
                         { if (insert_id(yytext,0)) return -1; }
+                        | ipv4_addr_def /* version can look like ipv4 address */
                         ;
 avrules_block           : avrule_decls avrule_user_defs
                         ;
