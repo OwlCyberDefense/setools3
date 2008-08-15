@@ -60,14 +60,14 @@ LIBPOLDIFF-SWIG-JAVA
 TESTING INFORMATION
 
 Operating Systems:
-  Fedora Core 5, 6, and 7, both i386 and x86_64 architectures
+  Fedora Core 5, 6, 7, and 8 for both i386 and x86_64 architectures
 
 SELinux monolithic policy versions:
   12, 15, 16, 17, 18
-  19, 20, and 21 (both with and without MLS support)
+  19, 20, 21, 22, and 23 (both with and without MLS support)
 
 SELinux modular policy versions:
-  5, 6
+  5, 6, 7, 8
 
 Please report any new bugs or comments to setools-bugs@tresys.com.
 Thank you for using SETools!

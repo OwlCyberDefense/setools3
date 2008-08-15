@@ -10,7 +10,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006-2007 Tresys Technology, LLC
+ * Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -670,22 +670,20 @@ char *apol_terule_render(const apol_policy_t * policy, const qpol_terule_t * rul
 
 	/* rule type */
 	if (qpol_terule_get_rule_type(policy->p, rule, &rule_type)) {
-		error = errno;
-		errno = error;
 		return NULL;
 	}
 	if (!(rule_type &= (QPOL_RULE_TYPE_TRANS | QPOL_RULE_TYPE_CHANGE | QPOL_RULE_TYPE_MEMBER))) {
-		ERR(policy, "%s", "Invalid type rule type");
+		ERR(policy, "%s", "Invalid TE rule type");
 		errno = EINVAL;
 		return NULL;
 	}
 	if (!(rule_type_str = apol_rule_type_to_str(rule_type))) {
-		ERR(policy, "%s", "Type rule has multiple rule types?");
+		ERR(policy, "%s", "Could not get TE rule type's string");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, rule_type_str) || apol_str_append(&tmp, &tmp_sz, " ")) {
-		error = error;
+	if (apol_str_appendf(&tmp, &tmp_sz, "%s ", rule_type_str)) {
+		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
@@ -699,8 +697,8 @@ char *apol_terule_render(const apol_policy_t * policy, const qpol_terule_t * rul
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
-		error = error;
+	if (apol_str_appendf(&tmp, &tmp_sz, "%s ", tmp_name)) {
+		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
@@ -714,8 +712,8 @@ char *apol_terule_render(const apol_policy_t * policy, const qpol_terule_t * rul
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " : ")) {
-		error = error;
+	if (apol_str_appendf(&tmp, &tmp_sz, "%s : ", tmp_name)) {
+		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
@@ -729,8 +727,8 @@ char *apol_terule_render(const apol_policy_t * policy, const qpol_terule_t * rul
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
-		error = error;
+	if (apol_str_appendf(&tmp, &tmp_sz, "%s ", tmp_name)) {
+		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
@@ -744,8 +742,8 @@ char *apol_terule_render(const apol_policy_t * policy, const qpol_terule_t * rul
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, ";")) {
-		error = error;
+	if (apol_str_appendf(&tmp, &tmp_sz, "%s;", tmp_name)) {
+		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
@@ -779,21 +777,20 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 
 	/* rule type */
 	if (qpol_syn_terule_get_rule_type(policy->p, rule, &rule_type)) {
-		error = errno;
 		return NULL;
 	}
 	if (!(rule_type &= (QPOL_RULE_TYPE_TRANS | QPOL_RULE_TYPE_CHANGE | QPOL_RULE_TYPE_MEMBER))) {
-		ERR(policy, "%s", "Invalid te rule type");
+		ERR(policy, "%s", "Invalid TE rule type");
 		errno = EINVAL;
 		return NULL;
 	}
 	if (!(rule_type_str = apol_rule_type_to_str(rule_type))) {
-		ERR(policy, "%s", "Te rule has multiple rule types?");
+		ERR(policy, "%s", "Could not get TE rule type's string");
 		errno = EINVAL;
 		return NULL;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, rule_type_str) || apol_str_append(&tmp, &tmp_sz, " ")) {
-		error = error;
+	if (apol_str_appendf(&tmp, &tmp_sz, "%s ", rule_type_str)) {
+		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
@@ -809,7 +806,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 	}
 	if (star) {
 		if (apol_str_append(&tmp, &tmp_sz, "* ")) {
-			error = error;
+			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
@@ -820,7 +817,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 		}
 		if (comp) {
 			if (apol_str_append(&tmp, &tmp_sz, "~")) {
-				error = error;
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -840,7 +837,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 		}
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
-				error = error;
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -855,8 +852,8 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
-				error = error;
+			if (apol_str_appendf(&tmp, &tmp_sz, "%s ", tmp_name)) {
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -871,9 +868,8 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, "-") ||
-			    apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
-				error = error;
+			if (apol_str_appendf(&tmp, &tmp_sz, "-%s ", tmp_name)) {
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -882,7 +878,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 		qpol_iterator_destroy(&iter2);
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "} ")) {
-				error = error;
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -900,7 +896,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 	}
 	if (star) {
 		if (apol_str_append(&tmp, &tmp_sz, "* ")) {
-			error = error;
+			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
 		}
@@ -911,7 +907,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 		}
 		if (comp) {
 			if (apol_str_append(&tmp, &tmp_sz, "~")) {
-				error = error;
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -931,7 +927,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 		}
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "{ ")) {
-				error = error;
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -946,8 +942,8 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
-				error = error;
+			if (apol_str_appendf(&tmp, &tmp_sz, "%s ", tmp_name)) {
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -962,9 +958,8 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 				error = errno;
 				goto err;
 			}
-			if (apol_str_append(&tmp, &tmp_sz, "-") ||
-			    apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
-				error = error;
+			if (apol_str_appendf(&tmp, &tmp_sz, "-%s ", tmp_name)) {
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -973,7 +968,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 		qpol_iterator_destroy(&iter2);
 		if (iter_sz + iter2_sz > 1) {
 			if (apol_str_append(&tmp, &tmp_sz, "} ")) {
-				error = error;
+				error = errno;
 				ERR(policy, "%s", strerror(error));
 				goto err;
 			}
@@ -981,7 +976,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 	}
 
 	if (apol_str_append(&tmp, &tmp_sz, ": ")) {
-		error = error;
+		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
@@ -1013,7 +1008,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 			error = errno;
 			goto err;
 		}
-		if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, " ")) {
+		if (apol_str_appendf(&tmp, &tmp_sz, "%s ", tmp_name)) {
 			error = errno;
 			ERR(policy, "%s", strerror(error));
 			goto err;
@@ -1037,7 +1032,7 @@ char *apol_syn_terule_render(const apol_policy_t * policy, const qpol_syn_terule
 		error = errno;
 		goto err;
 	}
-	if (apol_str_append(&tmp, &tmp_sz, tmp_name) || apol_str_append(&tmp, &tmp_sz, ";")) {
+	if (apol_str_appendf(&tmp, &tmp_sz, "%s;", tmp_name)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;

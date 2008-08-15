@@ -1,3 +1,16 @@
+SETools 3.3.5:
+
+This release builds upon SETools 3.3.4:
+
+  * Update to policy loader to match checkpolicy 2.0.16 and libsepol
+    2.0.32.
+
+  * Changes to libqpol to allow compiling against libsepol >= 2.0.29.
+
+  * Support for reading policy version 23.
+
+==================================================
+
 SETools 3.3.4:
 
 This release builds upon SETools 3.3.3:
