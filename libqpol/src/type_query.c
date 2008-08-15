@@ -178,6 +178,34 @@ int qpol_type_get_isattr(const qpol_policy_t * policy, const qpol_type_t * datum
 	return STATUS_SUCCESS;
 }
 
+int qpol_type_get_ispermissive(const qpol_policy_t * policy, const qpol_type_t * datum, unsigned char *ispermissive)
+{
+	if (policy == NULL || datum == NULL || ispermissive == NULL) {
+		if (ispermissive != NULL)
+			*ispermissive = 0;
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+#ifdef HAVE_SEPOL_PERMISSIVE_TYPES
+	/* checking internal_datum->flags for permissive won't work,
+	   because the type could be an alias.  so instead, look up
+	   its value within the permissive map */
+	uint32_t value;
+	if (qpol_type_get_value(policy, datum, &value) < 0) {
+		return STATUS_ERR;
+	}
+	policydb_t *p = &policy->p->p;
+	/* note that unlike other bitmaps, this one does not subtract
+	   1 in the bitmap */
+	*ispermissive = ebitmap_get_bit(&p->permissive_map, value);
+#else
+	*ispermissive = 0;
+#endif
+
+	return STATUS_SUCCESS;
+}
+
 int qpol_type_get_type_iter(const qpol_policy_t * policy, const qpol_type_t * datum, qpol_iterator_t ** types)
 {
 	type_datum_t *internal_datum = NULL;
