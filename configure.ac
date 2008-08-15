@@ -1,4 +1,4 @@
-AC_INIT(setools, 3.3.4, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.3.5, [Tresys Technology <setools@tresys.com>], [setools])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
@@ -7,10 +7,10 @@ AM_INIT_AUTOMAKE([-Wno-portability])
 dnl *** update these variables as versions change; also update AC_INIT ***
 
 libqpol_soversion=1
-libqpol_version=1.3.3
+libqpol_version=1.4
 
 libapol_soversion=4
-libapol_version=4.1.3
+libapol_version=4.1.4
 
 libpoldiff_soversion=1
 libpoldiff_version=1.3.1
@@ -496,10 +496,16 @@ CFLAGS="${CFLAGS} ${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG}"
 CPPFLAGS="${CPPFLAGS} ${SELINUX_CFLAGS}"
 
 dnl check for user and role mapping, added in libsepol version 2.0.29
-AC_CHECK_DECL([role_set_expand],
-              sepol_new_user_role_mapping="yes",
-              sepol_new_user_role_mapping="no",
-              [#include <sepol/policydb/expand.h>])
+AC_MSG_CHECKING([for user and role mappings])
+AC_COMPILE_IFELSE(
+                  [AC_LANG_SOURCE([
+#include <sepol/policydb/expand.h>
+int main () {
+  return role_set_expand(NULL, NULL, NULL, NULL);
+}])],
+                  sepol_new_user_role_mapping="yes",
+                  sepol_new_user_role_mapping="no")
+AC_MSG_RESULT([${sepol_new_user_role_mapping}])
 
 dnl check for permissive types, added in libsepol version 2.0.26
 AC_CHECK_DECL([TYPE_FLAGS_PERMISSIVE],
@@ -545,12 +551,6 @@ dnl check for new error code format, added in libsepol 2.0.0
 AC_CHECK_HEADER([sepol/errcodes.h],
 	        sepol_new_defines="yes",
                 sepol_new_defines="no")
-
-dnl check for modified AV tab behavior, introduced in libsepol version 2.0.20
-AC_CHECK_DECL([avtab_alloc],
-              sepol_new_avtab="yes",
-              sepol_new_avtab="no",
-              [#include <sepol/policydb/conditional.h>])
 
 AC_RUN_IFELSE(
    [AC_LANG_SOURCE([
