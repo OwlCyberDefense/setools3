@@ -56,6 +56,7 @@ static int expand_type_attr_map(hashtab_key_t key __attribute__ ((unused)), hash
 
 static int expand_type_permissive_map(hashtab_key_t key __attribute__ ((unused)), hashtab_datum_t datum, void *ptr)
 {
+#ifdef HAVE_SEPOL_PERMISSIVE_TYPES
 	type_datum_t *type = (type_datum_t *) datum;
 	policydb_t *db = (policydb_t *) ptr;
 
@@ -77,6 +78,7 @@ static int expand_type_permissive_map(hashtab_key_t key __attribute__ ((unused))
 			return -1;
 		}
 	}
+#endif
 	return 0;
 }
 
