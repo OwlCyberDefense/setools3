@@ -6,7 +6,7 @@
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
  *
- * Copyright (C) 2006-2007 Tresys Technology, LLC
+ * Copyright (C) 2006-2008 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -57,9 +57,9 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 int qpol_expand_module(qpol_policy_t * base, int neverallows)
 {
 	unsigned int i;
-	uint32_t *typemap = NULL, *boolmap = NULL;
+	uint32_t *typemap = NULL, *boolmap = NULL, *rolemap = NULL, *usermap = NULL;
 	policydb_t *db;
-	int rt;
+	int rt, error = 0;
 
 	INFO(base, "%s", "Expanding policy. (Step 3 of 5)");
 	if (base == NULL) {
@@ -75,33 +75,72 @@ int qpol_expand_module(qpol_policy_t * base, int neverallows)
 
 	/* expand out the types to include all the attributes */
 	if (hashtab_map(db->p_types.table, type_attr_map, (db))) {
+		error = errno;
 		ERR(base, "%s", "Error expanding attributes for types.");
 		goto err;
 	}
+#ifdef HAVE_SEPOL_PERMISSIVE_TYPES
+	/* fill in the permissive types bitmap.  this is normally done
+	 * in type_copy_callback(), but types are not copied in
+	 * expand_module_avrules() */
+	if (hashtab_map(db->p_types.table, expand_type_permissive_map, (db))) {
+		error = errno;
+		ERR(base, "%s", "Error expanding attributes for types.");
+		goto err;
+	}
+#endif
 
 	/* Build the typemap such that we can expand into the same policy */
 	typemap = (uint32_t *) calloc(db->p_types.nprim, sizeof(uint32_t));
 	if (typemap == NULL) {
+		error = errno;
 		ERR(base, "%s", strerror(errno));
 		goto err;
 	}
 	for (i = 0; i < db->p_types.nprim; i++) {
 		typemap[i] = i + 1;
 	}
+
 #ifdef HAVE_SEPOL_BOOLMAP
 	boolmap = (uint32_t *) calloc(db->p_bools.nprim, sizeof(uint32_t));
 	if (boolmap == NULL) {
+		error = errno;
 		ERR(base, "%s", strerror(errno));
 		goto err;
 	}
 	for (i = 0; i < db->p_bools.nprim; i++) {
 		boolmap[i] = i + 1;
 	}
+
+#ifdef HAVE_SEPOL_USER_ROLE_MAPPING
+	rolemap = (uint32_t *) calloc(db->p_roles.nprim, sizeof(uint32_t));
+	if (rolemap == NULL) {
+		error = errno;
+		ERR(base, "%s", strerror(errno));
+		goto err;
+	}
+	for (i = 0; i < db->p_roles.nprim; i++) {
+		rolemap[i] = i + 1;
+	}
+	usermap = (uint32_t *) calloc(db->p_users.nprim, sizeof(uint32_t));
+	if (usermap == NULL) {
+		error = errno;
+		ERR(base, "%s", strerror(errno));
+		goto err;
+	}
+	for (i = 0; i < db->p_users.nprim; i++) {
+		usermap[i] = i + 1;
+	}
+	rt = expand_module_avrules(base->sh, db, db, typemap, boolmap, rolemap, usermap, 0, neverallows);
+#else
 	rt = expand_module_avrules(base->sh, db, db, typemap, boolmap, 0, neverallows);
+#endif				       // end of user/role mapping
+
 #else
 	rt = expand_module_avrules(base->sh, db, db, typemap, 0, neverallows);
-#endif
+#endif				       // end of boolean mapping
 	if (rt < 0) {
+		error = errno;
 		goto err;
 	}
 	rt = 0;
@@ -109,9 +148,15 @@ int qpol_expand_module(qpol_policy_t * base, int neverallows)
       exit:
 	free(typemap);
 	free(boolmap);
+	free(rolemap);
+	free(usermap);
+	errno = error;
 	return rt;
       err:
 	rt = -1;
-	errno = EIO;
+	/* libsepol does not always set errno correctly, so have a
+	   default errno here */
+	if (!error)
+		error = EIO;
 	goto exit;
 }

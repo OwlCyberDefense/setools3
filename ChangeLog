@@ -1,3 +1,26 @@
+2008-08-15  J. Tang  <jtang@tresys.com>
+
+	* This is the official release of SETools 3.3.5.
+
+	* Fixed errors in libapol's AV and TE rule rendering functions
+	where errno was not being set properly.
+	
+	* Fixed error in apol_syn_avrule_render() where braces were not
+	being added around the target set when there is exactly one target
+	type and the keyword 'self'.  Thanks to Ryan Kagin for reporting
+	this error.
+
+2008-08-14  J. Tang  <jtang@tresys.com>
+
+	* Synched libqpol to libsepol version 2.0.32, policy parser to
+	2.0.16.
+
+	* Synched libqpol to libsepol version 2.0.26, policy parser to
+	2.0.14.
+
+	* Added qpol_type_get_ispermissive().  SETools can now handle
+	version 23 policy; bumped libqpol to version 1.4.
+
 2008-03-07  J. Tang  <jtang@tresys.com>
 
 	* This is the official release of SETools 3.3.4.

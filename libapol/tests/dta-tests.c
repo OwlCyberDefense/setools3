@@ -183,7 +183,7 @@ static void dta_forward_access(void)
 			const qpol_avrule_t *qa = (const qpol_avrule_t *)apol_vector_get_element(rules_v, j);
 			char *render = apol_avrule_render(p, qa);
 			CU_ASSERT_PTR_NOT_NULL_FATAL(render);
-			CU_ASSERT_STRING_EQUAL(render, "allow boat_t wave_t : file { write getattr execute };");
+			CU_ASSERT_STRING_EQUAL(render, "allow boat_t wave_t : file { write getattr execute } ;");
 			free(render);
 		}
 	}
