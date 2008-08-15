@@ -794,6 +794,9 @@ fi
 if test ${sepol_new_avtab} == "yes"; then
    AC_DEFINE(SEPOL_DYNAMIC_AVTAB, 1, [if avtab sizes are calculated dynamically by loader or are hardcoded])
 fi
+if test ${sepol_new_permissive_types} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_PERMISSIVE_TYPES, 1, [if types can be marked as permissive])
+fi
 if test ${sepol_new_user_role_mapping} == "yes"; then
    AC_DEFINE(HAVE_SEPOL_USER_ROLE_MAPPING, 1, [if users and roles are mapped during policy expansion])
 fi

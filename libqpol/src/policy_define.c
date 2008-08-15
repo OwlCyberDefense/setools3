@@ -244,6 +244,51 @@ int define_class(void)
 	return -1;
 }
 
+int define_permissive(void)
+{
+	char *type = NULL;
+	struct type_datum *t;
+	int rc = 0;
+
+	type = queue_remove(id_queue);
+
+	if (!type) {
+		yyerror2("forgot to include type in permissive definition?");
+		rc = -1;
+		goto out;
+	}
+
+	if (pass == 1)
+		goto out;
+
+	if (!is_id_in_scope(SYM_TYPES, type)) {
+		yyerror2("type %s is not within scope", type);
+		rc = -1;
+		goto out;
+	}
+
+	t = hashtab_search(policydbp->p_types.table, type);
+	if (!t) {
+		yyerror2("type is not defined: %s", type);
+		rc = -1;
+		goto out;
+	}
+
+	if (t->flavor == TYPE_ATTRIB) {
+		yyerror2("attributes may not be permissive: %s\n", type);
+		rc = -1;
+		goto out;
+	}
+#ifdef HAVE_SEPOL_PERMISSIVE_TYPES
+	t->flags |= TYPE_FLAGS_PERMISSIVE;
+#else
+	yyerror("This version of SETools does not have permissive types enabled.");
+#endif
+      out:
+	free(type);
+	return rc;
+}
+
 int define_polcap(void)
 {
 	char *id = 0;

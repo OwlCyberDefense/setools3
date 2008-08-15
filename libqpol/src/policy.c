@@ -395,10 +395,23 @@ static int infer_policy_version(qpol_policy_t * policy)
 	}
 	qpol_iterator_destroy(&iter);
 
-	/* 22 : there exists at least one policy capability */
-#ifdef HAVE_SEPOL_POLICYCAPS
+#if defined(HAVE_SEPOL_PERMISSIVE_TYPES) || defined(HAVE_SEPOL_POLICYCAPS)
 	ebitmap_node_t *node = NULL;
 	unsigned int i = 0;
+#endif
+
+	/* 23 : there exists at least one type that is permissive */
+#ifdef HAVE_SEPOL_PERMISSIVE_TYPES
+	ebitmap_for_each_bit(&db->permissive_map, node, i) {
+		if (ebitmap_get_bit(&db->permissive_map, i)) {
+			db->policyvers = 23;
+			return STATUS_SUCCESS;
+		}
+	}
+#endif
+
+	/* 22 : there exists at least one policy capability */
+#ifdef HAVE_SEPOL_POLICYCAPS
 	ebitmap_for_each_bit(&db->policycaps, node, i) {
 		if (ebitmap_get_bit(&db->policycaps, i)) {
 			db->policyvers = 22;
@@ -1236,6 +1249,8 @@ int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e c
 	case QPOL_CAP_POLCAPS:
 	{
 		if (version >= 22 && policy->type != QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		if (version >= 7 && policy->type == QPOL_POLICY_MODULE_BINARY)
 			return 1;
 		break;
 	}

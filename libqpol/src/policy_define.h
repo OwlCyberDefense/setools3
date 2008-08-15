@@ -47,6 +47,7 @@ int define_ipv6_node_context(void);
 int define_level(void);
 int define_mls(void);
 int define_netif_context(void);
+int define_permissive(void);
 int define_polcap(void);
 int define_port_context(unsigned int low, unsigned int high);
 int define_range_trans(int class_specified);
