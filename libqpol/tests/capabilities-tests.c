@@ -46,6 +46,7 @@ struct capability_answer
 	bool has_polcaps;
 	bool has_source;
 	bool has_modules;
+	char *enforcing_type, *permissive_type;
 };
 
 static void capability_test(const struct capability_answer *ca)
@@ -87,10 +88,26 @@ static void capability_test(const struct capability_answer *ca)
 	cap = (bool) qpol_policy_has_capability(q, QPOL_CAP_MODULES);
 	CU_ASSERT_EQUAL(cap, ca->has_modules);
 
+	unsigned char ispermissive;
+	const qpol_type_t *type;
+
+	if (ca->enforcing_type != NULL) {
+		retval = qpol_policy_get_type_by_name(q, ca->enforcing_type, &type);
+		CU_ASSERT(retval == 0 && type != NULL);
+		retval = qpol_type_get_ispermissive(q, type, &ispermissive);
+		CU_ASSERT(retval == 0 && ispermissive == 0);
+	}
+	if (ca->permissive_type != NULL) {
+		retval = qpol_policy_get_type_by_name(q, ca->permissive_type, &type);
+		CU_ASSERT(retval == 0 && type != NULL);
+		retval = qpol_type_get_ispermissive(q, type, &ispermissive);
+		CU_ASSERT(retval == 0 && ispermissive == 1);
+	}
+
 	qpol_policy_destroy(&q);
 }
 
-static void capability_v12_source()
+static void capability_v12_source(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-12.conf",
@@ -103,12 +120,13 @@ static void capability_v12_source()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		true,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"fs_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v15_source()
+static void capability_v15_source(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-15.conf",
@@ -121,12 +139,13 @@ static void capability_v15_source()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		true,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"fs_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v15_binary()
+static void capability_v15_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.15",
@@ -139,12 +158,13 @@ static void capability_v15_binary()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"fs_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v16_source()
+static void capability_v16_source(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-16.conf",
@@ -157,12 +177,13 @@ static void capability_v16_source()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		true,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"fs_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v16_binary()
+static void capability_v16_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.16",
@@ -175,12 +196,13 @@ static void capability_v16_binary()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"fs_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v17_source()
+static void capability_v17_source(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-17.conf",
@@ -193,12 +215,13 @@ static void capability_v17_source()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		true,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"fs_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v17_binary()
+static void capability_v17_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.17",
@@ -211,12 +234,13 @@ static void capability_v17_binary()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"fs_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v18_source()
+static void capability_v18_source(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-18.conf",
@@ -229,12 +253,13 @@ static void capability_v18_source()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		true,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"wing_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v18_binary()
+static void capability_v18_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.18",
@@ -247,12 +272,13 @@ static void capability_v18_binary()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"wing_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v19_binary()
+static void capability_v19_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.19",
@@ -265,12 +291,13 @@ static void capability_v19_binary()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"wing_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v19_binary_mls()
+static void capability_v19_binary_mls(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls.19",
@@ -283,12 +310,13 @@ static void capability_v19_binary_mls()
 		true,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"root_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v20_binary()
+static void capability_v20_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy.20",
@@ -301,12 +329,13 @@ static void capability_v20_binary()
 		false,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"wing_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v20_binary_mls()
+static void capability_v20_binary_mls(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls.20",
@@ -319,12 +348,13 @@ static void capability_v20_binary_mls()
 		true,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"root_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v21_source()
+static void capability_v21_source(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls-21.conf",
@@ -337,12 +367,13 @@ static void capability_v21_source()
 		true,		       // has mls
 		false,		       // has policy capabilities
 		true,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"root_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v21_binary()
+static void capability_v21_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls.21",
@@ -355,12 +386,13 @@ static void capability_v21_binary()
 		true,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"root_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v22_source()
+static void capability_v22_source(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls-22.conf",
@@ -373,12 +405,13 @@ static void capability_v22_source()
 		true,		       // has mls
 		true,		       // has policy capabilities
 		true,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"root_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_v22_binary()
+static void capability_v22_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/policy-mls.22",
@@ -391,12 +424,51 @@ static void capability_v22_binary()
 		true,		       // has mls
 		true,		       // has policy capabilities
 		false,		       // has source
-		false		       // has modules
+		false,		       // has modules
+		"root_t", NULL	       // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
 
-static void capability_modv6_base_binary()
+static void capability_v23_source(void)
+{
+	struct capability_answer cap = {
+		POLICY_ROOT "/policy-mls-23.conf",
+		QPOL_POLICY_KERNEL_SOURCE,	// policy type
+		23U,		       // policy version
+		true,		       // has attributes
+		true,		       // has syntactic rules
+		true,		       // has line numbers
+		true,		       // has conditionals
+		true,		       // has mls
+		true,		       // has policy capabilities
+		true,		       // has source
+		false,		       // has modules
+		"root_t", "system_t"   // enforcing / permissive types
+	};
+	capability_test(&cap);
+}
+
+static void capability_v23_binary(void)
+{
+	struct capability_answer cap = {
+		POLICY_ROOT "/policy-mls.23",
+		QPOL_POLICY_KERNEL_BINARY,	// policy type
+		23U,		       // policy version
+		false,		       // has attributes
+		false,		       // has syntactic rules
+		false,		       // has line numbers
+		true,		       // has conditionals
+		true,		       // has mls
+		true,		       // has policy capabilities
+		false,		       // has source
+		false,		       // has modules
+		"root_t", "system_t"   // enforcing / permissive types
+	};
+	capability_test(&cap);
+}
+
+static void capability_modv6_base_binary(void)
 {
 	struct capability_answer cap = {
 		POLICY_ROOT "/base-6.pp",
@@ -409,7 +481,27 @@ static void capability_modv6_base_binary()
 		true,		       // has mls
 		false,		       // has policy capabilities
 		false,		       // has source
-		true		       // has modules
+		true,		       // has modules
+		"root_t", NULL	       // enforcing / permissive types
+	};
+	capability_test(&cap);
+}
+
+static void capability_modv8_base_binary(void)
+{
+	struct capability_answer cap = {
+		POLICY_ROOT "/base-8.pp",
+		QPOL_POLICY_MODULE_BINARY,	// policy type
+		8U,		       // policy version
+		true,		       // has attributes
+		true,		       // has syntactic rules
+		false,		       // has line numbers
+		true,		       // has conditionals
+		true,		       // has mls
+		true,		       // has policy capabilities
+		false,		       // has source
+		true,		       // has modules
+		"root_t", "system_t"   // enforcing / permissive types
 	};
 	capability_test(&cap);
 }
@@ -432,7 +524,10 @@ CU_TestInfo capabilities_tests[] = {
 	{"v21, binary", capability_v21_binary},
 	{"v22, source", capability_v22_source},
 	{"v22, binary", capability_v22_binary},
+	{"v23, source", capability_v23_source},
+	{"v23, binary", capability_v23_binary},
 	{"mod v6, base binary", capability_modv6_base_binary},
+	{"mod v8, base binary", capability_modv8_base_binary},
 	CU_TEST_INFO_NULL
 };
 

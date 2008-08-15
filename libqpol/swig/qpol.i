@@ -772,16 +772,6 @@ typedef struct qpol_type {} qpol_type_t;
 	fail:
 		return (int) v;
 	};
-	int get_isattr(qpol_policy_t *p) {
-		unsigned char i;
-		BEGIN_EXCEPTION
-		if (qpol_type_get_isattr(p, self, &i)) {
-			SWIG_exception(SWIG_ValueError, "Could not determine whether type is an attribute");
-		}
-		END_EXCEPTION
-	fail:
-			return (int)i;
-	};
 	int get_isalias(qpol_policy_t *p) {
 		unsigned char i;
 		BEGIN_EXCEPTION
@@ -790,7 +780,27 @@ typedef struct qpol_type {} qpol_type_t;
 		}
 		END_EXCEPTION
 	fail:
-			return (int)i;
+		return (int)i;
+	};
+	int get_isattr(qpol_policy_t *p) {
+		unsigned char i;
+		BEGIN_EXCEPTION
+		if (qpol_type_get_isattr(p, self, &i)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine whether type is an attribute");
+		}
+		END_EXCEPTION
+	fail:
+		return (int)i;
+	};
+	int get_ispermissive(qpol_policy_t *p) {
+		unsigned char i;
+		BEGIN_EXCEPTION
+		if (qpol_type_get_ispermissive(p, self, &i)) {
+			SWIG_exception(SWIG_ValueError, "Could not determine whether type is permissive");
+		}
+		END_EXCEPTION
+	fail:
+		return (int)i;
 	};
 	%newobject get_type_iter(qpol_policy_t*);
 	qpol_iterator_t *get_type_iter(qpol_policy_t *p) {

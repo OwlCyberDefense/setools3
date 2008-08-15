@@ -221,7 +221,9 @@ H1				{ return(H1); }
 h2 |
 H2				{ return(H2); }
 policycap |
-POLICYCAP			{ return(POLICYCAP);}
+POLICYCAP			{ return(POLICYCAP); }
+permissive |
+PERMISSIVE			{ return(PERMISSIVE); }
 "/"({alnum}|[_.-/])*	        { return(PATH); }
 {letter}({alnum}|[_-])*([.]?({alnum}|[_-]))*	{ return(IDENTIFIER); }
 {digit}+                        { return(NUMBER); }
