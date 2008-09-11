@@ -1,3 +1,9 @@
+2008-09-11  J. Tang  <jtang@tresys.com>
+
+	* Fixed error in qpol_policy_rebuild_opt() where a policy's
+	neverallow rules are expanded when the rebuild option is
+	QPOL_POLICY_OPTION_NO_RULES.
+
 2008-08-15  J. Tang  <jtang@tresys.com>
 
 	* This is the official release of SETools 3.3.5.

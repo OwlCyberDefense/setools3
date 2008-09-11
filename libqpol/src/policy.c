@@ -496,7 +496,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	sepol_policydb_t **modules = NULL;
 	qpol_module_t *base = NULL;
 	size_t num_modules = 0, i;
-	int error = 0, old_otions;
+	int error = 0, old_options;
 
 	if (!policy) {
 		ERR(NULL, "%s", strerror(EINVAL));
@@ -517,7 +517,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 	policy->p = NULL;
 	struct qpol_extended_image *ext = policy->ext;
 	policy->ext = NULL;
-	old_otions = policy->options;
+	old_options = policy->options;
 	policy->options = options;
 
 	/* QPOL_POLICY_OPTION_NO_RULES implies QPOL_POLICY_OPTION_NO_NEVERALLOWS */
@@ -583,7 +583,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 		avtab_init(&(policy->p->p.te_cond_avtab));
 	}
 
-	if (qpol_expand_module(policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
+	if (qpol_expand_module(policy, !(policy->options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 		error = errno;
 		goto err;
 	}
@@ -608,7 +608,7 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 
 	policy->p = old_p;
 	policy->ext = ext;
-	policy->options = old_otions;
+	policy->options = old_options;
 	errno = error;
 	return STATUS_ERR;
 }
