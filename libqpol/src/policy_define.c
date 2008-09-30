@@ -57,6 +57,7 @@
 #ifdef HAVE_SEPOL_POLICYCAPS
 #include <sepol/policydb/polcaps.h>
 #endif
+#include <sepol/errcodes.h>
 
 #include "queue.h"
 #include <qpol/policy.h>

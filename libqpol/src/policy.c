@@ -45,6 +45,7 @@
 #include <sepol/policydb.h>
 #include <sepol/module.h>
 #include <sepol/policydb/module.h>
+#include <sepol/policydb/avrule_block.h>
 
 #include <stdbool.h>
 #include <qpol/iterator.h>
@@ -470,6 +471,241 @@ static int infer_policy_version(qpol_policy_t * policy)
 	return STATUS_SUCCESS;
 }
 
+/** State tracking struct used in the functions check_disabled, remove_symbol, and prune_disabled_symbols to handle disabled symbols */
+struct symbol_pruning_state
+{
+	qpol_policy_t *p; /**< The policy */
+	int symbol_type; /**< The current symbol type being processed */
+};
+
+/** Apply callback for hashtab_map_remove_on_error.
+ *  This function tests whether a symbol referenced by the policy is declared or only ever required.
+ *  Symbols without a declaration are disabled and must be removed.
+ *  @param key Symbol key to check.
+ *  @param datum Symbol datum to check.
+ *  @param args State object (of type struct symbol_pruning_state)
+ *  @return 0 if symbol is enabled, 1 if not enabled.
+ */
+static int check_disabled(hashtab_key_t key, hashtab_datum_t datum, void *args)
+{
+	struct symbol_pruning_state *s = args;
+	if (!is_id_enabled((char *)key, &(s->p->p->p), s->symbol_type))
+		return 1;
+	return 0;
+}
+
+/** Remove callback for hashtab_map_remove_on_error.
+ *  Frees all memory associated with a disabled symbol that has been removed from the symbol table.
+ *  @param key Symbol key to remove
+ *  @param datum Symbol datum to remove
+ *  @param args State object (of type struct symbol_pruning_state)
+ *  @post All memory associated with the symbol is freed.
+ */
+static void remove_symbol(hashtab_key_t key, hashtab_datum_t datum, void *args)
+{
+	struct symbol_pruning_state *s = args;
+	switch (s->symbol_type) {
+	case SYM_ROLES:
+	{
+		role_datum_destroy((role_datum_t *) datum);
+		break;
+	}
+	case SYM_TYPES:
+	{
+		type_datum_destroy((type_datum_t *) datum);
+		break;
+	}
+	case SYM_USERS:
+	{
+		user_datum_destroy((user_datum_t *) datum);
+		break;
+	}
+	case SYM_BOOLS:
+	{
+		/* no-op */
+		break;
+	}
+	case SYM_LEVELS:
+	{
+		level_datum_destroy((level_datum_t *) datum);
+		break;
+	}
+	case SYM_CATS:
+	{
+		cat_datum_destroy((cat_datum_t *) datum);
+		break;
+	}
+	default:
+		return;		       /* invalid type of datum to free; do nothing */
+	}
+	free(key);
+	free(datum);
+}
+
+/** Remove symbols that are only required but never declared from the policy.
+ *  Removes each disabled symbol freeing all memory associated with it.
+ *  @param policy The policy from which disabled symbols should be removed.
+ *  @return always 0.
+ *  @note Since hashtab_map_remove_on_error does not return any error status,
+ *  it is impossible to tell if it has failed; if it fails, the policy will
+ *  be in an inconsistent state.
+ */
+static int prune_disabled_symbols(qpol_policy_t * policy)
+{
+	if (policy->type == QPOL_POLICY_KERNEL_BINARY)
+		return 0;	       /* checkpolicy already prunes disabled symbols */
+	struct symbol_pruning_state state;
+	state.p = policy;
+	for (state.symbol_type = SYM_ROLES; state.symbol_type < SYM_NUM; state.symbol_type++) {
+		hashtab_map_remove_on_error(policy->p->p.symtab[state.symbol_type].table, check_disabled, remove_symbol, &state);
+	}
+	return 0;
+}
+
+/** For all symbols that are multiply defined (such as attributes, roles, and users),
+ *  union the relevant sets of types and roles from each declaration.
+ *  @param policy The policy containig the symbols to union.
+ *  @return 0 on success, non-zero on error; if the call fails,
+ *  errno will be set, and the policy should be considered invalid.
+ */
+static int union_multiply_declared_symbols(qpol_policy_t * policy) {
+	/* general structure of this function:
+	walk role and user symbol tables for each role/user/attribute
+		get datum from symtab, get key from array
+		look up symbol in scope table
+		foreach decl_id in scope entry
+			union types/roles bitmap with datum's copy
+	*/
+	qpol_iterator_t * iter = NULL;
+	int error = 0;
+	if (qpol_policy_get_type_iter(policy, &iter)) {
+		return 1;
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		type_datum_t *attr;
+		if (qpol_iterator_get_item(iter, (void**)&attr)) {
+			error = errno;
+			goto err;
+		}
+		unsigned char isattr = 0;
+		if (qpol_type_get_isattr(policy, attr, &isattr)) {
+			error = errno;
+			goto err;
+		}
+		if (!isattr)
+			continue;
+		const char *name;
+		if (qpol_type_get_name(policy, (qpol_type_t*)attr, &name)) {
+			error = errno;
+			goto err;
+		}
+		policydb_t *db = &policy->p->p;
+		avrule_block_t *blk = db->global;
+		for (; blk; blk = blk->next) {
+			avrule_decl_t *decl = blk->enabled;
+			if (!decl)
+				continue; /* disabled */
+			type_datum_t *internal_datum = hashtab_search(decl->symtab[SYM_TYPES].table, (const hashtab_key_t)name);
+			if (internal_datum == NULL) {
+				continue; /* not declared here */
+			}
+			if (ebitmap_union(&attr->types, &internal_datum->types))
+			{
+				error = errno;
+				ERR(policy, "could not merge declarations for attribute %s", name);
+				goto err;
+			}
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	/* repeat for roles */
+	if (qpol_policy_get_role_iter(policy, &iter)) {
+		return 1;
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		role_datum_t *role;
+		if (qpol_iterator_get_item(iter, (void**)&role)) {
+			error = errno;
+			goto err;
+		}
+		const char *name;
+		if (qpol_role_get_name(policy, (qpol_role_t*)role, &name)) {
+			error = errno;
+			goto err;
+		}
+		policydb_t *db = &policy->p->p;
+		scope_datum_t* scope_datum = hashtab_search(db->scope[SYM_ROLES].table, (const hashtab_key_t)name);
+		if (scope_datum == NULL) {
+			ERR(policy, "could not find scope datum for role %s", name);
+			error = ENOENT;
+			goto err;
+		}
+		for (uint32_t i = 0; i < scope_datum->decl_ids_len; i++)
+		{
+			if (db->decl_val_to_struct[scope_datum->decl_ids[i] - 1]->enabled == 0)
+				continue; /* block is disabled */
+			role_datum_t *internal_datum = hashtab_search(db->decl_val_to_struct[scope_datum->decl_ids[i] - 1]->symtab[SYM_ROLES].table, (const hashtab_key_t)name);
+			if (internal_datum == NULL) {
+				continue; /* not declared here */
+			}
+			if (ebitmap_union(&role->types.types, &internal_datum->types.types) || ebitmap_union(&role->dominates, &internal_datum->dominates))
+			{
+				error = errno;
+				ERR(policy, "could not merge declarations for role %s", name);
+				goto err;
+			}
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	/* repeat for users */
+	if (qpol_policy_get_user_iter(policy, &iter)) {
+		return 1;
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		user_datum_t *user;
+		if (qpol_iterator_get_item(iter, (void**)&user)) {
+			error = errno;
+			goto err;
+		}
+		const char *name;
+		if (qpol_user_get_name(policy, (qpol_user_t*)user, &name)) {
+			error = errno;
+			goto err;
+		}
+		policydb_t *db = &policy->p->p;
+		scope_datum_t* scope_datum = hashtab_search(db->scope[SYM_USERS].table, (const hashtab_key_t)name);
+		if (scope_datum == NULL) {
+			ERR(policy, "could not find scope datum for user %s", name);
+			error = ENOENT;
+			goto err;
+		}
+		for (uint32_t i = 0; i < scope_datum->decl_ids_len; i++)
+		{
+			if (db->decl_val_to_struct[scope_datum->decl_ids[i] - 1]->enabled == 0)
+				continue; /* block is disabled */
+			user_datum_t *internal_datum = hashtab_search(db->decl_val_to_struct[scope_datum->decl_ids[i] -1 ]->symtab[SYM_USERS].table, (const hashtab_key_t)name);
+			if (internal_datum == NULL) {
+				continue; /* not declared here */
+			}
+			if (ebitmap_union(&user->roles.roles, &internal_datum->roles.roles))
+			{
+				error = errno;
+				ERR(policy, "could not merge declarations for user %s", name);
+				goto err;
+			}
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	return 0;
+err:
+	qpol_iterator_destroy(&iter);
+	errno = error;
+	return 1;
+}
+
 /* forward declarations see policy_extend.c */
 struct qpol_extended_image;
 extern void qpol_extended_image_destroy(struct qpol_extended_image **ext);
@@ -581,6 +817,16 @@ int qpol_policy_rebuild_opt(qpol_policy_t * policy, const int options)
 		avtab_destroy(&(policy->p->p.te_cond_avtab));
 		avtab_init(&(policy->p->p.te_avtab));
 		avtab_init(&(policy->p->p.te_cond_avtab));
+	}
+
+	if (prune_disabled_symbols(policy)) {
+		error = errno;
+		goto err;
+	}
+
+	if (union_multiply_declared_symbols(policy)) {
+		error = errno;
+		goto err;
 	}
 
 	if (qpol_expand_module(policy, !(policy->options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
@@ -793,6 +1039,16 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 		avtab_init(&((*policy)->p->p.te_avtab));
 		avtab_init(&((*policy)->p->p.te_cond_avtab));
 
+		if (prune_disabled_symbols(*policy)) {
+			error = errno;
+			goto err;
+		}
+
+		if (union_multiply_declared_symbols(*policy)) {
+			error = errno;
+			goto err;
+		}
+
 		/* expand */
 		if (qpol_expand_module(*policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 			error = errno;
@@ -911,7 +1167,17 @@ int qpol_policy_open_from_memory_opt(qpol_policy_t ** policy, const char *fileda
 	avtab_init(&((*policy)->p->p.te_avtab));
 	avtab_init(&((*policy)->p->p.te_cond_avtab));
 
-	/* expand :) */
+	if (prune_disabled_symbols(*policy)) {
+		error = errno;
+		goto err;
+	}
+
+	if (union_multiply_declared_symbols(*policy)) {
+		error = errno;
+		goto err;
+	}
+
+	/* expand */
 	if (qpol_expand_module(*policy, !(options & (QPOL_POLICY_OPTION_NO_NEVERALLOWS)))) {
 		error = errno;
 		goto err;
