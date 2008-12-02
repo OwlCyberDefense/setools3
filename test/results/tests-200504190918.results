@@ -1,0 +1,169 @@
+partial_policy_loading
+Testing partial loading NONE of a policy . . . pass.
+Testing partial loading ALL of a policy . . . pass.
+Testing partial loading TYPES in a policy . . . pass.
+Testing partial loading only CLASSES in a policy . . . pass.
+Testing partial loading CLASSES/PERMS in a policy . . . pass.
+Testing partial loading EVERYTHING ELSE in a policy . . . pass.
+Testing partial loading AVRULES, USERS, and ROLES . . . pass.
+Testing partial loading NONE of a policy . . . pass.
+Testing partial loading ALL of a policy . . . pass.
+Testing partial loading TYPES in a policy . . . pass.
+Testing partial loading only CLASSES in a policy . . . pass.
+Testing partial loading CLASSES/PERMS in a policy . . . pass.
+Testing partial loading EVERYTHING ELSE in a policy . . . pass.
+Testing partial loading AVRULES, USERS, and ROLES . . . pass.
+transitive_flow
+Testing load . . . pass.
+Testing perm map load . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+Testing transitive flows . . . pass.
+obj_perms
+Testing loading a policy . . . pass.
+Testing whether get_obj_class_name returns normally . . . pass.
+Testing whether get_obj_class_name gets the right name . . . pass.
+Testing get_obj_class_idx . . . pass.
+
+Testing get_num_perms_for_obj_class w/ only common perms (lnk_file) . . . pass.
+Testing get_obj_class_perms . . . pass.
+Testing whether num_perms makes sense . . . pass.
+Testing whether num_perms == get_num_perms_for_obj_class . . . pass.
+Testing whether lnk_file's perms array is correct . . . pass.
+
+Testing get_num_perms_for_obj_class w/ unique and common perms (dir) . . . pass.
+Testing get_obj_class_perms . . . pass.
+Testing whether num_perms makes sense . . . pass.
+Testing whether num_perms == get_num_perms_for_obj_class . . . pass.
+Testing whether dir's perms array is correct . . . pass.
+
+Testing get_num_perms_for_obj_class w/ only unique perms(filesystem) . . . pass.
+Testing get_obj_class_perms . . . pass.
+Testing whether num_perms makes sense . . . pass.
+Testing whether num_perms == get_num_perms_for_obj_class . . . pass.
+Testing whether filesystem's perms array is correct . . . pass.
+
+perm_map_reload
+0
+0 16
+16 0
+Testing loading a policy . . . pass.
+Testing getting object class . . . pass.
+Testing getting perm_idx . . . pass.
+Testing opening tiny map . . . pass.
+Testing loading perm map . . . Warning: some permission were unmapped for object index 8 (lnk_file)
+Warning: some permission were unmapped for object index 5 (file)
+pass.
+Testing getting map for object class . . . pass.
+Testing finding mapping . . . pass.
+Testing opening full map . . . pass.
+Testing loading perm map . . . Warning: object (test) unknown to current policy; will be ignored
+Warning: there were less than 0 permissions recorded for object index -1
+pass.
+Testing getting map for object class . . . pass.
+Testing finding mapping . . . pass.
+Testing mapping changed . . . pass.
+Testing opening tiny map . . . pass.
+Testing loading perm map . . . Warning: some permission were unmapped for object index 8 (lnk_file)
+Warning: some permission were unmapped for object index 5 (file)
+pass.
+Testing getting map for object class . . . pass.
+Testing finding mapping . . . pass.
+Testing mapping changed . . . pass.
+template
+Testing example testing a constant . . . pass.
+Testing loading a policy . . . pass.
+Testing random numbers . . . pass.
+reload
+Testing loading a policy . . . 
+error in the statement ending on line 51 (token 'THIS_WILL_CAUSE_A_PARSE_ERROR'): syntax error
+
+error(s) encountered while parsing configuration (first pass, line: 51)
+error reading policy
+pass.
+Testing loading a policy . . . pass.
+roles
+Testing loading a policy . . . pass.
+Testing whether get_role_idx returns normally . . . pass.
+Testing whether get_role_name agrees . . . pass.
+Testing system_r's num_types . . . pass.
+Testing object_r's num_types . . . pass.
+Testing sysadm_r's num_types . . . pass.
+Testing user_r's num_types . . . pass.
+Testing whether user_r has the correct types . . . pass.
+binpol
+version is 17
+Testing open binary policy . . . pass.
+Testing getting version . . . pass.
+Testing load . . . pass.
+relabel
+
+Running Queries
+
+Testing load policy . . . pass.
+Testing allocating result holder . . . pass.
+Testing querying typC mode=obj dir=to . . . pass.
+Testing whether domC was incorrectly found . . . pass.
+Testing querying typD mode=obj dir=from . . . pass.
+Testing whether domC was incorrectly found . . . pass.
+Testing querying domF mode=subj . . . pass.
+Testing whether the correct number of rules (2) were found for file . . . pass.
+Testing querying typD mode=obj dir=both . . . pass.
+Testing whether subject domD was found for target typD . . . pass.
+Testing querying typF mode=obj dir=to . . . pass.
+Testing whether non-star rules were incorrectly found . . . pass.
+Testing querying typD mode=subj . . . pass.
+Testing whether results are empty . . . pass.
+Testing querying typA mode=subj . . . pass.
+Testing whether results are non-empty . . . pass.
+Testing querying typA mode=obj dir=both . . . pass.
+Testing whether domF is in all file results . . . pass.
+Testing querying typA mode=obj dir=to filter=dir . . . pass.
+Testing whether one object was found for each target . . . pass.
+Testing querying typA mode=obj dir=to filter=dir,domB . . . pass.
+Testing whether correct result was found . . . pass.
+Testing querying domE mode=subj filter=dir . . . pass.
+Testing whether results are empty . . . pass.
+Testing querying typC mode=obj dir=to filter=domB,domF,domA . . . pass.
+Testing whether the correct two subjects are found . . . pass.
+Testing querying typA mode=obj dir=from filter=file,dir,domC . . . pass.
+Testing whether correct number of targets were found (12) . . . pass.
+Testing querying domD mode=subj filter=dir . . . pass.
+Testing whether correct number of targets were found (4) . . . pass.
+Testing querying typE mode=obj dir=from filter=file,~domB . . . pass.
+Testing whether the same two rules are found for all targets . . . pass.
+Testing end of tests . . . pass.
+role_rules
+Testing load policy 1 . . . pass.
+Testing load policy 2 . . . pass.
+Testing diff policies . . . pass.
+Testing num role allow diffs from P1->P2 is 3 . . . pass.
+Testing num role allow diffs from P2->P1 is 3 . . . pass.
+Testing Role rules are in correct order . . . pass.
+Testing Rule "allow a_r { c_r f_r }" is changed from P2 . . . pass.
+Testing Rule "allow c_r e_r" is changed from P2 . . . pass.
+Testing Rule "allow e_r c_r" is missing from P2 . . . pass.
+Testing Rule "allow a_r { b_r f_r };" is changed from P1 . . . pass.
+Testing Rule "allow c_r d_r;" is changed from P1 . . . pass.
+Testing Rule "allow d_r c_r;" is missing from P1 . . . pass.
+Testing num role trans diffs from P1->P2 is 6 . . . pass.
+Testing num role trans diffs from P2->P1 is 6 . . . pass.
+Testing Rule "role_transition e_r b_t b_r;" is 1st node . . . pass.
+Testing Rule "role_transition e_r b_t b_r;" is missing in P2 . . . pass.
+Testing Rule "role_transition c_r b_t e_r;" is 2nd node . . . pass.
+Testing Rule "role_transition c_r b_t e_r;" is changed in P2 . . . pass.
+Testing Rule "role_transition b_r a_t a_r;" is 3rd node . . . pass.
+Testing Rule "role_transition b_r a_t a_r;" is not missing in P2 . . . pass.
+Testing Rule "role_transition a_r atriba b_r;" is 4th node . . . pass.
+Testing Rule "role_transition a_r atriba b_r; atriba = f_t " is missing from P2 . . . pass.
+Testing Rule "role_transition a_r e_t b_r;" is 5th node . . . pass.
+Testing Rule "role_transition a_r e_t b_r;" is missing in P2 . . . pass.
+Testing Rule "role_transition a_r a_t b_r;" is 6th node . . . pass.
+Testing Rule "role_transition a_r a_t b_r;" is missing in P2 . . . pass.

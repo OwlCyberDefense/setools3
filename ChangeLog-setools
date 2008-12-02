@@ -1,0 +1,585 @@
+CHANGE LOG, SE Linux TOOLS (setools)
+=======================================================
+May 17, 2005, Version 2.1.1
+
+libseaudit:
+	updated code to compile with gcc-4.0.0
+	minor bug fixes
+
+sediff:
+	updated code to compile with gcc-4.0.0
+
+seaudit:
+	updated code to compile with gcc-4.0.0
+
+libsefs:
+	updated code to compile with gcc-4.0.0
+
+libapol:
+	updated code to compile with gcc-4.0.0
+	minor bug fixes
+
+seuser:
+	updated code to compile with gcc-4.0.0
+
+======================================================
+April 18, 2005, Version 2.1.0
+
+apol: 
+	improved direct relabel analysis algorithm
+
+libapol: 
+	added policy version 19 support
+	
+sediff:
+	added role transitions, improved role allow
+	added conditional expression differences
+
+=======================================================
+February 16, 2005, Version 2.0
+
+setools:
+	
+libsefs:
+	Converted to use an on-disk SQLite database backend and 
+	  re-designed API to provide the functionality to other 
+	  applications, such as apol.
+libapol:
+	Added support for analyzing direct file relabels.
+	Added support for analyzing relationship between two types.
+	Integrated use of hashtable structures for easily analyzing
+	  differences between policies.
+	Minor bug fixes.
+	
+libseuser:
+	Minor bug fixes.
+	
+apol:
+	New analysis module for performing direct file relabel
+	  analysis.
+	New analysis module for analyzing the relationship be-
+	  tween two types.
+	New interface added for viewing file contexts from an
+	  SELinux filesystem.
+        Improvements to domain transition analysis interface.
+        Minor bug fixes and GUI tweaks.
+        
+secmds:
+	Updated indexcon/searchcon to use an on-disk SQLite database 
+	  in order to decrease memory use. These changes are not
+	  backwards-compatible.
+	  
+seaudit:
+	Integrated reporting functionality into GUI.
+	Minor GUI tweaks.
+
+sediff:
+	New gtk GUI and command-line tools for analyzing the semantic 
+	  differences between two policies. The semantic difference 
+	  of a policy is different from the syntactic difference in 
+	  that it shows the cumulative effect of rules rather than 
+	  doing a line-by-line comparison.
+=======================================================
+November 4, 2004, Version 1.5.1
+
+apol:
+	Fixed compatibility with tcl 8.3.
+	
+libsefs:
+	Fixed compile problem on PPC.
+	
+secmds:
+	Fixed fatal error in replcon.
+	
+setools:
+	Reverted to static linking and fixed various small bugs.
+
+October 27, 2004, Version 1.5
+
+apol: 
+	Advanced options added to forward domain
+	 transition analysis module for performing 
+	 more granular searching of transitions to 
+	 domains using specified classes, permissions 
+	 and target types.
+	Minor bug fixes and improvements.
+	
+libapol: 
+	Fixed to handle new libapol user structs.
+	Enhanced forward domain transition analysis to
+	  perform more granular searching using specified
+	  classes, permissions and target types.
+	Minor bug fixes.
+		
+libseuser: 
+	General clean up of the policy components.
+	Fixed handling of users to be consistent with rest.
+	
+seaudit:
+	New tool (seaudit-report) for generating customized
+	 reports on SE Linux audit messages using saved 
+	 seaudit view files. This tool is highly configurable
+	 and can effectively integrate with the LogWatch 
+	 application for automating SE Linux audit log reporting. 
+	Added feature for exporting audit messages to a 
+	  file, as well as viewing all components of an audit 
+	  message within a text view.
+	
+libseaudit:
+	Updated library to store audit header information, such as
+	 the system call timestamp and serial number.
+	Fixed parse errors for new logs.  
+
+secmds:
+	New tool (indexcon) for creating a snapshot of security 
+	 contexts for SE Linux filesystem entities.
+	New tool (searchcon) for searching the SE Linux filesystem 
+	 database that was created using indexcon.
+	
+=======================================================
+July 7, 2004, Version 1.4.1
+
+setools:
+	Added the install target install-dev to install the
+	  setools headers and libraries for third party
+	  developers (libapol, libseuser, libseaudit).
+
+libapol:
+	Added support for parsing policy version 18 (source
+	  and binary).
+	Added a permission map for version 18 policies.
+	
+libseaudit:
+	Fix timezone related bug that resulted in incorrect
+	  dates displayed in seaudit.
+
+=======================================================
+June 2, 2004, Version 1.4
+
+setools:
+	Made policy installation and file labeling a separate
+	  makefile target to better support non-default policies
+	  like the 'targeted' policy included in Fedora Core 2.
+apol:
+	Added support for the user to change the name of
+	 result tabs.
+	Added new Tool Options dialog for opening limited
+	  portions of the selinux policy.
+	GUI changes to correctly support binary policies.
+	Enhanced display of conditional rules in TE rule
+	  search results.
+libapol: 
+	Added support for loading binary policy files (in 
+	  addition to source policy files).
+	Added utility functions for finding default policies
+	  - both source and binary.
+	Various cleanups and bug fixes to source policy parsing.		
+secmds:
+	Added conditional policy support to seinfo.
+	Changed to use libapol default policy logic.
+seaudit:
+	Changed to use libapol default policy logic.
+	Gui changes to correctly support binary policies.
+libseuser:
+	Changed to use libapol default policy logic.
+
+=======================================================
+May 5, 2004 Version 1.3.1
+
+apol:
+	Fixed to properly exclude object classes and/or 
+	  permissions in information flow analysis.
+libapol:
+	Fixed to properly exclude object classes and/or 
+	  permissions in information flow analysis.
+seuser:
+	Changed default policy.conf location in seuser.conf
+	  to /etc/security/selinux/src/policy/policy.conf 
+	Minor bug fixes.
+sepcut:
+	Minor bug fixes.
+libseuser:
+	Minor fixes to parsing of the seuser.conf file.
+	
+=======================================================
+April 15, 2004 Version 1.3
+
+apol:
+	Added conditional policy support.
+	Added permission weighting for information flows.
+libapol: 
+	Added full support for conditional policies.
+	Included support for policy version 17
+	Various fixes and updates
+seaudit:
+	Added support for audit messages from changing  
+	  booleans in a conditional policy.
+	Added multiple filters/views.
+libseaudit: 
+	Updated to support new audit framework in the 2.6.5
+	  kernel.
+seuser:
+	Added home directory labeling command as command 
+	  line option.
+libseuser:
+	Updated to support home directory labeling.
+secmds:
+	Added new context swap tool (replcon).
+	Added new context search tool (findcon).
+
+	  
+========================================================
+February 6, 2004 Version 1.2.1
+
+Libapol:
+	Fixed parse error when using attributes in role
+	declarations.
+
+========================================================
+February 4, 2004 Version 1.2
+
+Apol:    
+	Added saving and loading queries from the TE rules tab.
+	Added a tab for referencing initial SIDs in the policy.
+	Fixed some memory usage problems in information flow.
+	Combined Forward and Reverse domain transitions into one
+	 analysis module.
+
+Seuser:
+	Some minor changes to command line parsing for better use on 
+	non selinux machines.
+
+Seaudit:
+	Added real-time log monitoring capability.  
+	Added support for hostname recognition in logs.
+	Added ability to select from values that appear in the 
+	 policy or the log, for filtering. An open policy is no 
+	 longer needed to filter a log.
+
+
+Libapol:
+	Added support for new policy language features ('-' in
+	 lists of types and typealias).
+	Enabled conditional policy (v16) support by default.
+	Added support for parsing and storing initial SIDs.
+
+========================================================
+December 30, 2003 Version 1.1.1
+ 
+libapol:
+        fixed memory leakage on information flow analysis
+ 
+seaudit:
+        fixed to properly compile with ISO C90 standards.
+ 
+libseaudit:
+        fixed to properly compile with ISO C90 standards.
+ 
+seuser:
+        fixed build process to properly build with no GUI.
+        fixed help for 'seuser -X'
+        removed default_context and cron_context in seuser.conf
+ 
+secmds:
+        fixed seinfo to display version information
+
+
+========================================================
+December 18, 2003 Version 1.1
+
+Apol:	
+	Significantly improved transitive information flow analysis
+		by allowing for greater control over the types,
+		object classes, and permissions to use in an analysis;
+		as well as the ability to search for multiple paths
+		bounded by number of founds paths and time.
+		Additional work to complete a fully functional
+		transitive flow analysis is planned.
+	Updated to work with restructured libraries
+	Added support for saving and loading analysis queries
+	Additional work to make the fonts and window sizes work better
+
+Seuser:
+	Updated to work with restructured libraries. 
+	Created separate seuser (no X) and seuserx (X) commands
+	
+Secmds: NEW
+	Added new command line tools:
+		seinfo: displays information--including expanded
+			information--about the components of a
+			policy (classes, types, attributes, users,
+			roles), as well as policy stats
+		sesearch: searches and displays type enforcement
+			rules based on criteria such as source
+			and target type, object class, permissions,
+			and rule type
+
+seaudit: NEW 
+	 Added a new GUI-based audit log analysis tool.  The tool allows
+	 	one to view and search SE Linux messages from a log file
+	 	and to analyze the policy for rules that relate to 
+	 	a given audit message.  This is a first generation tool,
+	 	and real-time monitoring of the audit messages is planned.
+
+libseaudit: NEW 
+	    Includes library to parse and store SE Linux audit messages.
+
+Libapol:
+	Added latent support to parse future conditional policy syntax
+	Restructured library to separate core functions from 
+		TCL/TK/X support functions (to allow non-X commands).
+		There are now libapol and libapol-tcl libraries.
+	Removed "dead" code and various bug fixes and clean up
+	Improved transitive information flow analysis.
+	
+Libseuser:
+	Restructured library to separate core functions from TCL/TK/X 
+		support functions (to allow non-X commands). There are
+		now libseuser and libseuser-tcl libraries.
+
+
+========================================================
+October 30, 2003 SE Linux Tools, version 1.0.1
+
+Apol:
+	Update to default font configuration
+
+Sepcut:
+	Update to default font configuration
+
+Seuser:
+	Updated seuser .te file
+	Update seuser Makefile to use -Z option when installing seuser
+	Update to default font configuration
+
+Libapol: 
+	Minor fix to support Tcl 8.4 interface
+	
+========================================================
+September 22, 2003 SE Linux Tools, version 1.0
+
+Added BWidgets source under packages.
+Added support for rpm packages.
+
+Apol:
+	Added reverse domain transition analysis.
+	Added direct information flow analysis.
+	Added an experimental transitive information flow 
+		analysis.  
+	Added permap loading/editing/saving support (required by
+		information flow analyses). 
+	Fixed various bugs.
+
+Sepcut:
+	Added 'Relabel Files' button in the test policy tab.  
+	Fixed various bugs.
+
+Seuser:
+	Fixed forward and backward compatibility in the use of system 
+		user administration utilities (i.e., old versions of 
+		SELinux use suseradd, new versions use useradd).  
+	Changed shell scripts to fix compatibility.
+
+Libapol:
+	Fixed type alias support. 
+	Added support for policy version 15.
+	Added direct information flow analysis capabilities.  
+	Added partial transitive information flow analysis 
+		capabilities.
+	Added reverse domain transition analysis capabilities.
+	Added permap support.
+	Fixed various bugs.
+
+
+
+========================================================
+June 9, 2003 SE Linux Tools, Release 20030609
+
+Apol:
+	Simplified the user interface by consolidating tabs.
+	Various bug fixes and clean up
+
+Sepcut: 
+	Added feature to track recently opened policy dirs
+	Added feature to allow one to save policy module configurations
+		so that one policy directory may be use for multiple
+		configurations.
+	Added feature to allow individual user ability to control
+		tool global settings
+	Enhanced tools ability to stay in sync with on disk view
+	Various minor fixes and code clean up
+	
+Seuser:
+	Various bug fixes and general clean up	
+
+Libapol:
+	Fixed various bugs.
+
+		
+========================================================
+April 10, 2003 SE Linux Tools, Version 0.8
+
+Apol:
+	Added Analysis tab for new domain transition analysis capability.
+	Changed compile process to install just a single, compressed .tcl file
+	Fixed problems with fonts.
+
+Sepcut:
+	Added support for older policy directories (customize
+		tab will disable if domains/program doesn't exist)
+	Minor fixes
+
+Seuser:
+	Significantly changed command line options.  Added rename, show, and load
+		commands.  Added -X, -f, and -R flags.  Made loading policy the
+		default and replaced -L with -N flag.  Removed -g and -r flags.
+	Added seuseradd, seuserdel, and seusermod scripts as shell wrappers for
+		the s* equivalent wrappers that also call seuser as necessary
+		to provide single command-line interface to manage users
+	Completely replaced the graphical user interface (GUI) that supports
+		a single interface to manage both system and selinux
+		user issues
+	Removed support for old-style default context management.
+
+Libapol:
+	Added extensions to support new domain transition analysis
+	Fix various problems with handling '*' in TE rules
+	Remove the OBJ_CLASSES_PERMS compile flag and the associated
+		old dead code.
+	Added command to get types for a given attribute as a list
+	Began restructuring the rule rendering code.
+	Fixed some memory leaks
+	Various bug fixes, clean up, and restructuring
+
+Libseuser:
+	Added commands to get system groups
+	Modified command that returns system users to also identify
+		user type.
+	Added several new command support wrap functions to support new command 
+		line interface.
+	Various bug fixes.
+		
+
+		
+========================================================
+February 27, 2003 SE Linux Tools, Version 0.7
+
+Enhanced SepCut:
+	Added text search feature
+	Added ability to include a policy directory path on command line 
+	Added ability to view all unsaved, modified files in various 
+		dialogs
+	Fixed various bugs
+
+Apol updates:
+	Added a policy.conf tab with search ability
+	Added hyperlinks between TE rules and policy conf allowing one to
+		look up where in policy.conf where a given rule came from
+	Added basic ability to recognize roles declared via dominance statement
+		(semantics of statement still to be done)
+	Fixed various bugs
+
+Libapol:
+	Updated to support apol hyperlinking.
+	Minor bugs
+	
+Seuser:
+	Updated seuser .te file to fix policy dependencies
+
+
+========================================================
+January 09, 2002 SE Linux Tools, Version 0.6.1
+
+Updated install process to allow setools to be installed during 
+	initial selinux system install
+
+Fixed various problems with seuser's policy .te and .fc files 
+	(Wayne Salamon, wsalamon@tislabs.com)
+	
+Fixed way sepcut handle temporary files to accommodate policy
+	fixes
+
+
+
+=========================================================
+
+December 18, 2002 SE Linux Tools, Version 0.6
+
+
+Created SePCuT: SE Linux Policy Customization Tool
+	a first generation GUI policy customization/editing/testing tool
+
+
+Update libapol:
+	Added regular expression searches to types/attribs, TE rules, objects
+	Cleaned up the policy version hints support
+	Tested with MLS enabled and added a compile option
+
+	
+Updated apol:
+	Changes to accommodate regex searches
+	Made displays read only
+	Various minor GUI improvements and bug fixes
+	
+Updated libseuser:
+	Added checks and support for new login context style (support both
+		old and new style)
+	Added buffer overflow checks
+	
+Updates seuser:
+	Supports old and new login context styles
+	Better error checking for command line interface
+
+	
+
+===============================================================
+
+September 21, 2002 SE Linux Tools, Version 0.5
+
+
+Updated libapol:
+	Added object classes and permissions to lib
+	Added avl-tree based sorting (~40% improvement in load time)
+	various minor bugs
+	
+Updated apol:
+	Added object classes and permissions tab
+	Added object classes and permissions as TE rule search options
+	Added multiple results tabs for type enforcement rule searches
+	Added a recent files menu to the File menu
+	Various minor fixes
+	
+Updated libseuser:
+	Added non-TCL/TK wrappers for C programs (to support command line seuser)
+	
+Updated seuser:
+	Added command line version and options
+	
+Misc:
+	General clean up
+	Improved string buffer overflow validation
+		
+=================================================================
+
+
+August 1, 2002 SELinux Tools, Version 0.4.2
+
+Updated libapol:
+	Updated policy parsing to work with July 2002 policy syntax changes
+		Added backward compatibility with older policies
+		Added policy version checking
+		Replaced notify with dontaudit
+		Added new generalized filesystem syntax
+	Added latent structures for object classes and permissions
+	
+Updated apol:
+	Updated GUI to reflect libapol changes
+		Added dontaudit rule selector
+		Made several font fixes
+		Added policy version indicators
+		Various minor GUI fixes		
+		
+Updated seuser:
+	Added a policy for seuser tool itself
+	Various GUI updates and bug fixes
+	Compatibility updates
