@@ -1,0 +1,226 @@
+AN OVERVIEW OF INFORMATION FLOW ASSERTION
+apol, version 2.0
+May 17, 2005
+selinux@tresys.com
+
+THE NEED FOR INFORMATION FLOW ASSERTION AND A FLOW ASSERTION LANGUAGE
+
+Information flow in an access control policy refers to the ability for 
+information to flow from a process or object into another process or 
+object. This can be done directly or transitively through several 
+intermediate types. When analyzing an access control policy the need 
+to see information flow from one type to another is very important 
+and while direct flow is fairly obvious, transitive flows are not. However,
+due to the amount of information that can be presented, manually analyzing 
+the policy for invalid information flows is likely not feasible for a human 
+analyzer. 
+
+In order to automate the analyzing of a policy for invalid information flows, 
+the user would need to formulate a complex query that specifies which types 
+are allowed to flow into one another and through which intermediary types. 
+Thus, in order to facilitate automated validation and regression testing of 
+SELinux policies, the need arises for some sort of batch language that allows 
+the user to create a series of information flow assertions, which can then be 
+validated against the SELinux policy in order to determine if the specified
+statements are true or not.  
+
+UNDERSTANDING THE INFORMATION FLOW ASSERTION LANGUAGE
+
+Engineers at Tresys Technology have successfully developed a batch information
+flow assertion language, whereby each assertion represents a single flow from 
+one type to another.  The primary language construct is 'noflow' whose meaning 
+states that information from the source domain shall never flow to the target 
+domain.  For example the line:
+
+	noflow shadow_t apache_t;
+
+states that the data from domain shadow_t should never flow to apache_t, 
+directly nor indirectly.  Of course in practical systems such statements 
+are not always true.  Suppose for some reason an Apache CGI script requires 
+a user to authenticate through his or her password.  The batch language 
+provides for exceptions to 'noflow' statements.  These are specified as an 
+optional third argument to 'noflow'; if flow does exist, then it will be 
+through an item in the exceptions list.  Thus, if this hypothetical CGI 
+script were of type apache.cgi.trusted_t, then the revised assertion would
+be:
+
+	noflow shadow_t apache_t apache.cgi.trusted_t;
+
+Within the batch language, all three parameters (i.e. source, target, and 
+exception) may instead be written as a set of domains enclosed within braces.  
+If there were multiple trusted CGI scripts one could conceivably have:
+
+	noflow shadow_t apache_t { apache.cgi.trusted1_t apache.cgi.trusted2_t apache.cgi.trusted3_t };
+
+If there is information flow from shadow_t to apache_t then it will be through 
+one or more of the three trusted CGI domains.  For all other conditions the 
+statement evaluates to false.
+
+Both the source and destination parameters may themselves be lists.  If there 
+were two types of shadow files and two types of apache, rather than having four 
+lines representing all permutations one can combine them into a single statement:
+
+	noflow {shadow_t shadow2_t} {apache_t apache2_t};
+
+The assertion statement evaluates to true if and only if all permutations are 
+individually correct (shadow_t to apache_t, shadow_t to apache2_t, shadow2_t 
+to apache_t, shadow2_t to apache2_t).  If any one of them is invalid then the 
+entire assertion is found false.
+
+Giving large numbers of types may be cumbersome; thus, the language allows one  
+to specify attributes instead of individual types.  The language will expand 
+attributes into its' member types.  Suppose there is an attribute 'remote_executable'
+to which all CGI scripts belong. An earlier assertion could instead be written as:
+
+	noflow shadow_t apache_t remote_executable;
+
+However, say that the user does not trust the particular CGI script apache.cgi.untrusted_t 
+which happens to be a member of the 'remote_executable' attribute.  In this case, 
+particular types may be removed from a set by preceeding the attribute name with a '-' 
+character:
+
+	noflow shadow_t apache_t {remote_executable -apache.cgi.untrusted_t};
+
+If the user is extremely paranoid and does not trust anything except for a particular 
+CGI script, he can use the wildcard '*' to indicate all types:
+
+	noflow shadow_t * apache.cgi.trusted_t;
+
+Of course, if this were true, then passwd_t would neither be able to read nor write to 
+shadow_t.  In the future, statements may be refined by way of object classes, which
+may be grouped with braces, however, this is not currently supported. But, for the 
+sake of an example, if one were only interested in flows from shadow_t to an apache_t 
+TCP or UDP packet, then he or she could use the following assertion statement:
+
+	noflow shadow_t apache_t:{tcp_socket udp_socket};
+
+All of these elements may be combined to form more complex assertions. So by way of 
+an example, if a paranoid policy writer wants to deny all access to shadow_t except 
+through passwd_t or from an Apache TCP packet, he or she could use the statement:
+
+	noflow * shadow_t {passwd_t apache_t:tcp_socket};
+
+Two other constructs exist within the batch language.  The first is called 'mustflow', 
+which asserts that flow must exist between the source and target. If no flow was found 
+then the flow assertion is false.  For 'mustflow' constructs, the optional third parameter 
+specifies intermediate types through which data must flow.  If multiple intermediate types 
+are listed, then there must exist a flow path through each one of them.  The following 
+statement:
+
+	mustflow shadow_t apache_t { apache.cgi.trusted1_t apache.cgi.trusted2_t apache.cgi.trusted3_t };
+
+says that there must be at least three information flows from shadow_t to apache_t.  
+One of those flows is by way of apache.cgi.trusted1_t, a second through 
+apache.cgi.trusted2_t, and a third apache.cgi.trusted3_t.  If there is no flow at 
+all between shadow_t to apache_t or if there is not a flow through one of these 
+CGI types the assertion evaluates to false.  Note that there could exist a fourth 
+flow through another intermediary, however, 'mustflow' is only concerned with the
+specified intermediate types, if any.
+
+The third construct is 'onlyflow'.  Unlike the previous two constructs (i.e. noflow 
+and mustflow), 'onlyflow' requires a third argument, which specifies a list of allowed 
+intermediate types.  If data flows from the source to target, then it may only be 
+through one or multiple of these allowed domains.  Otherwise if there exists a flow 
+through a non-specified domain or if there is no flow at all, then the 'onlyflow' 
+predicate evaluates to false.  For example, on a system, the policy writer may want
+to ensure that users (of type user_t) can write to shadow_t by way of passwd_t, and 
+that only passwd_t (and no other types) can do the writing. He would use the following
+assertion statement:
+
+	onlyflow user_t shadow_t passwd_t;
+
+Finally, all assertions may take a final integer parameter. This parameter specifies 
+a minimum weight (i.e. the amount of bandwidth) for the information flow. If one were 
+only interested in writes to shadow_t by way of very overt channels, weights of at 
+least 7 (high bandwidths), then the above assertion becomes:
+
+	onlyflow user_t shadow_t passwd_t 7;
+
+Otherwise, the default behavior is for apol to analyze all possible paths.
+
+Variable substitution:  Variables may be used to store values for use in the assertion 
+rules.  A variable may hold as its value any number of type names or type attributes 
+as well as their associated object classes.  Variables must be declared and assigned 
+a value before their use; referencing undefined variables is a syntax error.  The 
+following declarations define two variables, one of which is dependent upon another. 
+The latter is then used in an assertion statement.
+
+	$foo = some_attribute;
+	$bar = { $foo -type_t };
+	noflow $bar apache_t;
+	
+Complements:  The parser performs attribute expansion while tokenizing its input.  
+Complements are represented by actually removing items from its list of types.  
+Unbounded sets (e.g., the universal set *) are interpreted during execution. As 
+a result removing a type from a * set does not work as intended yet raises no 
+errors.  For example, for the assertion statement:
+
+	noflow {* -some_type} some_other_type;
+
+the language parser will silently ignore the token -some_type because at the time 
+of parsing * has not yet expanded.  Of course, had the statement been:
+
+	noflow {some_atttrib -some_type} some_other_type;
+
+the parser's behavior is as predicted.
+
+
+USING THE INFORMATION FLOW ASSERTION INTERFACE IN APOL
+
+A graphical interface is provided in apol, for creating and executing information
+flow assertions. This interface is available by selecting the Analysis tab and then 
+selecting the 'Information Flow Assertion' item from list of analyses in the top-
+left corner of the tab. From this interface, the user is presented with a clickable 
+text view.  The text within this view comprises the assertion file contents.  
+Everything in here will then be passed to the execution engine by way of clicking
+the 'New' or 'Update' buttons.  
+
+The 'Export Assertions...' and 'Import Assertions...' buttons are used to save and 
+load the assertions to or from a file.  Be aware that these files differ from saving 
+and loading apol's query files. The difference in loading/saving apol's query files 
+is that query files contain two extra header lines identifying the correct tab to 
+raise, as well as the analysis item to select, upon loading; whereas, exporting or
+importing assertions, will only export the assertions from or import the assertions 
+into the clickable text view. 
+
+A 'Clear All' button is provided for clearing the text view of all assertion statements. 
+You can also select a particular assertion statement to edit or delete from the text view 
+by clicking the 'Edit' or 'Delete' buttons. Clicking the 'Edit' button will display the
+flowassert wizard dialog (discussed next), whereby you can then edit statement. Users 
+may also add arbitrary comments with 'Insert Comment...' button.
+
+Clicking the 'Insert Assertion...' button will display the flowassert wizard dialog. 
+This dialog aids the user in creating new assertion statements, as well as editing. 
+The 'Assertion Mode' frame contains radiobuttons for specifying the construct 
+(noflow, mustflow, onlyflow) for the statement. Note that upon seleting an assertion 
+mode, the label for the right-most frame changes dynamically to suit the construct. 
+The following frames consist of widgets for specifying types, attributes and object 
+classes (not currently supported) for each parameter of the assertion statement. By 
+default, the dialog selects the 'Any Type' radiobutton for each field, which upon 
+clicking the 'Add' button, will insert a '*' into the types listbox widget to the 
+bottom. However, upon selecting a particular type or attribute from the types combobox, 
+this radiobutton will be deselected. After selecting a type or selecting the 'Any Type' 
+radiobutton, the user has the choice of specifying whether this type or attribute is 
+to be include or excluded from the set of types by selecting either of the 'Include 
+Type' or 'Exclude Type' radiobuttons. Then upon clicking the 'Add' button, the type 
+will be added to the types listbox. If the user has chosen to exclude the type, a 
+'-' sign (subtract) will be displayed in front of the types label. Clicking on the 
+'OK' button transfers the contents from the types list boxes to the assertion file 
+buffer. You can also remove an item from the types list box by selecting an item
+from the list and then clicking the 'Remove' button below the list box.
+
+UNDERSTANDING THE RESULTS OF AN INFORMATION FLOW ASSERTION ANALYSIS
+
+Unlike the other analysis modules, clicking on 'New' (above) does not generate a tree 
+and results pane.  Instead the assertion file, as given by the file editor, is sent 
+directly to the execution engine.  If the assertions were executed
+successfully, and there were assertion statements that failed, each information flow
+path along with the rule proof consisting of hyperlinked rule line numbers to 
+policy.conf tab are rendered in the text view below each statement that failed. There 
+may be more than one path returned for each statement that failed, because a single 
+statement can expand into multiple assertions. Finally, a brief summary is 
+written at the top indicating the number of assertions that passed/failed and if any
+lines were malformed.
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
