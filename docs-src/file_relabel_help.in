@@ -1,0 +1,117 @@
+AN OVERVIEW OF FILE RELABEL ANALYSIS
+apol, version APOL_GUI_VERSION
+MOD_DATE
+selinux@tresys.com
+
+UNDERSTANDING FILE RELABEL ANALYSIS
+
+The permission to relabel a file has elevated significance in a type enforcement 
+system.  The ability to change type leads to the possibility of circumventing 
+the control provided by the type enforcement policy.  Therefore it is useful 
+to be able to analyze the ability to relabel both from the standpoint of policy 
+development, deciding to what extent to permit relabeling, and that of system 
+administration, detecting potential vulnerabilities from less obvious access or 
+unwanted information flows. Several cases exist for the use of this type of 
+analysis as enumerated below (It should be noted that the cases presented are 
+not intended to be an exhaustive list):
+
+Case 1:
+The first case is the simplest and most common search desired - given a starting
+type, in a single step, to what types can it be relabeled in which domains.  
+
+Case 2:
+The second case involves searching from a given end type for a list of types 
+from which it could be relabeled in a single step. 
+
+Case 3:
+The third case is a single domain search for all possible start and end types 
+that a given domain can relabel. 
+
+Case 4:
+Another case that arises in analyzing the relabeling permissions of a policy 
+is whether there exists the ability to relabel a file to and/or from one type to
+another type associated with a particular object class. This is essentially a 
+filtering of case 1, 2 and 3. 
+
+Case 5:
+Heretofore all cases have involved only a single domain. The fifth case is much 
+more complex - is it possible for a file of a given type in a given starting 
+domain to be relabeled to an given end type through a series of relabel and domain 
+transitions.  This case requires a transitive analysis and is not currently 
+implemented, however, the transitive analysis will be available in the near future
+making this type of search available.
+
+USING THE DIRECT FILE RELABEL ANALYSIS INTERFACE IN APOL
+
+File relabel analysis in apol is designed to facilitate querying an SELinux 
+policy for the possible changes for any given type provided by the special
+permissions 'relabelto' and 'relabelfrom'. There are two modes for a query:
+
+	- Object mode - must indicate the direction of the relabeling (i.e.
+			To, From, or Both)
+	- Subject mode
+	
+In Object mode, the analysis examines relabeling from the perspective of an 
+object entity, which does not initiate the relabeling action, but rather is
+subjected to being relabeled. In this mode, the direction of the relabeling
+can be further controlled for the analysis. The directions are To, From, or
+Both. So for example, using this analysis, one can choose to determine all 
+types 'to' which relabeling is possible, given a starting type. Additionally, 
+one can choose to determine all types 'from' which relabeling is possible, 
+given an ending type or find all types 'to' or 'from' which relabeling is 
+possible (both).
+
+In Subject mode, the analysis examines relabeling from the perspective of the 
+subject entity, which actually initiates the relabeling. So for example, one
+can determine all types 'to' and 'from' which that subject can relabel.
+
+The interface provides the user with radiobuttons for selecting the desired
+mode for the query. Upon selecting Object mode, two checkbuttons will become 
+enabled for specifying the direction of the relabeling to the query. By default, 
+the direction is set to Both, which is indicated by both checkbuttons being 
+selected. Also, upon selecting the checkbuttons, the labels within the 'Required
+parameters' frame will change accordingly. 
+
+Within the 'Required parameters' frame are comboboxes, the top-most of which is 
+for specifying the starting/ending type to the query. The combobox below is only 
+used to filter the list of types from which to choose in the starting/ending type 
+combobox and has no affect on the query.
+
+Within the 'Optional result filters' frame are options for filtering the results
+of the query by end type using a regular expression and/or filtering the results
+based upion the object class of the ending type. The ability to filter types given 
+a desired set of permissions would also be useful, however, this will be available 
+in the near future. Note, that the list of object classes provided does not 
+necessarily include all of the object classes defined in the policy, as this list
+has been filtered to include only object classes which have the 'relabelto' and
+'relabelfrom' permission.
+
+UNDERSTANDING THE RESULTS OF A DIRECT FILE RELABEL ANALYSIS
+
+The results of the query are represented by a tree with the given starting/ending
+type as the parent node of the tree. However, the child nodes of the tree are
+represented differently based upon the specified mode of the query. 
+
+If the user has specified Object mode, the child nodes will consist of all of the 
+ending types included within the results. Selecting a child node from the tree, 
+will display the subjects that can relabel the given starting/ending type to or 
+from the selected ending type, along with the rule proof and if a policy source 
+file is loaded, hyperlinked line numbers to the policy.conf tab.  Selecting the 
+parent node of the tree when in Object mode will display a brief summary of the 
+number of ending types found and some simple instructions. 
+
+If the user has specified Subject mode, the tree will contain only two child nodes, 
+labeled 'To' and 'From' respectively. Each of these nodes may contain a subtree of 
+end types representing the types to and from which the specified domain can relabel. 
+The user may choose to expand the subtrees to view the returned list of ending types. 
+Selecting an end type from one of these subtrees, will display information indicating 
+that the starting/ending type can relabel to or from (depending on which subtree is 
+selected) the selected domain type, along with the rule proof and if a policy source 
+file is loaded, hyperlinked line numbers to the policy.conf tab. Also, selecting the 
+parent node of the tree when in Subject mode will display a brief summary and some 
+simple instructions.
+
+
+
+
+                                                         

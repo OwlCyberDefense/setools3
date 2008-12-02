@@ -1,0 +1,37 @@
+# sediff tools - command-line and GUI
+
+LIBAPOL		= ../libapol/libapol.a
+INCLUDE		= -I.. -I../libapol
+GUI-OBJS	= sediff_gui.o sediff_treemodel.o utilgui.o
+GTK_CFLAGS      = `pkg-config --cflags libglade-2.0`
+GTK_LIBS        = `pkg-config --libs libglade-2.0`
+GLADE_FILES     = 
+
+CFLAGS  	+= -DSEDIFF_VERSION_NUM='"$(shell cat SEDIFF_VERSION)"'
+CFLAGS  	+= -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
+CFLAGS  	+= -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
+
+all: sediff sediffx
+
+sediff: sediff.o $(LIBAPOL)
+	$(CC) -o $@ sediff.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
+
+sediffx: $(LIBAPOL) $(GUI-OBJS)
+	$(CC) $(GUI-OBJS) -o $@ $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS) 
+
+install-nogui: sediff 
+	install -m 755 sediff $(BINDIR);
+	
+install: all
+	install -m 755 sediff sediffx $(BINDIR);
+
+%.o:  %.c
+	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(INCLUDE) -c $<
+
+$(LIBAPOL):
+	cd ../ ; $(MAKE) libapol
+
+clean:
+	rm -f *.o core* sediff sediffx *~
+bare:
+	rm -f *.o core* sediff sediffx *~
