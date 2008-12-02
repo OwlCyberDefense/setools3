@@ -1,0 +1,56 @@
+AN OVERVIEW OF TWO TYPES RELATIONSHIP ANALYSIS
+apol, version 1.6
+December 18, 2004
+selinux@tresys.com
+
+
+Apol allows one to analyze an SELinux policy to understand the relationship 
+between two specific types that are defined in the policy. Policy developers 
+may want to know if there exists any relationship (or interactions) between 
+typeA and typeB and exactly what makes up that relationship (i.e., what rules, 
+permissions, attributes, roles, etc. exist that cause or allow interactions 
+between the two types). Or they may want to determine whether a particular 
+type is completely isolated from another. This analysis can also be used as a 
+stepping stone to analyzing dependencies within a policy. For example, one may 
+want to determine whether typeA is dependent upon typeB or vice versa. Does typeA 
+need to write to typeB or read from typeB to perform its' duties? What happens 
+if typeA is removed from the policy?
+
+Additional questions that this type of analysis may answer include: Are both 
+types assigned to a common attribute or role? What users have access to this 
+attribute and under what roles? What common object types do the types in 
+question need to access? What makes them similar? What makes them unique, 
+thus needing a separate type defined? How do the types, particularly domains, 
+interact with each other; through process signaling or through a more complex 
+interprocess communication (IPC) mechanism? Do the two types share any data 
+and if so, how does information move from one domain to another?
+
+
+UNDERSTANDING THE RELATIONSHIP BETWEEN TWO TYPES
+
+When discussing the relationship between two types, the following aspects 
+need to be determined:
+
+  - the attribute(s) to which both types are assigned (common attribs) 
+  - the role(s) which have access to both TypeA and TypeB (common roles)
+  - the users which have access to both TypeA and TypeB (common users) 
+  - all type transition rules from TypeA to TypeB or from TypeB  
+    to TypeA. 
+  - any process interactions between TypeA and TypeB (e.g., allow rules that   
+    allow TypeA and TypeB to send signals to each other).  
+  - object types to which both types are granted access. 
+  - the unique object types to which TypeA and TypeB have access. 
+  - any direct information flows between TypeA and TypeB (see "Information 
+    Flow Analysis" under the Help menu) 
+  - any transitive information flows between TypeA and TypeB (see "Information 
+    Flow Analysis" under the Help menu) 
+  - any domain transitions from TypeA to TypeB or from TypeB to TypeA. 
+    (see "Domain  Transition Analysis" under the Help menu) 
+    
+This analysis may contain an overwhelming amount of information, so the results 
+are simplified by listing each aspect of the analysis as a separate element 
+within the listbox. This allows the user to select any aspect of the analysis 
+from the listbox and have that specific information displayed within the results 
+textbox. If desired, all results can be displayed at once by selecting the listbox 
+item labeled 'Show All Results'.
+	

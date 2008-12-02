@@ -1,0 +1,204 @@
+SE Linux Policy Customization and Editing Tool Help File
+sepcut, version SEPCUT_GUI_VERSION
+MOD_DATE
+selinux@tresys.com
+
+
+Overview
+--------
+
+This file contains basic help information for using sepcut, a policy 
+customization, browsing, editing, and testing tool for Security 
+Enhanced Linux.  This is version SEPCUT_GUI_VERSION of the tool, i.e., the very first 
+generation.  Sepcut is a basic editor and early generation 
+customization tool....use with caution.
+
+The tool has three main tabs (and associated functions):
+
+	BROWSE POLICY: This tab allows you to browse, view, and edit 
+	any files within a given policy directory.  
+
+	POLICY MODULES: This tab allows you to view all the 
+	program "modules" within a policy directory, as well as to 
+	enable/disable the module within the built policy.  Each 
+	module has a .te and .fc file, each of which may also be 
+	edited within this tab.
+
+	TEST POLICY:  This tab allows you to test build, install, and 
+	load a 	policy (i.e., by invoking one of the standard make 
+	targets) and view the results.  
+
+Together these three tabs gives you a complete, albeit basic, ability 
+to view, edit, test, and debug a policy source directory.  
+
+
+Menus
+-----
+
+Most of the menus are straightforward.  
+
+	POLICY menu:  This menu allows you to choose (open) a policy 
+	directory, re-load the currently opened policy directory, or close 
+	the current policy directory.  A close happens implicitly on opening 
+	or re-opening a policy directory.  The tool will do some basic 
+	checking, and if it determines that the chosen directory does not 
+	appear to be a valid policy directory, it will refuse to open the 
+	directory and provide some error message. This tool requires a 
+	reasonably modern policy source directory, that includes the 
+	modularized .te and .fc program directories.  Sorry, this tool will  
+	not work with older source directories. This menu also gives you the 
+	ability to save all modified files as well as save/load module 
+	configurations. However, you can only save/load module configurations 
+	from the "Policy Modules" tab (see Policy Configurations 
+	section below for more information). 
+	
+	*You can define a policy directory to be opened by default when 
+	the tool starts in the global defaults (see below).
+	
+	FILE menu:  This menu allows you to view, save or revert files 
+	that have been modified.  You can only do "save as" from the 
+	browse tab (the Policy Modules tab allows you to create new modules 
+	on the next menu).
+	
+	EDIT menu:  This menu lets you do three types of functions. 
+	First, in the Policy Modules tab only, you can add or delete a new 
+	module, which will create both a .te and .fc file for the new 
+	module.  For Add module, these files are created on disk 
+	immediately and added to the current display. Stubs of the 
+	file contents are also created.  Future changes will need to 
+	be saved.  You can also delete a module (which would 
+	permanently delete both the .te and .fc files).  
+	
+		NOTE:  We strongly recommend against deleting modules;
+		rather just disable them in the Policy Modules 
+		tab.
+	
+	You can also enable all modules from the Edit menu.
+	
+	The Edit menu also allows you to go to a particular line in 
+	the currently displayed file, as well as to toggle the Edit 
+	mode.  This tool has a read-only and an edit mode.  The default 
+	setting for this mode is defined in the global defaults 
+	setting (see below). Additionally, you can perform a text search
+	from this menu. 
+	
+	OPTIONS menu:  This menu allows you to define default tool settings 
+	when the tool starts (see Setting Global Defaults:section below).
+
+Browse Policy Tab:
+-----------------
+
+This tab is a simple browser, file viewer, and editor.  You can view 
+and edit any file below the root of the policy directory.  You can 
+also "save as" a file to another file, but the tool will not let you 
+save a file outside the policy directory and its subdirectories.  This 
+tab remains entirely consistent with any changes (enable/disable, file 
+modifications/removal) performed in the Policy Modules tab.
+
+
+Policy Modules Tab:
+----------------------
+
+This tab gives you a program module view of a policy source tree.  The 
+view focuses on the ./domains/programs directory for type enforcement 
+(.te) policy files and their associated file context (.fc) files in 
+file_contexts/programs.  The convention is that each .te program file 
+must have a .fc file with the same root filename.  This tab treats 
+both files as two halves of a single module package, and allows you to 
+enable (include in the built policy) and disable (exclude from the 
+built policy) modules by checking the associated checkbox.  The tool 
+disables a module by moving its .te file to an "unused" subdirectory, 
+which will cause it (and its associated .fc) file to be excluded from 
+the build process. It is recommended that the user save the default 
+state of the policy before enabling/disabling modules, by selecting 
+"Save Module Configuration" from the Policy menu. This way the user can 
+reload the previous state should any problems occur or simply use this 
+state as a starting point for further policy configurations. (see 
+Policy Configurations section below for more information).
+
+NOTE:	At some time we'll need to do some serious work in the policy
+	to check for dependencies so a tool like this can ensure that
+	dependencies are not violated...for now it's trial and error.  
+
+Program modules can be displayed by filename or by descriptive name. 
+The convention for descriptive name is to look for the first line to 
+have a "#DESC" tag, and take the string following that tag as 
+the descriptive name.  Not all files follow this convention, in which 
+case we use the filename for both.  
+
+
+Test Policy Tab:
+---------------
+
+This tab allows you to test compile the policy, with all changes and
+module inclusions as specified in other tabs, to check for errors.
+The TEST button will run the policy source through checkpolicy 
+(i.e., compile the policy and check for syntax/semantic errors).
+The CLEAN button will run a "make clean" on the policy directory.
+The INSTALL button will compile the policy and attempt to
+store the resulting binary in the system install location (if
+you have permission).  The LOAD button does the same as install, but
+also immediately loads the new policy into the kernel.  The RELABEL
+button will relabel the entire filesystem.  Use this button with caution 
+because it will take serveral minutes to complete.
+
+You can also open the policy.conf file that results from a test
+compile, and search by line number in that file.  This is useful
+as it's really the only debug technique that exists for policy
+compile errors.  
+
+We also recommend using our policy analysis tool (apol) on the same
+policy.conf file to help understand a policy.
+
+
+Setting Global Defaults:
+-----------------------
+
+Sepcut default settings can be configured by editing your ~/.sepcut file. 
+If this file does  not exist, sepcut will create it on exit and save all 
+current settings here. These settings include whether the tool starts in  
+edit or read-only mode, whether a policy is opened by default, and whether 
+to show file names for the list of modules on the Policy Modules tab.  You can 
+edit these settings  directly in your ~/.sepcut file.  The default settings 
+section looks like:
+	..
+	[initial_edit_mode]
+	1
+	[inital_policy_dir]
+	
+	[show_customize_file_names]
+	0
+
+An explanation of each tag is as follows:
+
+	initial_edit_mode - determines whether the tool starts in edit or read-only 
+		            mode (0 read only, 1 edit mode).
+	
+	inital_policy_dir - if defined with something other than "", determines
+			    what policy directory will open (load) by default.
+	
+	show_customize_file_names - determines whether modules are listed using 
+		     		    descriptive name (0) or file name (1), by  
+		     		    default, in the Policy Modules tab.
+
+Policy Configurations:
+-----------------------
+
+Sepcut provides the ability for saving and loading the state of a configured
+policy (i.e. a list of used and un-used policy modules). A saved policy 
+configuration has ".pcfg" as its' file extension. NOTE: Loading a saved policy
+configuration may CHANGE the current state of the policy! Therefore, it is 
+recommended that the user save the current state of the policy before loading.
+When loading a saved policy configuration, sepcut will read in all used and 
+unused policy module names from the configuration file and then perform 
+enabling/disabling of the actual modules in the policy directory. After loading 
+the configuration, if there were any modules specified in the configuration file 
+that were missing from the policy directory, a list of these modules will be 
+displayed.
+
+Known bugs
+----------
+
+
+
+                      
