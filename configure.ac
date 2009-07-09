@@ -549,8 +549,8 @@ fi
 
 dnl check for new error code format, added in libsepol 2.0.0
 AC_CHECK_HEADER([sepol/errcodes.h],
-	        sepol_new_errcodes="yes",
-                sepol_new_errcodes="no")
+	        sepol_new_defines="yes",
+                sepol_new_defines="no")
 
 AC_RUN_IFELSE(
    [AC_LANG_SOURCE([
@@ -781,11 +781,9 @@ AC_DEFINE_UNQUOTED(LIBSEFS_VERSION_STRING, "${libsefs_version}", [libsefs versio
 AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
 AC_DEFINE_UNQUOTED(TEST_POLICIES, "${test_policies}", [location of testing policies])
 
-if test ${sepol_new_errcodes} != "yes" ; then
+if test ${sepol_new_defines} != "yes" ; then
    AC_DEFINE(SEPOL_ENOMEM, HASHTAB_OVERFLOW, [remap of libsepol 1.x.x define to 2.x.x])
    AC_DEFINE(SEPOL_EEXIST, HASHTAB_PRESENT, [remap of libsepol 1.x.x define to 2.x.x])
-else
-   AC_DEFINE(HAVE_SEPOL_ERRCODES, 1, [if libsepol has errcodes.h])
 fi
 if test ${sepol_new_expand_boolmap} == "yes" ; then
    AC_DEFINE(HAVE_SEPOL_BOOLMAP, 1, [sepol's new expand boolmap behavior])
