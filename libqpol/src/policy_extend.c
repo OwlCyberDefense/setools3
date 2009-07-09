@@ -32,9 +32,7 @@
 #include <sepol/policydb/flask.h>
 #include <sepol/policydb/ebitmap.h>
 #include <sepol/policydb/expand.h>
-#ifdef HAVE_SEPOL_ERRCODES
 #include <sepol/errcodes.h>
-#endif
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
 #include <qpol/iterator.h>
