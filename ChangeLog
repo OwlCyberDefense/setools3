@@ -1,3 +1,8 @@
+2009-05-26  Jeremy Solt <jsolt@tresys.com>
+
+	* Modified seaudit to show the raw audit message when doubleclicking
+	an entry.
+
 2008-09-11  J. Tang  <jtang@tresys.com>
 
 	* Fixed error in qpol_policy_rebuild_opt() where a policy's
