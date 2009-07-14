@@ -91,6 +91,8 @@ extern "C"
 	void *ebitmap_state_get_cur_type(const qpol_iterator_t * iter);
 	void *ebitmap_state_get_cur_role(const qpol_iterator_t * iter);
 	void *ebitmap_state_get_cur_cat(const qpol_iterator_t * iter);
+	void *ebitmap_state_get_cur_permissive(const qpol_iterator_t * iter);
+	void *ebitmap_state_get_cur_polcap(const qpol_iterator_t * iter);
 	void *ocon_state_get_cur(const qpol_iterator_t * iter);
 	void *perm_state_get_cur(const qpol_iterator_t * iter);
 	void *avtab_state_get_cur(const qpol_iterator_t * iter);

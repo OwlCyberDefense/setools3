@@ -28,6 +28,8 @@ libapol_a_SOURCES = \
 	mls_range.c \
 	netcon-query.c \
 	perm-map.c \
+	permissive-query.c \
+	polcap-query.c \
 	policy.c \
 	policy-path.c \
 	policy-query.c \

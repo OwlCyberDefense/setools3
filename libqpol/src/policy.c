@@ -5,6 +5,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
  *  @author Brandon Whalen bwhalen@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2006-2008 Tresys Technology, LLC
  *
@@ -1480,7 +1481,7 @@ int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e c
 	switch (cap) {
 	case QPOL_CAP_ATTRIB_NAMES:
 	{
-		if (policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY)
+		if ((policy->type == QPOL_POLICY_KERNEL_SOURCE || policy->type == QPOL_POLICY_MODULE_BINARY) || (version >= 24))
 			return 1;
 		break;
 	}
