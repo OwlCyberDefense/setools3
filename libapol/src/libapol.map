@@ -78,3 +78,9 @@ VERS_4.1{
 		apol_str_to_protocol;
 		apol_str_to_objclass;
 } VERS_4.0;
+
+VERS_4.2{
+	global:
+		apol_permissive_*;
+		apol_polcap_*;
+} VERS_4.1;

@@ -7,6 +7,7 @@
  * @author Frank Mayer  mayerf@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author David Windsor dwindsor@tresys.com
+ * @author Steve Lawrence slawrence@tresys.com
  *
  * Copyright (C) 2003-2008 Tresys Technology, LLC
  *
@@ -65,6 +66,7 @@ enum opt_values
 	OPT_SENSITIVITY = 256, OPT_CATEGORY,
 	OPT_INITIALSID, OPT_FS_USE, OPT_GENFSCON,
 	OPT_NETIFCON, OPT_NODECON, OPT_PORTCON, OPT_PROTOCOL,
+	OPT_PERMISSIVE, OPT_POLCAP,
 	OPT_ALL, OPT_STATS
 };
 
@@ -82,6 +84,8 @@ static struct option const longopts[] = {
 	{"genfscon", optional_argument, NULL, OPT_GENFSCON},
 	{"netifcon", optional_argument, NULL, OPT_NETIFCON},
 	{"nodecon", optional_argument, NULL, OPT_NODECON},
+	{"permissive", optional_argument, NULL, OPT_PERMISSIVE},
+	{"polcap", optional_argument, NULL, OPT_POLCAP},
 	{"portcon", optional_argument, NULL, OPT_PORTCON},
 	{"protocol", required_argument, NULL, OPT_PROTOCOL},
 	{"stats", no_argument, NULL, OPT_STATS},
@@ -121,6 +125,8 @@ void usage(const char *program_name, int brief)
 	printf("  --genfscon[=TYPE]                print genfscon statements\n");
 	printf("  --netifcon[=NAME]                print netif contexts\n");
 	printf("  --nodecon[=ADDR]                 print node contexts\n");
+	printf("  --permissive                     print permissive types\n");
+	printf("  --polcap                         print policy capabilities\n");
 	printf("  --portcon[=PORT]                 print port contexts\n");
 	printf("  --protocol=PROTO                 specify a protocol for portcons\n");
 	printf("  --all                            print all of the above\n");
@@ -163,7 +169,8 @@ static int print_stats(FILE * fp, const apol_policy_t * policydb)
 		n_cats = 0, n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0,
 		n_genfscons = 0, n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
 		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0, n_roleallows = 0,
-		n_roletrans = 0, n_rangetrans = 0, n_constr = 0, n_vtrans = 0;
+		n_roletrans = 0, n_rangetrans = 0, n_constr = 0, n_vtrans = 0, n_permissives = 0,
+		n_polcaps = 0;
 
 	assert(policydb != NULL);
 
@@ -379,6 +386,20 @@ static int print_stats(FILE * fp, const apol_policy_t * policydb)
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Netifcon:      %7zd    Nodecon:       %7zd\n", n_netifcons, n_nodecons);
+
+	/* permissives/polcaps */
+	if (qpol_policy_get_permissive_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_permissives))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_polcap_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_polcaps))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Permissives:   %7zd    Polcap:        %7zd\n", n_permissives, n_polcaps);
+	
 	fprintf(fp, "\n");
 
 	retval = 0;
@@ -1223,22 +1244,111 @@ static int print_isids(FILE * fp, const char *name, int expand, const apol_polic
 	return retval;
 }
 
+/**
+ * Prints statistics regarding a policy's permissives.
+ * If this function is given a name, it will attempt to
+ * print statistics about a particular permissive; otherwise
+ * the function prints statistics about all of the policy's permissives.
+ *
+ * @param fp Reference to a file to which to print statistics
+ * @param name Reference to a permissives name; if NULL,
+ * all permissives will be considered
+ * @param expand Flag indicating whether to print each
+ * @param policydb Reference to a policy
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int print_permissives(FILE * fp, const char *name, int expand, const apol_policy_t * policydb)
+{
+	int retval = -1;
+	const char *tmp = NULL;
+	const qpol_permissive_t *permissive_datum = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policydb);
+	size_t n_permissives = 0;
+
+	if (qpol_policy_get_permissive_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_permissives))
+		goto cleanup;
+	fprintf(fp, "\nPermissive Types: %zd\n", n_permissives);
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&permissive_datum))
+			goto cleanup;
+		if (qpol_permissive_get_name(q, permissive_datum, &tmp))
+			goto cleanup;
+		if (!tmp)
+			goto cleanup;
+		fprintf(fp, "   %s\n", tmp);
+	}
+		
+	retval = 0;
+      cleanup:
+	qpol_iterator_destroy(&iter);
+	return retval;
+}
+
+/**
+ * Prints statistics regarding a policy's capabilities.
+ * If this function is given a name, it will attempt to
+ * print statistics about a particular capability; otherwise
+ * the function prints statistics about all of the policy's capabilities.
+ *
+ * @param fp Reference to a file to which to print statistics
+ * @param name Reference to a policy capability name; if NULL,
+ * all capabilities will be considered
+ * @param expand Flag indicating whether to print each
+ * @param policydb Reference to a policy
+ *
+ * @return 0 on success, < 0 on error.
+ */
+
+static int print_polcaps(FILE * fp, const char *name, int expand, const apol_policy_t * policydb)
+{
+	int retval = -1;
+	const char *tmp = NULL;
+	qpol_polcap_t *polcap_datum = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_policy_t *q = apol_policy_get_qpol(policydb);
+	size_t n_polcaps = 0;
+
+	if (qpol_policy_get_polcap_iter(q, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_polcaps))
+		goto cleanup;
+	fprintf(fp, "\nPolicy Capabilities: %zd\n", n_polcaps);
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **)&polcap_datum))
+			goto cleanup;
+		if (qpol_polcap_get_name(q, polcap_datum, &tmp))
+			goto cleanup;
+		if (!tmp)
+			goto cleanup;
+		fprintf(fp, "   %s\n", tmp);
+	}
+	
+	retval = 0;
+      cleanup:
+	qpol_iterator_destroy(&iter);
+	return retval;
+}
+
 int main(int argc, char **argv)
 {
 	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids, bools, sens, cats, fsuse, genfs, netif,
-		node, port;
+		node, port, permissives, polcaps;
 	apol_policy_t *policydb = NULL;
 	apol_policy_path_t *pol_path = NULL;
 	apol_vector_t *mod_paths = NULL;
 	apol_policy_path_type_e path_type = APOL_POLICY_PATH_TYPE_MONOLITHIC;
 
 	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name, *sens_name, *cat_name,
-		*fsuse_type, *genfs_type, *netif_name, *node_addr, *port_num = NULL, *protocol = NULL;
+		*fsuse_type, *genfs_type, *netif_name, *node_addr, *permissive_name, *polcap_name, *port_num = NULL, *protocol = NULL;
 
 	class_name = type_name = attrib_name = role_name = user_name = isid_name = bool_name = sens_name = cat_name = fsuse_type =
-		genfs_type = netif_name = node_addr = port_num = NULL;
+		genfs_type = netif_name = node_addr = port_num = permissive_name = polcap_name = NULL;
 	classes = types = attribs = roles = users = all = expand = stats = isids = bools = sens = cats = fsuse = genfs = netif =
-		node = port = 0;
+		node = port = permissives = polcaps = 0;
 	while ((optc = getopt_long(argc, argv, "c::t::a::r::u::b::xhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
@@ -1308,6 +1418,16 @@ int main(int argc, char **argv)
 			if (optarg != 0)
 				node_addr = optarg;
 			break;
+		case OPT_PERMISSIVE:
+			permissives = 1;
+			if (optarg != 0)
+				permissive_name = optarg;
+			break;
+		case OPT_POLCAP:
+			polcaps = 1;
+			if (optarg != 0)
+				polcap_name = optarg;
+			break;
 		case OPT_PORTCON:
 			port = 1;
 			if (optarg != 0)
@@ -1345,7 +1465,7 @@ int main(int argc, char **argv)
 	}
 
 	/* if no options, then show stats */
-	if (classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + all < 1) {
+	if (classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + permissives + polcaps + all < 1) {
 		stats = 1;
 	}
 
@@ -1443,6 +1563,10 @@ int main(int argc, char **argv)
 		print_portcon(stdout, port_num, protocol, policydb);
 	if (isids || all)
 		print_isids(stdout, isid_name, expand, policydb);
+	if (permissives || all)
+		print_permissives(stdout, permissive_name, expand, policydb);
+	if (polcaps || all)
+		print_polcaps(stdout, polcap_name, expand, policydb);
 
 	apol_policy_destroy(&policydb);
 	apol_policy_path_destroy(&pol_path);
