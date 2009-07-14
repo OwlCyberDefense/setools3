@@ -190,6 +190,44 @@ extern "C"
 			      regex_t ** type_regex);
 
 /**
+ * Determines if a (partial) permissive query matches a qpol_permissive_t,
+ * by name.
+ *
+ * @param p Policy within which to look up types.
+ * @param type Permissive datum to compare against.
+ * @param name Source target from which to compare.
+ * @param flags If APOL_QUERY_REGEX bit is set, treat name as a
+ * regular expression.
+ * @param regex If using regexp comparison, the compiled regular
+ * expression to use; the pointer will be allocated space if regexp is
+ * legal.  If NULL, then compile the regexp pattern given by name and
+ * cache it here.
+ *
+ * @return 1 If comparison succeeds, 0 if not; < 0 on error.
+ */
+	int apol_compare_permissive(const apol_policy_t * p, const qpol_permissive_t * permissive, const char *name, unsigned int flags,
+			      regex_t ** type_regex);
+
+/**
+ * Determines if a (partial) polcap query matches a qpol_polcap_t,
+ * by name.
+ *
+ * @param p Policy within which to look up types.
+ * @param type Polcap datum to compare against.
+ * @param name Source target from which to compare.
+ * @param flags If APOL_QUERY_REGEX bit is set, treat name as a
+ * regular expression.
+ * @param regex If using regexp comparison, the compiled regular
+ * expression to use; the pointer will be allocated space if regexp is
+ * legal.  If NULL, then compile the regexp pattern given by name and
+ * cache it here.
+ *
+ * @return 1 If comparison succeeds, 0 if not; < 0 on error.
+ */
+	int apol_compare_polcap(const apol_policy_t * p, const qpol_polcap_t * polcap, const char *name, unsigned int flags,
+			      regex_t ** type_regex);
+
+/**
  * Determines if a boolean is used within a particual conditional.
  *
  * @param p Policy within which to look up types.

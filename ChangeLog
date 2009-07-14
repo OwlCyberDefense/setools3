@@ -3,6 +3,17 @@
 	* Modified seaudit to show the raw audit message when doubleclicking
 	an entry.
 
+2009-05-19  Steve Lawrence <slawrence@tresys.com>
+
+	* Add libqpol and libapol support for policy capabilites and
+	permissive domains.
+	* Add policy capabilities and permissive domains querying to seinfo.
+
+2009-05-15  Jeremy Solt <jsolt@tresys.com>
+
+	* Add support for using attribute names available in version 24
+	binary policies.
+
 2008-09-11  J. Tang  <jtang@tresys.com>
 
 	* Fixed error in qpol_policy_rebuild_opt() where a policy's

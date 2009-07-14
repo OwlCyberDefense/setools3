@@ -63,3 +63,11 @@ VERS_1.4 {
 	global:
 		qpol_type_get_ispermissive;
 } VERS_1.3;
+
+VERS_1.5 {
+	global:
+		qpol_policy_permissive_*;
+		qpol_permissive_*;
+		qpol_policy_polcap_*;
+		qpol_polcap_*;
+} VERS_1.4;

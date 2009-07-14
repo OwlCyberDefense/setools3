@@ -51,6 +51,8 @@ extern "C"
 #include <qpol/module.h>
 #include <qpol/netifcon_query.h>
 #include <qpol/nodecon_query.h>
+#include <qpol/permissive_query.h>
+#include <qpol/polcap_query.h>
 #include <qpol/portcon_query.h>
 #include <qpol/rbacrule_query.h>
 #include <qpol/role_query.h>

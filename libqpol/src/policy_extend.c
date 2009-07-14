@@ -5,6 +5,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2006-2008 Tresys Technology, LLC
  *
@@ -208,15 +209,20 @@ static int qpol_policy_build_attrs_from_map(qpol_policy_t * policy)
 		/* first create a new type_datum_t for the attribute,
 		 * with the attribute's type_list consisting of types
 		 * with this attribute */
-		if (db->type_val_to_struct[i] != NULL) {
-			continue;      /* datum already exists? */
+		/* Does not exist */
+		if (db->p_type_val_to_name[i] == NULL){
+			snprintf(buff, 9, "@ttr%04zd", i + 1);
+			tmp_name = strdup(buff);
+			if (!tmp_name) {
+				error = errno;
+				goto err;
+			}
 		}
-		snprintf(buff, 9, "@ttr%04zd", i + 1);
-		tmp_name = strdup(buff);
-		if (!tmp_name) {
-			error = errno;
-			goto err;
-		}
+
+		/* Already exists */
+		else 
+			tmp_name = db->p_type_val_to_name[i];
+
 		tmp_type = calloc(1, sizeof(type_datum_t));
 		if (!tmp_type) {
 			error = errno;
@@ -241,15 +247,29 @@ static int qpol_policy_build_attrs_from_map(qpol_policy_t * policy)
 				}
 			}
 		}
-
-		retv = hashtab_insert(db->p_types.table, (hashtab_key_t) tmp_name, (hashtab_datum_t) tmp_type);
-		if (retv) {
-			if (retv == SEPOL_ENOMEM)
-				error = db->p_types.table ? ENOMEM : EINVAL;
-			else
-				error = EEXIST;
-			goto err;
+		/* Does not exist - insert new */
+		if (db->p_type_val_to_name[i] == NULL){
+			retv = hashtab_insert(db->p_types.table, (hashtab_key_t) tmp_name, (hashtab_datum_t) tmp_type);
+			if (retv) {
+				if (retv == SEPOL_ENOMEM)
+					error = db->p_types.table ? ENOMEM : EINVAL;
+				else
+					error = EEXIST;
+				goto err;
+			}
 		}
+		/* Already exists - replace old */
+		else {
+			retv = hashtab_replace(db->p_types.table, (hashtab_key_t) tmp_name, (hashtab_datum_t) tmp_type, NULL, NULL);
+			if (retv) {
+				if (retv == SEPOL_ENOMEM)
+					error = db->p_types.table ? ENOMEM : EINVAL;
+				else
+					error = EEXIST;
+				goto err;
+			}
+		}
+
 		db->p_type_val_to_name[i] = tmp_name;
 		db->type_val_to_struct[i] = tmp_type;
 
