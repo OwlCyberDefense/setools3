@@ -1,5 +1,9 @@
 2009-07-16  Chris PeBenito <cpebenito@tresys.com>
 
+	* Change default log for seaudit to /var/log/audit/audit.log.
+
+2009-07-16  Chris PeBenito <cpebenito@tresys.com>
+
 	* Change context parsing in libseaudit to use libselinux functions.
 
 2009-06-04  Jeremy Solt <jsolt@tresys.com>
