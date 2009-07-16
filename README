@@ -308,7 +308,7 @@ The main emphasis of SETools is the graphical analysis tools.
       messages to a file.  The tool can also create reports in HTML
       or plaintext format using an entire audit log or an seaudit
       view.  Note that this program is installed in $(PREFIX)/sbin
-      because its main function is to analyze /var/log/messages.
+      because its main function is to analyze /var/log/audit/audit.log.
 
   sediffx:
       A GTK+ graphical tool to semantically compare two policies.
