@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
@@ -56,6 +57,7 @@ struct seaudit_log
 	apol_vector_t *models;
 	apol_bst_t *types, *classes, *roles, *users;
 	apol_bst_t *perms, *hosts, *bools, *managers;
+	apol_bst_t *mls_lvl, *mls_clr;
 	seaudit_log_type_e logtype;
 	seaudit_handle_fn_t fn;
 	void *handle_arg;
@@ -199,12 +201,20 @@ struct seaudit_avc_message
 	char *srole;
 	/** source context's type */
 	char *stype;
+	/** source context's mls level */
+	char *smls_lvl;
+	/** source context's mls clearance */
+	char *smls_clr;
 	/** target context's user */
 	char *tuser;
 	/** target context's role */
 	char *trole;
 	/** target context's type */
 	char *ttype;
+	/** target context's mls level */
+	char *tmls_lvl;
+	/** target context's mls clearance */
+	char *tmls_clr;
 	/** target class */
 	char *tclass;
 	/** audit header timestamp (seconds) */

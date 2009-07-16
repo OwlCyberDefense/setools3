@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
@@ -41,12 +42,20 @@ struct seaudit_filter
 	apol_vector_t *src_roles;
 	/** vector of strings, for source types */
 	apol_vector_t *src_types;
+	/** vector of strings, for source mls levels */
+	apol_vector_t *src_mls_lvl;
+	/** vector of strings, for source mls clearance */
+	apol_vector_t *src_mls_clr;
 	/** vector of strings, for target users */
 	apol_vector_t *tgt_users;
 	/** vector of strings, for target roles */
 	apol_vector_t *tgt_roles;
 	/** vector of strings, for target types */
 	apol_vector_t *tgt_types;
+	/** vector of strings, for target mls levels */
+	apol_vector_t *tgt_mls_lvl;
+	/** vector of strings, for target mls clearance */
+	apol_vector_t *tgt_mls_clr;
 	/** vector of strings, for target object classes */
 	apol_vector_t *tgt_classes;
 	/** criteria for permissions, glob expression */

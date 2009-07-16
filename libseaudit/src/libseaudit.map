@@ -64,3 +64,25 @@ VERS_4.2{
 		seaudit_sort_by_sport;
 		seaudit_sort_create_from_sort;
 } VERS_4.1;
+
+VERS_4.3{
+	global:
+		seaudit_avc_message_get_source__mls_lvl;
+		seaudit_avc_message_get_source__mls_clr;
+		seaudit_avc_message_get_target_mls_lvl;
+		seaudit_avc_message_get_target_mls_clr;
+		seaudit_filter_get_source_mls_lvl;
+		seaudit_filter_get_source_mls_clr;
+		seaudit_filter_set_source_mls_lvl;
+		seaudit_filter_set_source_mls_clr;
+		seaudit_filter_get_target_mls_lvl;
+		seaudit_filter_get_target_mls_clr;
+		seaudit_filter_set_target_mls_lvl;
+		seaudit_filter_set_target_mls_clr;
+		seaudit_log_get_mls_lvl;
+		seaudit_log_get_mls_clr;
+		seaudit_sort_by_source_mls_lvl;
+		seaudit_sort_by_source_mls_clr;
+		seaudit_sort_by_target_mls_lvl;
+		seaudit_sort_by_target_mls_clr;
+} VERS_4.2;

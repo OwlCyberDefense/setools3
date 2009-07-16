@@ -5,6 +5,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -182,6 +183,24 @@ apol_vector_t *seaudit_get_log_types(seaudit_t * s)
 		return NULL;
 	} else {
 		return seaudit_log_get_types(s->log);
+	}
+}
+
+apol_vector_t *seaudit_get_log_mls_lvl(seaudit_t * s)
+{
+	if (s->log == NULL) {
+		return NULL;
+	} else {
+		return seaudit_log_get_mls_lvl(s->log);
+	}
+}
+
+apol_vector_t *seaudit_get_log_mls_clr(seaudit_t * s)
+{
+	if (s->log == NULL) {
+		return NULL;
+	} else {
+		return seaudit_log_get_mls_clr(s->log);
 	}
 }
 

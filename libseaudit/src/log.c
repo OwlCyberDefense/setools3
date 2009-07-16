@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -49,6 +50,8 @@ seaudit_log_t *seaudit_log_create(seaudit_handle_fn_t fn, void *callback_arg)
 	    (log->roles = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->users = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->perms = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->mls_lvl = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->mls_clr = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->hosts = apol_bst_create(apol_str_strcmp, free)) == NULL
 	    || (log->bools = apol_bst_create(apol_str_strcmp, free)) == NULL
 	    || (log->managers = apol_bst_create(apol_str_strcmp, free)) == NULL) {
@@ -81,6 +84,8 @@ void seaudit_log_destroy(seaudit_log_t ** log)
 	apol_bst_destroy(&(*log)->hosts);
 	apol_bst_destroy(&(*log)->bools);
 	apol_bst_destroy(&(*log)->managers);
+	apol_bst_destroy(&(*log)->mls_lvl);
+	apol_bst_destroy(&(*log)->mls_clr);
 	free(*log);
 	*log = NULL;
 }
@@ -101,6 +106,8 @@ void seaudit_log_clear(seaudit_log_t * log)
 	apol_bst_destroy(&log->hosts);
 	apol_bst_destroy(&log->bools);
 	apol_bst_destroy(&log->managers);
+	apol_bst_destroy(&log->mls_lvl);
+	apol_bst_destroy(&log->mls_clr);
 	if ((log->messages = apol_vector_create(message_free)) == NULL ||
 	    (log->malformed_msgs = apol_vector_create(free)) == NULL ||
 	    (log->types = apol_bst_create(apol_str_strcmp, free)) == NULL ||
@@ -108,6 +115,8 @@ void seaudit_log_clear(seaudit_log_t * log)
 	    (log->roles = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->users = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->perms = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->mls_lvl = apol_bst_create(apol_str_strcmp, free)) == NULL ||
+	    (log->mls_clr = apol_bst_create(apol_str_strcmp, free)) == NULL ||
 	    (log->hosts = apol_bst_create(apol_str_strcmp, free)) == NULL
 	    || (log->bools = apol_bst_create(apol_str_strcmp, free)) == NULL
 	    || (log->managers = apol_bst_create(apol_str_strcmp, free)) == NULL) {
@@ -145,6 +154,24 @@ apol_vector_t *seaudit_log_get_types(const seaudit_log_t * log)
 		return NULL;
 	}
 	return apol_bst_get_vector(log->types, 0);
+}
+
+apol_vector_t *seaudit_log_get_mls_lvl(const seaudit_log_t * log)
+{
+	if (log == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return apol_bst_get_vector(log->mls_lvl, 0);
+}
+
+apol_vector_t *seaudit_log_get_mls_clr(const seaudit_log_t * log)
+{
+	if (log == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return apol_bst_get_vector(log->mls_clr, 0);
 }
 
 apol_vector_t *seaudit_log_get_classes(const seaudit_log_t * log)

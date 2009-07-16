@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -152,6 +153,30 @@ apol_vector_t *toplevel_get_log_roles(toplevel_t * top);
  * caller must call apol_vector_destroy() upon the return value.
  */
 apol_vector_t *toplevel_get_log_types(toplevel_t * top);
+
+/**
+ * Return a vector of strings corresponding to all mls
+ * levels found within the current log file.  
+ * The vector will be sorted alphabetically.
+ *
+ * @param top Toplevel containing seaudit log object.
+ *
+ * @return Vector of sorted types, or NULL if no log is loaded.  The
+ * caller must call apol_vector_destroy() upon the return value.
+ */
+apol_vector_t *toplevel_get_log_clr(toplevel_t * top);
+
+/**
+ * Return a vector of strings corresponding to all mls
+ * clearance found within the current log file.  
+ * The vector will be sorted alphabetically.
+ *
+ * @param top Toplevel containing seaudit log object.
+ *
+ * @return Vector of sorted types, or NULL if no log is loaded.  The
+ * caller must call apol_vector_destroy() upon the return value.
+ */
+apol_vector_t *toplevel_get_log_clr(toplevel_t * top);
 
 /**
  * Return a vector of strings corresponding to all object classes
