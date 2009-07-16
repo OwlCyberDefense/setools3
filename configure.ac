@@ -430,6 +430,7 @@ AC_CHECK_HEADER([sepol/sepol.h], , AC_MSG_ERROR([could not find sepol headers at
 AC_CHECK_LIB([sepol], [sepol_policydb_read], ,
              AC_MSG_ERROR([could not find libsepol at $sepol_devel_libdir]))
 AC_CHECK_HEADER([selinux/selinux.h], , AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
+AC_CHECK_HEADER([selinux/context.h], , AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
 AC_CHECK_LIB([selinux], [selinux_policy_root], ,
 AC_MSG_ERROR([could not find libselinux at $selinux_devel_libdir]),
              -lsepol)
