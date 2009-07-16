@@ -16,6 +16,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
@@ -81,12 +82,20 @@ seaudit_filter_t *seaudit_filter_create_from_filter(const seaudit_filter_t * fil
 		&& (f->src_roles = apol_vector_create_from_vector(filter->src_roles, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->src_types != NULL
 		&& (f->src_types = apol_vector_create_from_vector(filter->src_types, apol_str_strdup, NULL, free)) == NULL)
+		|| (filter->src_mls_lvl != NULL
+		&& (f->src_mls_lvl = apol_vector_create_from_vector(filter->src_mls_lvl, apol_str_strdup, NULL, free)) == NULL)
+		|| (filter->src_mls_clr != NULL
+		&& (f->src_mls_clr = apol_vector_create_from_vector(filter->src_mls_clr, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_users != NULL
 		&& (f->tgt_users = apol_vector_create_from_vector(filter->tgt_users, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_roles != NULL
 		&& (f->tgt_roles = apol_vector_create_from_vector(filter->tgt_roles, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_types != NULL
 		&& (f->tgt_types = apol_vector_create_from_vector(filter->tgt_types, apol_str_strdup, NULL, free)) == NULL)
+	    || (filter->tgt_mls_lvl != NULL
+		&& (f->tgt_mls_lvl = apol_vector_create_from_vector(filter->tgt_mls_lvl, apol_str_strdup, NULL, free)) == NULL)
+		|| (filter->tgt_mls_clr != NULL
+		&& (f->tgt_mls_clr = apol_vector_create_from_vector(filter->tgt_mls_clr, apol_str_strdup, NULL, free)) == NULL)
 	    || (filter->tgt_classes != NULL
 		&& (f->tgt_classes = apol_vector_create_from_vector(filter->tgt_classes, apol_str_strdup, NULL, free)) == NULL)) {
 		error = errno;
@@ -184,9 +193,13 @@ void seaudit_filter_destroy(seaudit_filter_t ** filter)
 		apol_vector_destroy(&(*filter)->src_users);
 		apol_vector_destroy(&(*filter)->src_roles);
 		apol_vector_destroy(&(*filter)->src_types);
+		apol_vector_destroy(&(*filter)->src_mls_lvl);
+		apol_vector_destroy(&(*filter)->src_mls_clr);
 		apol_vector_destroy(&(*filter)->tgt_users);
 		apol_vector_destroy(&(*filter)->tgt_roles);
 		apol_vector_destroy(&(*filter)->tgt_types);
+		apol_vector_destroy(&(*filter)->tgt_mls_lvl);
+		apol_vector_destroy(&(*filter)->tgt_mls_clr);		
 		apol_vector_destroy(&(*filter)->tgt_classes);
 		free((*filter)->perm);
 		free((*filter)->exe);
@@ -439,6 +452,41 @@ const apol_vector_t *seaudit_filter_get_source_type(const seaudit_filter_t * fil
 	return filter->src_types;
 }
 
+int seaudit_filter_set_source_mls_lvl(seaudit_filter_t * filter, const apol_vector_t * v)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_vector(filter, &filter->src_mls_lvl, v);
+}
+
+const apol_vector_t *seaudit_filter_get_source_mls_lvl(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return filter->src_mls_lvl;
+}
+
+int seaudit_filter_set_source_mls_clr(seaudit_filter_t * filter, const apol_vector_t * v)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_vector(filter, &filter->src_mls_clr, v);
+}
+
+const apol_vector_t *seaudit_filter_get_source_mls_clr(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return filter->src_mls_clr;
+}
 int seaudit_filter_set_target_user(seaudit_filter_t * filter, const apol_vector_t * v)
 {
 	if (filter == NULL) {
@@ -491,6 +539,42 @@ const apol_vector_t *seaudit_filter_get_target_type(const seaudit_filter_t * fil
 		return NULL;
 	}
 	return filter->tgt_types;
+}
+
+int seaudit_filter_set_target_mls_lvl(seaudit_filter_t * filter, const apol_vector_t * v)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_vector(filter, &filter->tgt_mls_lvl, v);
+}
+
+const apol_vector_t *seaudit_filter_get_target_mls_lvl(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return filter->tgt_mls_lvl;
+}
+
+int seaudit_filter_set_target_mls_clr(seaudit_filter_t * filter, const apol_vector_t * v)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	return filter_set_vector(filter, &filter->tgt_mls_clr, v);
+}
+
+const apol_vector_t *seaudit_filter_get_target_mls_clr(const seaudit_filter_t * filter)
+{
+	if (filter == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	return filter->tgt_mls_clr;
 }
 
 int seaudit_filter_set_target_class(seaudit_filter_t * filter, const apol_vector_t * v)

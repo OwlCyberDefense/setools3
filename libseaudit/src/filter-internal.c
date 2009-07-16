@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
@@ -278,6 +279,58 @@ static void filter_src_type_print(const seaudit_filter_t * filter, const char *n
 	filter_string_vector_print(name, filter->src_types, f, tabs);
 }
 
+static bool filter_src_mls_lvl_is_set(const seaudit_filter_t * filter)
+{
+	return filter->src_mls_lvl != NULL;
+}
+
+static int filter_src_mls_lvl_support(const seaudit_message_t * msg)
+{
+	return msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->smls_lvl != NULL;
+}
+
+static int filter_src_mls_lvl_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_string_vector_read(&filter->src_mls_lvl, ch);
+}
+
+static int filter_src_mls_lvl_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	size_t i;
+	return apol_vector_get_index(filter->src_mls_lvl, msg->data.avc->smls_lvl, apol_str_strcmp, NULL, &i) == 0;
+}
+
+static void filter_src_mls_lvl_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_string_vector_print(name, filter->src_mls_lvl, f, tabs);
+}
+
+static bool filter_src_mls_clr_is_set(const seaudit_filter_t * filter)
+{
+	return filter->src_mls_clr != NULL;
+}
+
+static int filter_src_mls_clr_support(const seaudit_message_t * msg)
+{
+	return msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->smls_clr != NULL;
+}
+
+static int filter_src_mls_clr_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_string_vector_read(&filter->src_mls_clr, ch);
+}
+
+static int filter_src_mls_clr_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	size_t i;
+	return apol_vector_get_index(filter->src_mls_clr, msg->data.avc->smls_clr, apol_str_strcmp, NULL, &i) == 0;
+}
+
+static void filter_src_mls_clr_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_string_vector_print(name, filter->src_mls_clr, f, tabs);
+}
+
 static bool filter_tgt_user_is_set(const seaudit_filter_t * filter)
 {
 	return filter->tgt_users != NULL;
@@ -355,6 +408,59 @@ static void filter_tgt_type_print(const seaudit_filter_t * filter, const char *n
 {
 	filter_string_vector_print(name, filter->tgt_types, f, tabs);
 }
+
+static bool filter_tgt_mls_lvl_is_set(const seaudit_filter_t * filter)
+{
+	return filter->tgt_mls_lvl != NULL;
+}
+
+static int filter_tgt_mls_lvl_support(const seaudit_message_t * msg)
+{
+	return msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->tmls_lvl != NULL;
+}
+
+static int filter_tgt_mls_lvl_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_string_vector_read(&filter->tgt_mls_lvl, ch);
+}
+
+static int filter_tgt_mls_lvl_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	size_t i;
+	return apol_vector_get_index(filter->tgt_mls_lvl, msg->data.avc->tmls_lvl, apol_str_strcmp, NULL, &i) == 0;
+}
+
+static void filter_tgt_mls_lvl_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_string_vector_print(name, filter->tgt_mls_lvl, f, tabs);
+}
+
+static bool filter_tgt_mls_clr_is_set(const seaudit_filter_t * filter)
+{
+	return filter->tgt_mls_clr != NULL;
+}
+
+static int filter_tgt_mls_clr_support(const seaudit_message_t * msg)
+{
+	return msg->type == SEAUDIT_MESSAGE_TYPE_AVC && msg->data.avc->tmls_clr != NULL;
+}
+
+static int filter_tgt_mls_clr_read(seaudit_filter_t * filter, const xmlChar * ch)
+{
+	return filter_string_vector_read(&filter->tgt_mls_clr, ch);
+}
+
+static int filter_tgt_mls_clr_accept(const seaudit_filter_t * filter, const seaudit_message_t * msg)
+{
+	size_t i;
+	return apol_vector_get_index(filter->tgt_mls_clr, msg->data.avc->tmls_clr, apol_str_strcmp, NULL, &i) == 0;
+}
+
+static void filter_tgt_mls_clr_print(const seaudit_filter_t * filter, const char *name, FILE * f, int tabs)
+{
+	filter_string_vector_print(name, filter->tgt_mls_clr, f, tabs);
+}
+
 
 static bool filter_tgt_class_is_set(const seaudit_filter_t * filter)
 {
@@ -1133,12 +1239,20 @@ static const struct filter_criteria_t filter_criteria[] = {
 	 filter_src_role_print},
 	{"src_type", filter_src_type_is_set, filter_src_type_support, filter_src_type_accept, filter_src_type_read,
 	 filter_src_type_print},
+	{"src_mls_lvl", filter_src_mls_lvl_is_set, filter_src_mls_lvl_support, filter_src_mls_lvl_accept, filter_src_mls_lvl_read,
+	 filter_src_mls_lvl_print},
+	{"src_mls_clr", filter_src_mls_clr_is_set, filter_src_mls_clr_support, filter_src_mls_clr_accept, filter_src_mls_clr_read,
+	 filter_src_mls_clr_print},
 	{"tgt_user", filter_tgt_user_is_set, filter_tgt_user_support, filter_tgt_user_accept, filter_tgt_user_read,
 	 filter_tgt_user_print},
 	{"tgt_role", filter_tgt_role_is_set, filter_tgt_role_support, filter_tgt_role_accept, filter_tgt_role_read,
 	 filter_tgt_role_print},
 	{"tgt_type", filter_tgt_type_is_set, filter_tgt_type_support, filter_tgt_type_accept, filter_tgt_type_read,
 	 filter_tgt_type_print},
+	{"tgt_mls_lvl", filter_tgt_mls_lvl_is_set, filter_tgt_mls_lvl_support, filter_tgt_mls_lvl_accept, filter_tgt_mls_lvl_read,
+	 filter_src_mls_lvl_print},
+	{"tgt_mls_clr", filter_tgt_mls_clr_is_set, filter_tgt_mls_clr_support, filter_tgt_mls_clr_accept, filter_tgt_mls_clr_read,
+	 filter_src_mls_clr_print},
 	{"obj_class", filter_tgt_class_is_set, filter_tgt_class_support, filter_tgt_class_accept, filter_tgt_class_read,
 	 filter_tgt_class_print},
 	{"perm", filter_perm_is_set, filter_perm_support, filter_perm_accept, filter_perm_read, filter_perm_print},

@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
@@ -31,6 +32,7 @@
 #include <errno.h>
 #include <string.h>
 #include <apol/policy-query.h>
+#include <apol/mls-query.h>
 #include <apol/util.h>
 #include <glade/glade.h>
 
@@ -59,7 +61,7 @@ struct filter_view
 	GtkEntry *name_entry;
 	GtkComboBox *match_combo;
 
-	struct context_item suser, srole, stype, tuser, trole, ttype, obj_class;
+	struct context_item suser, srole, stype, smls_lvl, smls_clr, tuser, trole, ttype, tmls_lvl, tmls_clr, obj_class;
 	GtkButton *context_clear_button;
 
 	GtkEntry *ipaddr_entry, *port_entry, *netif_entry, *exe_entry, *path_entry, *host_entry, *comm_entry;
@@ -79,28 +81,40 @@ static void filter_view_init_widgets_context(struct filter_view *fv)
 	fv->suser.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewSUserButton"));
 	fv->srole.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewSRoleButton"));
 	fv->stype.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewSTypeButton"));
+	fv->smls_lvl.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewSMLSLVLButton"));
+	fv->smls_clr.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewSMLSCLRButton"));
 	fv->tuser.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewTUserButton"));
 	fv->trole.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewTRoleButton"));
 	fv->ttype.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewTTypeButton"));
+	fv->tmls_lvl.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewTMLSLVLButton"));
+	fv->tmls_clr.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewTMLSCLRButton"));
 	fv->obj_class.button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewClassButton"));
-	assert(fv->suser.button != NULL && fv->srole.button != NULL && fv->stype.button != NULL &&
-	       fv->tuser.button != NULL && fv->trole.button != NULL && fv->ttype.button != NULL && fv->obj_class.button != NULL);
+	assert(fv->suser.button != NULL && fv->srole.button != NULL && fv->stype.button != NULL && fv->smls_lvl.button != NULL && fv->smls_clr.button != NULL &&
+	       fv->tuser.button != NULL && fv->trole.button != NULL && fv->ttype.button != NULL && fv->tmls_lvl.button != NULL && fv->tmls_clr.button != NULL && fv->obj_class.button != NULL);
 
 	fv->suser.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewSUserEntry"));
 	fv->srole.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewSRoleEntry"));
 	fv->stype.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewSTypeEntry"));
+	fv->smls_lvl.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewSMLSLVLEntry"));
+	fv->smls_clr.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewSMLSCLREntry"));
 	fv->tuser.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewTUserEntry"));
 	fv->trole.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewTRoleEntry"));
 	fv->ttype.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewTTypeEntry"));
+	fv->tmls_lvl.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewTMLSLVLEntry"));
+	fv->tmls_clr.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewTMLSCLREntry"));
 	fv->obj_class.entry = GTK_ENTRY(glade_xml_get_widget(fv->xml, "FilterViewClassEntry"));
-	assert(fv->suser.entry != NULL && fv->srole.entry != NULL && fv->stype.entry != NULL &&
-	       fv->tuser.entry != NULL && fv->trole.entry != NULL && fv->ttype.entry != NULL && fv->obj_class.entry != NULL);
+	assert(fv->suser.entry != NULL && fv->srole.entry != NULL && fv->stype.entry != NULL && fv->smls_lvl.entry != NULL && fv->smls_clr.entry != NULL &&
+	       fv->tuser.entry != NULL && fv->trole.entry != NULL && fv->ttype.entry != NULL && fv->tmls_lvl.entry != NULL && fv->tmls_clr.entry != NULL && fv->obj_class.entry != NULL);
 	g_object_set_data(G_OBJECT(fv->suser.entry), "data", &fv->suser);
 	g_object_set_data(G_OBJECT(fv->srole.entry), "data", &fv->srole);
 	g_object_set_data(G_OBJECT(fv->stype.entry), "data", &fv->stype);
+	g_object_set_data(G_OBJECT(fv->smls_lvl.entry), "data", &fv->smls_lvl);
+	g_object_set_data(G_OBJECT(fv->smls_clr.entry), "data", &fv->smls_clr);
 	g_object_set_data(G_OBJECT(fv->tuser.entry), "data", &fv->tuser);
 	g_object_set_data(G_OBJECT(fv->trole.entry), "data", &fv->trole);
 	g_object_set_data(G_OBJECT(fv->ttype.entry), "data", &fv->ttype);
+	g_object_set_data(G_OBJECT(fv->tmls_lvl.entry), "data", &fv->tmls_lvl);
+	g_object_set_data(G_OBJECT(fv->tmls_clr.entry), "data", &fv->tmls_clr);
 	g_object_set_data(G_OBJECT(fv->obj_class.entry), "data", &fv->obj_class);
 
 	fv->context_clear_button = GTK_BUTTON(glade_xml_get_widget(fv->xml, "FilterViewContextClearButton"));
@@ -217,9 +231,13 @@ static void filter_view_context_items_to_entries(struct filter_view *fv)
 	filter_view_context_item_to_entry(fv, &fv->suser);
 	filter_view_context_item_to_entry(fv, &fv->srole);
 	filter_view_context_item_to_entry(fv, &fv->stype);
+	filter_view_context_item_to_entry(fv, &fv->smls_lvl);
+	filter_view_context_item_to_entry(fv, &fv->smls_clr);
 	filter_view_context_item_to_entry(fv, &fv->tuser);
 	filter_view_context_item_to_entry(fv, &fv->trole);
 	filter_view_context_item_to_entry(fv, &fv->ttype);
+	filter_view_context_item_to_entry(fv, &fv->tmls_lvl);
+	filter_view_context_item_to_entry(fv, &fv->tmls_clr);
 	filter_view_context_item_to_entry(fv, &fv->obj_class);
 }
 
@@ -241,6 +259,17 @@ static void filter_view_init_context(struct filter_view *fv)
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
+	v = seaudit_filter_get_source_mls_lvl(fv->filter);
+	if (v != NULL && (fv->smls_lvl.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
+		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
+		return;
+	}
+	v = seaudit_filter_get_source_mls_clr(fv->filter);
+	if (v != NULL && (fv->smls_clr.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
+		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
+		return;
+	}	
+	
 	v = seaudit_filter_get_target_user(fv->filter);
 	if (v != NULL && (fv->tuser.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
@@ -256,6 +285,17 @@ static void filter_view_init_context(struct filter_view *fv)
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
 		return;
 	}
+	v = seaudit_filter_get_target_mls_lvl(fv->filter);
+	if (v != NULL && (fv->tmls_lvl.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
+		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
+		return;
+	}
+	v = seaudit_filter_get_target_mls_clr(fv->filter);
+	if (v != NULL && (fv->tmls_clr.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
+		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
+		return;
+	}
+	
 	v = seaudit_filter_get_target_class(fv->filter);
 	if (v != NULL && (fv->obj_class.items = apol_vector_create_from_vector(v, apol_str_strdup, NULL, free)) == NULL) {
 		toplevel_ERR(fv->top, "Error initializing context tab: %s", strerror(errno));
@@ -373,9 +413,13 @@ static void filter_view_apply_context(struct filter_view *fv)
 	if (seaudit_filter_set_source_user(fv->filter, fv->suser.items) < 0 ||
 	    seaudit_filter_set_source_role(fv->filter, fv->srole.items) < 0 ||
 	    seaudit_filter_set_source_type(fv->filter, fv->stype.items) < 0 ||
+	    seaudit_filter_set_source_mls_lvl(fv->filter, fv->smls_lvl.items) < 0 ||
+	    seaudit_filter_set_source_mls_clr(fv->filter, fv->smls_clr.items) < 0 ||
 	    seaudit_filter_set_target_user(fv->filter, fv->tuser.items) < 0 ||
 	    seaudit_filter_set_target_role(fv->filter, fv->trole.items) < 0 ||
 	    seaudit_filter_set_target_type(fv->filter, fv->ttype.items) < 0 ||
+	    seaudit_filter_set_target_mls_lvl(fv->filter, fv->tmls_lvl.items) < 0 ||
+	    seaudit_filter_set_target_mls_clr(fv->filter, fv->tmls_clr.items) < 0 ||
 	    seaudit_filter_set_target_class(fv->filter, fv->obj_class.items) < 0) {
 		toplevel_ERR(fv->top, "Error applying context: %s", strerror(errno));
 	}
@@ -613,6 +657,117 @@ static apol_vector_t *filter_view_get_policy_types(struct filter_view *fv)
 }
 
 /**
+ * Return a list of mls levels/clearance (not aliases) within the
+ * currently loaded policy, sorted alphabetically.  If there is no
+ * policy loaded then return NULL.
+ */
+static apol_vector_t *filter_view_get_policy_mls_lvl(struct filter_view *fv)
+{
+	apol_vector_t *policy_items = NULL, *v = NULL;
+	apol_policy_t *p = toplevel_get_policy(fv->top);
+	const qpol_iterator_t **cats = NULL;
+	
+	size_t i;
+
+	if (p == NULL) {
+		return NULL;
+	}
+
+	if (apol_level_get_by_query(p, NULL, &v) < 0 || (policy_items = apol_vector_create(&free)) == NULL) {
+		toplevel_ERR(fv->top, "Error getting a list of policy mls levels: %s", strerror(errno));
+		apol_vector_destroy(&policy_items);
+		return NULL;
+	}
+
+	for (i = 0; i < apol_vector_get_size(v); i++) 
+	{
+		const char *name = NULL;
+		const char *mls = malloc(100*sizeof(mls));
+		
+		const char *cat_name1 = NULL, *cat_name2 = NULL;
+		uint32_t *cat_val1, *cat_val2;
+		const char *cat_low = NULL;
+		const char *cat_high = NULL;
+		bool isrange = false, isrange_end = false, isempty = true;
+		size_t k;
+		qpol_cat_t *c = NULL;
+		const qpol_level_t *e = apol_vector_get_element(v, i);
+
+		qpol_level_get_name(apol_policy_get_qpol(p), e, &name);
+		strcpy(mls, name);
+		if (qpol_level_get_cat_iter(apol_policy_get_qpol(p), e, &cats) < 0){
+			toplevel_ERR(fv->top, "Error getting categories for level: %s", strerror(errno));
+			qpol_iterator_destroy(&cats);
+		}
+		qpol_iterator_get_size(cats, &k);
+
+		if (k > 0){
+			strcat(mls, ":");
+			isempty = true;
+		}
+		if (qpol_iterator_get_item(cats, &c) < 0){
+			toplevel_ERR(fv->top, "Error getting category: %s", strerror(errno));
+				qpol_iterator_destroy(&cats);
+		}
+		qpol_cat_get_value(apol_policy_get_qpol(p), c, &cat_val1);
+		qpol_cat_get_name(apol_policy_get_qpol(p), c, &cat_name1);
+		isrange = false;
+		isrange_end = false;
+		
+		for (; !qpol_iterator_end(cats); qpol_iterator_next(cats))
+		{
+			if (qpol_iterator_get_item(cats, &c) < 0){
+				toplevel_ERR(fv->top, "Error getting category: %s", strerror(errno));
+				qpol_iterator_destroy(&cats);
+			}
+			qpol_cat_get_value(apol_policy_get_qpol(p), c, &cat_val2);
+			qpol_cat_get_name(apol_policy_get_qpol(p), c, &cat_name2);
+			if (((int)cat_val2 == ((int)cat_val1 + 1)) && (isrange == false))
+			{
+				cat_low = cat_name1;
+				strcat(mls, cat_low);
+				strcat(mls, ".");
+				isrange = true;
+				isempty = false;
+			}
+			if ((isrange == true) && ((int)cat_val2 == ((int)cat_val1 + 1)))
+			{
+				cat_high = cat_name2;
+			}
+			else if ((isrange == true) && ((int)cat_val2 != ((int)cat_val1 + 1)))
+			{
+				cat_high = cat_name1;
+				isrange_end = true;
+				strcat(mls, cat_high);
+				isempty=false;
+			}
+			if ((isrange == false) && (isempty == false) && ((int)cat_val2 != ((int)cat_val1 + 1)))
+			{
+				strcat(mls, ",");
+				strcat(mls, cat_name2);
+			}
+			cat_val1 = cat_val2;
+			cat_name1 = cat_name2;
+			
+		} 
+		if ((isrange == true) && (isrange_end == false))
+		{
+			strcat(mls, cat_high);
+		}
+		if (apol_vector_append(policy_items, (void *)mls) < 0) {
+			toplevel_ERR(fv->top, "Error getting a list of policy mls levels: %s", strerror(errno));
+			apol_vector_destroy(&v);
+			apol_vector_destroy(&policy_items);
+		}
+	}
+
+	apol_vector_destroy(&v);
+	qpol_iterator_destroy(&cats);
+	apol_vector_sort(policy_items, apol_str_strcmp, NULL);
+	return policy_items;
+}
+
+/**
  * Return a list of object classeswithin the currently loaded policy,
  * sorted alphabetically.  If there is no policy loaded then return
  * NULL.
@@ -684,6 +839,33 @@ static void filter_view_on_stype_context_click(GtkButton * widget __attribute__ 
 	filter_view_context_item_to_entry(fv, &fv->stype);
 }
 
+static void filter_view_on_smls_lvl_context_click(GtkButton * widget __attribute__ ((unused)), gpointer user_data)
+{
+	struct filter_view *fv = (struct filter_view *)user_data;
+
+	apol_vector_t *log_items = toplevel_get_log_mls_lvl(fv->top);
+	apol_vector_t *policy_items = filter_view_get_policy_mls_lvl(fv);
+	fv->smls_lvl.items =
+		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Source MLS Level Items", log_items, policy_items,
+					   fv->smls_lvl.items);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
+	filter_view_context_item_to_entry(fv, &fv->smls_lvl);
+}
+
+static void filter_view_on_smls_clr_context_click(GtkButton * widget __attribute__ ((unused)), gpointer user_data)
+{
+	struct filter_view *fv = (struct filter_view *)user_data;
+	apol_vector_t *log_items = toplevel_get_log_mls_clr(fv->top);
+	apol_vector_t *policy_items = filter_view_get_policy_mls_lvl(fv);
+	fv->smls_clr.items =
+		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Source MLS Clearance Items", log_items, policy_items,
+					   fv->smls_clr.items);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
+	filter_view_context_item_to_entry(fv, &fv->smls_clr);
+}
+
 static void filter_view_on_tuser_context_click(GtkButton * widget __attribute__ ((unused)), gpointer user_data)
 {
 	struct filter_view *fv = (struct filter_view *)user_data;
@@ -721,6 +903,32 @@ static void filter_view_on_ttype_context_click(GtkButton * widget __attribute__ 
 	apol_vector_destroy(&log_items);
 	apol_vector_destroy(&policy_items);
 	filter_view_context_item_to_entry(fv, &fv->ttype);
+}
+
+static void filter_view_on_tmls_lvl_context_click(GtkButton * widget __attribute__ ((unused)), gpointer user_data)
+{
+	struct filter_view *fv = (struct filter_view *)user_data;
+	apol_vector_t *log_items = toplevel_get_log_mls_lvl(fv->top);
+	apol_vector_t *policy_items = filter_view_get_policy_mls_lvl(fv);
+	fv->tmls_lvl.items =
+		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Target MLS Level Items", log_items, policy_items,
+					   fv->tmls_lvl.items);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
+	filter_view_context_item_to_entry(fv, &fv->tmls_lvl);
+}
+
+static void filter_view_on_tmls_clr_context_click(GtkButton * widget __attribute__ ((unused)), gpointer user_data)
+{
+	struct filter_view *fv = (struct filter_view *)user_data;
+	apol_vector_t *log_items = toplevel_get_log_mls_clr(fv->top);
+	apol_vector_t *policy_items = filter_view_get_policy_mls_lvl(fv);
+	fv->tmls_clr.items =
+		policy_components_view_run(fv->top, GTK_WINDOW(fv->dialog), "Target MLS Clearance Items", log_items, policy_items,
+					   fv->tmls_clr.items);
+	apol_vector_destroy(&log_items);
+	apol_vector_destroy(&policy_items);
+	filter_view_context_item_to_entry(fv, &fv->tmls_clr);
 }
 
 static void filter_view_on_class_context_click(GtkButton * widget __attribute__ ((unused)), gpointer user_data)
@@ -783,9 +991,13 @@ static void filter_view_destroy_context_vectors(struct filter_view *fv)
 	apol_vector_destroy(&fv->suser.items);
 	apol_vector_destroy(&fv->srole.items);
 	apol_vector_destroy(&fv->stype.items);
+	apol_vector_destroy(&fv->smls_lvl.items);
+	apol_vector_destroy(&fv->smls_clr.items);
 	apol_vector_destroy(&fv->tuser.items);
 	apol_vector_destroy(&fv->trole.items);
 	apol_vector_destroy(&fv->ttype.items);
+	apol_vector_destroy(&fv->tmls_lvl.items);
+	apol_vector_destroy(&fv->tmls_clr.items);
 	apol_vector_destroy(&fv->obj_class.items);
 }
 
@@ -804,12 +1016,20 @@ static void filter_view_init_context_signals(struct filter_view *fv)
 	g_signal_connect(fv->srole.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
 	g_signal_connect(fv->stype.button, "clicked", G_CALLBACK(filter_view_on_stype_context_click), fv);
 	g_signal_connect(fv->stype.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
+	g_signal_connect(fv->smls_lvl.button, "clicked", G_CALLBACK(filter_view_on_smls_lvl_context_click), fv);
+	g_signal_connect(fv->smls_lvl.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
+	g_signal_connect(fv->smls_clr.button, "clicked", G_CALLBACK(filter_view_on_smls_clr_context_click), fv);
+	g_signal_connect(fv->smls_clr.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
 	g_signal_connect(fv->tuser.button, "clicked", G_CALLBACK(filter_view_on_tuser_context_click), fv);
 	g_signal_connect(fv->tuser.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
 	g_signal_connect(fv->trole.button, "clicked", G_CALLBACK(filter_view_on_trole_context_click), fv);
 	g_signal_connect(fv->trole.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
 	g_signal_connect(fv->ttype.button, "clicked", G_CALLBACK(filter_view_on_ttype_context_click), fv);
 	g_signal_connect(fv->ttype.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
+	g_signal_connect(fv->tmls_lvl.button, "clicked", G_CALLBACK(filter_view_on_tmls_lvl_context_click), fv);
+	g_signal_connect(fv->tmls_lvl.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
+	g_signal_connect(fv->tmls_clr.button, "clicked", G_CALLBACK(filter_view_on_tmls_clr_context_click), fv);
+	g_signal_connect(fv->tmls_clr.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
 	g_signal_connect(fv->obj_class.button, "clicked", G_CALLBACK(filter_view_on_class_context_click), fv);
 	g_signal_connect(fv->obj_class.entry, "focus_out_event", G_CALLBACK(filter_view_on_entry_focus_out), fv);
 	g_signal_connect(fv->context_clear_button, "clicked", G_CALLBACK(filter_view_on_context_clear_click), fv);

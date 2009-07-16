@@ -8,6 +8,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -119,6 +120,28 @@ extern "C"
  * must call apol_vector_destroy() upon the return value.
  */
 	apol_vector_t *seaudit_log_get_types(const seaudit_log_t * log);
+	
+/**
+ * Return a vector of strings corresponding to all mls levels found within
+ * the log file.  The vector will be sorted alphabetically.
+ *
+ * @param log Log file to access.
+ *
+ * @return Vector of sorted types, or NULL upon error.  The caller
+ * must call apol_vector_destroy() upon the return value.
+ */
+	apol_vector_t *seaudit_log_get_mls_lvl(const seaudit_log_t * log);	
+
+/**
+ * Return a vector of strings corresponding to all mls clearance found within
+ * the log file.  The vector will be sorted alphabetically.
+ *
+ * @param log Log file to access.
+ *
+ * @return Vector of sorted types, or NULL upon error.  The caller
+ * must call apol_vector_destroy() upon the return value.
+ */
+	apol_vector_t *seaudit_log_get_mls_clr(const seaudit_log_t * log);
 
 /**
  * Return a vector of strings corresponding to all object classes

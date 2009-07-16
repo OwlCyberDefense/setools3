@@ -5,6 +5,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2006-2007 Tresys Technology, LLC
  *
@@ -86,7 +87,7 @@ extern "C"
 	extern const char *seaudit_avc_message_get_source_role(const seaudit_avc_message_t * avc);
 
 /**
- * Return the source context's target of an avc message.
+ * Return the source context's type of an avc message.
  *
  * @param avc AVC message to check.
  *
@@ -94,6 +95,26 @@ extern "C"
  * free() this string.
  */
 	extern const char *seaudit_avc_message_get_source_type(const seaudit_avc_message_t * avc);
+
+/**
+ * Return the source context's mls level of an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Source target, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern const char *seaudit_avc_message_get_source__mls_lvl(const seaudit_avc_message_t * avc);
+	
+/**
+ * Return the source context's mls clearance of an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Source target, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern const char *seaudit_avc_message_get_source__mls_clr(const seaudit_avc_message_t * avc);	
 
 /**
  * Return the target context's user of an avc message.
@@ -116,7 +137,7 @@ extern "C"
 	extern const char *seaudit_avc_message_get_target_role(const seaudit_avc_message_t * avc);
 
 /**
- * Return the target context's target of an avc message.
+ * Return the target context's type of an avc message.
  *
  * @param avc AVC message to check.
  *
@@ -124,6 +145,26 @@ extern "C"
  * free() this string.
  */
 	extern const char *seaudit_avc_message_get_target_type(const seaudit_avc_message_t * avc);
+	
+/**
+ * Return the target context's mls level of an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Target type, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern const char *seaudit_avc_message_get_target_mls_lvl(const seaudit_avc_message_t * avc);	
+
+/**
+ * Return the target context's mls clearance of an avc message.
+ *
+ * @param avc AVC message to check.
+ *
+ * @return Target type, or NULL upon error or if unknown.  Do not
+ * free() this string.
+ */
+	extern const char *seaudit_avc_message_get_target_mls_clr(const seaudit_avc_message_t * avc);	
 
 /**
  * Return the object class from an avc message.

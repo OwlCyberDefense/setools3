@@ -1,3 +1,12 @@
+2009-07-16  Chris PeBenito <cpebenito@tresys.com>
+
+	* Change context parsing in libseaudit to use libselinux functions.
+
+2009-06-04  Jeremy Solt <jsolt@tresys.com>
+
+	* Add support for display of level and clearance of contexts to seaudit.
+	* Add support for filterting by level and clearance to seaudit.
+
 2009-05-26  Jeremy Solt <jsolt@tresys.com>
 
 	* Modified seaudit to show the raw audit message when doubleclicking

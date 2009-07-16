@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -74,9 +75,13 @@ static const struct pref_toggle pref_toggle_map[] = {
 	{"SourceUserCheck", SUSER_FIELD},
 	{"SourceRoleCheck", SROLE_FIELD},
 	{"SourceTypeCheck", STYPE_FIELD},
+	{"SourceMLSLVLCheck", SMLS_LVL_FIELD},
+	{"SourceMLSCLRCheck", SMLS_CLR_FIELD},
 	{"TargetUserCheck", TUSER_FIELD},
 	{"TargetRoleCheck", TROLE_FIELD},
 	{"TargetTypeCheck", TTYPE_FIELD},
+	{"TargetMLSLVLCheck", TMLS_LVL_FIELD},
+	{"TargetMLSCLRCheck", TMLS_CLR_FIELD},	
 	{"ObjectClassCheck", OBJCLASS_FIELD},
 	{"PermissionCheck", PERM_FIELD},
 	{"ExecutableCheck", EXECUTABLE_FIELD},

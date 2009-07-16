@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -58,9 +59,13 @@ static const struct visible_field default_visible_fields[] = {
 	{SUSER_FIELD, "src_usr_field", 0},
 	{SROLE_FIELD, "src_role_field", 0},
 	{STYPE_FIELD, "src_type_field", 1},
+	{SMLS_LVL_FIELD, "src_mls_lvl_field", 0},
+	{SMLS_CLR_FIELD, "src_mls_clr_field", 0},	
 	{TUSER_FIELD, "tgt_usr_field", 0},
 	{TROLE_FIELD, "tgt_role_field", 0},
 	{TTYPE_FIELD, "tgt_type_field", 1},
+	{TMLS_LVL_FIELD, "tgt_mls_lvl_field", 0},
+	{TMLS_CLR_FIELD, "tgt_mls_clr_field", 0},
 	{OBJCLASS_FIELD, "obj_class_field", 1},
 	{PERM_FIELD, "perm_field", 1},
 	{EXECUTABLE_FIELD, "exe_field", 1},

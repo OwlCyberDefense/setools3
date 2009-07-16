@@ -3,7 +3,7 @@ lib_LIBRARIES = libseaudit.a
 seauditso_DATA = libseaudit.so.@libseaudit_version@
 seauditsodir = $(libdir)
 
-AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ \
+AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	@APOL_CFLAGS@ @QPOL_CFLAGS@ @XML_CFLAGS@ -I$(srcdir)/../include -fpic
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 
@@ -29,7 +29,7 @@ LIBSEAUDIT_SONAME = @libseaudit_soname@
 dist_noinst_DATA = libseaudit.map
 
 $(seauditso_DATA): $(libseaudit_so_OBJS) libseaudit.map
-	$(CC) -shared -o $@ $(libseaudit_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEAUDIT_SONAME),--version-script=$(srcdir)/libseaudit.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so $(XML_LIBS)
+	$(CC) -shared -o $@ $(libseaudit_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBSEAUDIT_SONAME),--version-script=$(srcdir)/libseaudit.map,-z,defs $(top_builddir)/libqpol/src/libqpol.so $(top_builddir)/libapol/src/libapol.so $(XML_LIBS) -lselinux
 	$(LN_S) -f $@ @libseaudit_soname@
 	$(LN_S) -f $@ libseaudit.so
 
