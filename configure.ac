@@ -19,7 +19,7 @@ libsefs_soversion=4
 libsefs_version=4.0.2
 
 libseaudit_soversion=4
-libseaudit_version=4.2.1
+libseaudit_version=4.3
 
 setoolsdir='${prefix}/share/setools-3.3'
 javadir='${prefix}/share/java'

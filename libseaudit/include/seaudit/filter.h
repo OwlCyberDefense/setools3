@@ -6,7 +6,8 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
- *
+ *	@author Jeremy Solt jsolt@tresys.com
+ * 
  *  Copyright (C) 2004-2007 Tresys Technology, LLC
  *
  *  This library is free software; you can redistribute it and/or
@@ -295,6 +296,50 @@ extern "C"
 	extern const apol_vector_t *seaudit_filter_get_source_type(const seaudit_filter_t * filter);
 
 /**
+ * Set the list of source mls levels.  A message is accepted if its source
+ * mls level is within this list.  The filter will duplicate the vector and
+ * the strings within.
+ *
+ * @param filter Filter to modify.
+ * @param v Vector of strings, or NULL to clear current settings.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_source_mls_lvl(seaudit_filter_t * filter, const apol_vector_t * v);
+
+/**
+ * Return the current list of source mls levels for a filter.  This will be
+ * a vector of strings.  Treat the vector and its contents as const.
+ *
+ * @param filter Filter to get values.
+ *
+ * @return Vector of strings, or NULL if no value has been set.
+ */
+	extern const apol_vector_t *seaudit_filter_get_source_mls_lvl(const seaudit_filter_t * filter);
+
+/**
+ * Set the list of source mls clearance.  A message is accepted if its source
+ * mls clearance is within this list.  The filter will duplicate the vector and
+ * the strings within.
+ *
+ * @param filter Filter to modify.
+ * @param v Vector of strings, or NULL to clear current settings.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_source_mls_clr(seaudit_filter_t * filter, const apol_vector_t * v);
+
+/**
+ * Return the current list of source mls clearance for a filter.  This will be
+ * a vector of strings.  Treat the vector and its contents as const.
+ *
+ * @param filter Filter to get values.
+ *
+ * @return Vector of strings, or NULL if no value has been set.
+ */
+	extern const apol_vector_t *seaudit_filter_get_source_mls_clr(const seaudit_filter_t * filter);
+
+/**
  * Set the list of target users.  A message is accepted if its target
  * user is within this list.  The filter will duplicate the vector and
  * the strings within.
@@ -359,6 +404,50 @@ extern "C"
  * @return Vector of strings, or NULL if no value has been set.
  */
 	extern const apol_vector_t *seaudit_filter_get_target_type(const seaudit_filter_t * filter);
+	
+/**
+ * Set the list of target mls levels.  A message is accepted if its target
+ * mls level is within this list.  The filter will duplicate the vector and
+ * the strings within.
+ *
+ * @param filter Filter to modify.
+ * @param v Vector of strings, or NULL to clear current settings.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_target_mls_lvl(seaudit_filter_t * filter, const apol_vector_t * v);
+
+/**
+ * Return the current list of target mls levels for a filter.  This will be
+ * a vector of strings.  Treat the vector and its contents as const.
+ *
+ * @param filter Filter to get values.
+ *
+ * @return Vector of strings, or NULL if no value has been set.
+ */
+	extern const apol_vector_t *seaudit_filter_get_target_mls_lvl(const seaudit_filter_t * filter);
+	
+	/**
+ * Set the list of target mls clearance.  A message is accepted if its target
+ * mls clearance is within this list.  The filter will duplicate the vector and
+ * the strings within.
+ *
+ * @param filter Filter to modify.
+ * @param v Vector of strings, or NULL to clear current settings.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+	extern int seaudit_filter_set_target_mls_clr(seaudit_filter_t * filter, const apol_vector_t * v);
+
+/**
+ * Return the current list of target mls clearance for a filter.  This will be
+ * a vector of strings.  Treat the vector and its contents as const.
+ *
+ * @param filter Filter to get values.
+ *
+ * @return Vector of strings, or NULL if no value has been set.
+ */
+	extern const apol_vector_t *seaudit_filter_get_target_mls_clr(const seaudit_filter_t * filter);
 
 /**
  * Set the list of target object classes.  A message is accepted if

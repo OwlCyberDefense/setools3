@@ -5,6 +5,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -36,8 +37,8 @@ typedef struct preferences preferences_t;
 typedef enum preference_field
 {
 	HOST_FIELD, MESSAGE_FIELD, DATE_FIELD,
-	SUSER_FIELD, SROLE_FIELD, STYPE_FIELD,
-	TUSER_FIELD, TROLE_FIELD, TTYPE_FIELD,
+	SUSER_FIELD, SROLE_FIELD, STYPE_FIELD, SMLS_LVL_FIELD, SMLS_CLR_FIELD,
+	TUSER_FIELD, TROLE_FIELD, TTYPE_FIELD, TMLS_LVL_FIELD, TMLS_CLR_FIELD,
 	OBJCLASS_FIELD, PERM_FIELD,
 	EXECUTABLE_FIELD, COMMAND_FIELD, NAME_FIELD,
 	PID_FIELD, INODE_FIELD, PATH_FIELD, OTHER_FIELD

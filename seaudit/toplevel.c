@@ -4,6 +4,7 @@
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Jeremy Solt jsolt@tresys.com
  *
  *  Copyright (C) 2003-2007 Tresys Technology, LLC
  *
@@ -842,6 +843,16 @@ apol_vector_t *toplevel_get_log_roles(toplevel_t * top)
 apol_vector_t *toplevel_get_log_types(toplevel_t * top)
 {
 	return seaudit_get_log_types(top->s);
+}
+
+apol_vector_t *toplevel_get_log_mls_lvl(toplevel_t * top)
+{
+	return seaudit_get_log_mls_lvl(top->s);
+}
+
+apol_vector_t *toplevel_get_log_mls_clr(toplevel_t * top)
+{
+	return seaudit_get_log_mls_clr(top->s);
 }
 
 apol_vector_t *toplevel_get_log_classes(toplevel_t * top)
