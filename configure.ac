@@ -447,7 +447,7 @@ AC_ARG_ENABLE(sepol-src,
 if test "x${sepol_srcdir}" = "x"; then
    sepol_srcdir=${sepol_devel_libdir}
    AC_CHECK_FILE([${sepol_srcdir}/libsepol.a],,
-      AC_MSG_ERROR([make sure libsepol-devel is installed]))
+      AC_MSG_ERROR([make sure libsepol-static is installed]))
 else
    AC_MSG_CHECKING([for compatible sepol source tree])
    sepol_version=${sepol_srcdir}/VERSION
@@ -671,7 +671,7 @@ if test "x${build_gui}" = xyes; then
   AC_MSG_CHECKING([for libglade])
   pkg-config --exists 'libglade-2.0'
   if test $? -ne 0; then
-     AC_MSG_ERROR([setools requires libglade-2.0])
+     AC_MSG_ERROR([setools requires libglade-2.0; make sure libglade2-devel is installed])
   fi
   GLADE_CFLAGS=`pkg-config --cflags libglade-2.0`
   GLADE_LIBS=`pkg-config --libs libglade-2.0`
