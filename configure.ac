@@ -1,7 +1,8 @@
-AC_INIT(setools, 3.3.5, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.3.6, [Tresys Technology <setools@tresys.com>], [setools])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wno-portability])
 
 dnl *** update these variables as versions change; also update AC_INIT ***
@@ -430,6 +431,7 @@ AC_CHECK_HEADER([sepol/sepol.h], , AC_MSG_ERROR([could not find sepol headers at
 AC_CHECK_LIB([sepol], [sepol_policydb_read], ,
              AC_MSG_ERROR([could not find libsepol at $sepol_devel_libdir]))
 AC_CHECK_HEADER([selinux/selinux.h], , AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
+AC_CHECK_HEADER([selinux/context.h], , AC_MSG_ERROR([could not find selinux headers at $selinux_devel_incdir - make sure libselinux-devel is installed]))
 AC_CHECK_LIB([selinux], [selinux_policy_root], ,
 AC_MSG_ERROR([could not find libselinux at $selinux_devel_libdir]),
              -lsepol)
@@ -445,7 +447,7 @@ AC_ARG_ENABLE(sepol-src,
 if test "x${sepol_srcdir}" = "x"; then
    sepol_srcdir=${sepol_devel_libdir}
    AC_CHECK_FILE([${sepol_srcdir}/libsepol.a],,
-      AC_MSG_ERROR([make sure libsepol-devel is installed]))
+      AC_MSG_ERROR([make sure libsepol-static is installed]))
 else
    AC_MSG_CHECKING([for compatible sepol source tree])
    sepol_version=${sepol_srcdir}/VERSION
@@ -669,7 +671,7 @@ if test "x${build_gui}" = xyes; then
   AC_MSG_CHECKING([for libglade])
   pkg-config --exists 'libglade-2.0'
   if test $? -ne 0; then
-     AC_MSG_ERROR([setools requires libglade-2.0])
+     AC_MSG_ERROR([setools requires libglade-2.0; make sure libglade2-devel is installed])
   fi
   GLADE_CFLAGS=`pkg-config --cflags libglade-2.0`
   GLADE_LIBS=`pkg-config --libs libglade-2.0`
