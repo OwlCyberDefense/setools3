@@ -2,6 +2,7 @@ AC_INIT(setools, 3.3.6, [Tresys Technology <setools@tresys.com>], [setools])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wno-portability])
 
 dnl *** update these variables as versions change; also update AC_INIT ***
