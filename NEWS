@@ -1,3 +1,26 @@
+SETools 3.3.6:
+
+This release builds upon SETools 3.3.5:
+
+  * Update attribute handling to use attributes in version 24 policy.
+
+  * Fix bug where dontaudit rules were loaded when the "no rules" option is
+    enabled.
+
+seaudit: 
+
+  * Add MLS fields to source and target contexts.
+
+  * Double clicking a message line will display the orignal log message.
+
+seinfo:
+
+  * Qdd query for permissive types.
+
+  * Add query for policy capabilities.
+
+==================================================
+
 SETools 3.3.5:
 
 This release builds upon SETools 3.3.4:
