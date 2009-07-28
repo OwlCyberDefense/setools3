@@ -158,9 +158,12 @@ static int qpol_policy_remove_bogus_aliases(qpol_policy_t * policy)
 	struct extend_bogus_alias_struct e = { policy, 0 };
 	hashtab_map_remove_on_error(db->p_types.table, extend_find_bogus_alias, extend_remove_bogus_alias, &e);
 
+#ifdef SETOOLS_DEBUG
 	if (e.num_bogus_aliases > 0) {
 		WARN(policy, "%s", "This policy contained disabled aliases; they have been removed.");
 	}
+#endif
+
 	return 0;
 }
 
