@@ -17,7 +17,7 @@ qpol_HEADERS = \
 	netifcon_query.h \
 	nodecon_query.h \
 	permissive_query.h \
-	polcap_query.h
+	polcap_query.h \
 	policy.h \
 	policy_extend.h \
 	portcon_query.h \
