@@ -75,8 +75,7 @@ proc Apol_Perms_Map::openDefaultPermMap {} {
                 set message "Could not locate system default permission map.  You must explicitly load a permission map from file."
                 if {[Apol_Progress_Dialog::is_waiting]} {
                     error $message
-                }
-                else {
+                } else {
                     tk_messageBox -icon error -type ok -title "Permission Maps" \
                         -message $message
                 }
