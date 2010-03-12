@@ -1179,9 +1179,17 @@ proc print_init {s} {
 }
 
 if {[catch {tcl_config_init_libraries}]} {
-    puts stderr "The SETools libraries could not be found in one of these subdirectories:\n\y[join $auto_path "\n\t"]"
+    puts stderr "FAILED. The SETools libraries could not be found in any of these subdirectories:\n\t[join $auto_path "\n\t"]"
     exit -1
 }
+
+print_init "Initializing Tk... "
+if {[catch {package require Tk}]} {
+    puts stderr "FAILED. This library could not be found in any of these subdirectories:\n\t[join $auto_path "\n\t"]"
+    puts stderr "This may indicate a problem with the tcl package's auto_path variable.\n"
+    exit -1
+}
+puts "done."
 
 set path [handle_args $argv0 $argv]
 ApolTop::main
