@@ -2,6 +2,11 @@
 
 	* Fix seaudit/libseaudit headers.
 
+2010-03-02  John Oliver <joliver@tresys.com>
+
+	* Fix error message when Tk can not be loaded by apol.  Make it
+	  clear that it is Tk, not an SETools library that connot be loaded.
+
 2010-03-01  John Oliver <joliver@tresys.com>
 
 	* Fix error in Apol which would disable new and updated search

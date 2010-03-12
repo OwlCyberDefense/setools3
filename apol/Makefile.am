@@ -109,8 +109,6 @@ init.tcl: Makefile
 	@echo "    package require sefs @libsefs_version@" >> $@
 	@echo "    print_init \"done.\nInitializing libapol_tcl... \"" >> $@
 	@echo "    package require apol_tcl @libapol_version@" >> $@
-	@echo "    print_init \"done.\nInitializing Tk... \"" >> $@
-	@echo "    package require Tk" >> $@
 	@echo "    print_init \"done.\n\"" >> $@
 	@echo "}" >> $@
 	@echo "proc tcl_config_get_install_dir {} {" >> $@
