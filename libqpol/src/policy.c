@@ -188,11 +188,12 @@ static int read_source_policy(qpol_policy_t * qpolicy, char *progname, int optio
 	INFO(qpolicy, "%s", "Parsing policy. (Step 1 of 5)");
 	init_scanner();
 	init_parser(1, load_rules);
+	errno = 0;
 	if (yyparse() || policydb_errors) {
 		ERR(qpolicy, "%s:  error(s) encountered while parsing configuration\n", progname);
 		queue_destroy(id_queue);
 		id_queue = NULL;
-		errno = EIO;
+//		errno = EIO;
 		return -1;
 	}
 	/* rewind the pointer */
@@ -203,13 +204,13 @@ static int read_source_policy(qpol_policy_t * qpolicy, char *progname, int optio
 		ERR(qpolicy, "%s:  error(s) encountered while parsing configuration\n", progname);
 		queue_destroy(id_queue);
 		id_queue = NULL;
-		errno = EIO;
+//		errno = EIO;
 		return -1;
 	}
 	queue_destroy(id_queue);
 	id_queue = NULL;
 	if (policydb_errors) {
-		errno = EIO;
+//		errno = EIO;
 		return -1;
 	}
 	return 0;
@@ -968,7 +969,7 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 		(*policy)->type = retv = QPOL_POLICY_KERNEL_BINARY;
 		sepol_policy_file_set_fp(pfile, infile);
 		if (sepol_policydb_read((*policy)->p, pfile)) {
-			error = EIO;
+//			error = EIO;
 			goto err;
 		}
 		/* By definition, binary policy cannot have neverallow rules and all other rules are always loaded. */

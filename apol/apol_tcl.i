@@ -111,7 +111,11 @@ static char *tcl_get_error(void)
 		apol_policy_t *p = apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS,
 								       apol_tcl_route_apol_to_string, interp);
 		if (p == NULL) {
-			SWIG_exception(SWIG_RuntimeError, "Could not open policy");
+			if (errno != 0) {
+                SWIG_exception(SWIG_RuntimeError, strerror(errno));
+            } else {
+			    SWIG_exception(SWIG_RuntimeError, "The selected file does not appear to be a valid SELinux Policy.");
+            }
 		}
 	fail:
 		return p;
