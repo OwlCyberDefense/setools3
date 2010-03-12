@@ -7,6 +7,11 @@
 	* Fix error in Apol which would disable new and updated search
 	  buttons in rule search.
 
+2009-12-09  John Oliver <joliver@tresys.com>
+
+	* Fix seaudit-report to correctly handle -c and --config
+	  options.
+
 2009-07-22  Chris PeBenito <cpebenito@tresys.com>
 
 	* SETools 3.3.6.
