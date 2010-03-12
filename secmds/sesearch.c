@@ -6,7 +6,7 @@
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Paul Rosenfeld  prosenfeld@tresys.com
  *
- *  Copyright (C) 2003-2008 Tresys Technology, LLC
+ *  Copyright (C) 2003-2009 Tresys Technology, LLC
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2009 Tresys Technology, LLC"
 
 static char *policy_file = NULL;
 
@@ -184,13 +184,14 @@ static int perform_av_query(const apol_policy_t * policy, const options_t * opt,
 
 	if (opt->allow || opt->all)
 		rules |= QPOL_RULE_ALLOW;
-	if ((opt->nallow || opt->all) && qpol_policy_has_capability(apol_policy_get_qpol(policy), QPOL_CAP_NEVERALLOW))
+	if (opt->nallow || opt->all)	// Add this regardless of policy capabilities
 		rules |= QPOL_RULE_NEVERALLOW;
 	if (opt->auditallow || opt->all)
 		rules |= QPOL_RULE_AUDITALLOW;
 	if (opt->dontaudit || opt->all)
 		rules |= QPOL_RULE_DONTAUDIT;
-	apol_avrule_query_set_rules(policy, avq, rules);
+	if (rules != 0)					// Setting rules = 0 means you want all the rules
+		apol_avrule_query_set_rules(policy, avq, rules);
 	apol_avrule_query_set_regex(policy, avq, opt->useregex);
 	if (opt->src_name)
 		apol_avrule_query_set_source(policy, avq, opt->src_name, opt->indirect);
@@ -943,7 +944,7 @@ int main(int argc, char **argv)
 		case RULE_AUDIT:      /* audit */
 			cmd_opts.auditallow = true;
 			cmd_opts.dontaudit = true;
-			fprintf(stderr, "Use of --audit is depercated; use --auditallow and --dontaudit instead.\n");
+			fprintf(stderr, "Use of --audit is deprecated; use --auditallow and --dontaudit instead.\n");
 			break;
 		case RULE_AUDITALLOW:
 			cmd_opts.auditallow = true;
