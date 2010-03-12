@@ -950,6 +950,8 @@ proc Apol_TE::_search_terules {whichButton} {
 
     Apol_Progress_Dialog::wait "TE Rules" "Searching rules" \
         {
+            set numTEs {0 0 0}
+            set numAVs {0 0 0}
             set avresults NULL
             set teresults NULL
             set num_avresults 0
@@ -994,15 +996,23 @@ proc Apol_TE::_search_terules {whichButton} {
             if {![ApolTop::is_capable "syntactic rules"]} {
                 apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_avresults AV rule results"
                 apol_tcl_terule_sort $::ApolTop::policy $teresults
-                set numAVs [Apol_Widget::appendSearchResultRules $sr 0 $avresults qpol_avrule_from_void]
+                if {$num_avresults > 0} {
+                    set numAVs [Apol_Widget::appendSearchResultRules $sr 0 $avresults qpol_avrule_from_void]
+                }
                 apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_teresults TE rule results"
                 apol_tcl_avrule_sort $::ApolTop::policy $avresults
-                set numTEs [Apol_Widget::appendSearchResultRules $sr 0 $teresults qpol_terule_from_void]
+                if {$num_teresults > 0} {
+                    set numTEs [Apol_Widget::appendSearchResultRules $sr 0 $teresults qpol_terule_from_void]
+                }
             } else {
                 apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_avresults AV rule results"
-                set numAVs [Apol_Widget::appendSearchResultSynRules $sr 0 $avresults qpol_syn_avrule_from_void]
+                if {$num_avresults > 0} {
+                    set numAVs [Apol_Widget::appendSearchResultSynRules $sr 0 $avresults qpol_syn_avrule_from_void]
+                }
                 apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_teresults TE rule results"
-                set numTEs [Apol_Widget::appendSearchResultSynRules $sr 0 $teresults qpol_syn_terule_from_void]
+                if {$num_teresults > 0} {
+                    set numTEs [Apol_Widget::appendSearchResultSynRules $sr 0 $teresults qpol_syn_terule_from_void]
+                }
             }
             set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0]}]
             set num_enabled [expr {[lindex $numAVs 1] + [lindex $numTEs 1]}]
