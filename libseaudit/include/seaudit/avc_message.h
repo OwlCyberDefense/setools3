@@ -104,7 +104,7 @@ extern "C"
  * @return Source target, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern const char *seaudit_avc_message_get_source__mls_lvl(const seaudit_avc_message_t * avc);
+	extern const char *seaudit_avc_message_get_source_mls_lvl(const seaudit_avc_message_t * avc);
 	
 /**
  * Return the source context's mls clearance of an avc message.
@@ -114,7 +114,7 @@ extern "C"
  * @return Source target, or NULL upon error or if unknown.  Do not
  * free() this string.
  */
-	extern const char *seaudit_avc_message_get_source__mls_clr(const seaudit_avc_message_t * avc);	
+	extern const char *seaudit_avc_message_get_source_mls_clr(const seaudit_avc_message_t * avc);	
 
 /**
  * Return the target context's user of an avc message.
