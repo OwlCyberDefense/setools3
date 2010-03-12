@@ -3,8 +3,8 @@ wrappedso_SONAME = @libqpol_pyswig_soname@
 wrappedsodir = $(pkgpyexecdir)
 
 pkgpython_PYTHON = __init__.py
-wrappedpy_DATA = qpol.py
-wrappedpydir = $(pkgpythondir)
+wrappedpy_DATA = qpol.py $(pkgpython_PYTHON)
+wrappedpydir = $(pkgpyexecdir)
 
 dist_noinst_DATA = $(srcdir)/../qpol.i
 BUILT_SOURCES = qpol_wrap.c

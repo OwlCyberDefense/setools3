@@ -3,7 +3,7 @@ wrappedso_SONAME = @libsefs_pyswig_soname@
 wrappedsodir = $(pkgpyexecdir)
 
 wrappedpy_DATA = sefs.py
-wrappedpydir = $(pkgpythondir)
+wrappedpydir = $(pkgpyexecdir)
 
 dist_noinst_DATA = $(srcdir)/../sefs.i
 BUILT_SOURCES = sefs_wrap.cc

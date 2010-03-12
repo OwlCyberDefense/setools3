@@ -3,7 +3,7 @@ wrappedso_SONAME = @libapol_pyswig_soname@
 wrappedsodir = $(pkgpyexecdir)
 
 wrappedpy_DATA = apol.py
-wrappedpydir = $(pkgpythondir)
+wrappedpydir = $(pkgpyexecdir)
 
 dist_noinst_DATA = $(srcdir)/../apol.i
 BUILT_SOURCES = apol_wrap.c
