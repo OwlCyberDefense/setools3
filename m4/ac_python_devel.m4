@@ -187,7 +187,7 @@ $ac_distutils_result])
 
 		PYTHON_LDFLAGS=`$PYTHON -c "from distutils.sysconfig import *; \
 			from string import join; \
-			print '-L' + get_python_lib(0,1), \
+			print '-L' + get_python_lib(1,1), \
 		      	'-lpython';"`$py_version
 	fi
 	AC_MSG_RESULT([$PYTHON_LDFLAGS])
@@ -199,7 +199,7 @@ $ac_distutils_result])
 	AC_MSG_CHECKING([for Python site-packages path])
 	if test -z "$PYTHON_SITE_PKG"; then
 		PYTHON_SITE_PKG=`$PYTHON -c "import distutils.sysconfig; \
-		        print distutils.sysconfig.get_python_lib(0,0);"`
+		        print distutils.sysconfig.get_python_lib(1,0);"`
 	fi
 	AC_MSG_RESULT([$PYTHON_SITE_PKG])
 	AC_SUBST([PYTHON_SITE_PKG])

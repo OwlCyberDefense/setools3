@@ -3,7 +3,7 @@ wrappedso_SONAME = @libpoldiff_pyswig_soname@
 wrappedsodir = $(pkgpyexecdir)
 
 wrappedpy_DATA = poldiff.py
-wrappedpydir = $(pkgpythondir)
+wrappedpydir = $(pkgpyexecdir)
 
 dist_noinst_DATA = $(srcdir)/../poldiff.i
 BUILT_SOURCES = poldiff_wrap.c
