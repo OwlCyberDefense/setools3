@@ -20,6 +20,9 @@ dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 	perm_maps/apol_perm_mapping_ver19 \
 	perm_maps/apol_perm_mapping_ver20 \
 	perm_maps/apol_perm_mapping_ver21 \
+	perm_maps/apol_perm_mapping_ver22 \
+	perm_maps/apol_perm_mapping_ver23 \
+	perm_maps/apol_perm_mapping_ver24 \
 	apol.gif
 
 EXTRA_DIST = \
