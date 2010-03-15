@@ -128,9 +128,18 @@ proc Apol_Analysis_domaintrans::newAnalysis {} {
 }
 
 proc Apol_Analysis_domaintrans::updateAnalysis {f} {
+    variable vals
+
     if {[set rt [_checkParams]] != {}} {
         return $rt
     }
+
+    if {$vals(dir) == $::APOL_DOMAIN_TRANS_DIRECTION_FORWARD} {
+        $f.left configure -text "Forward Domain Transition"
+    } else {
+        $f.left configure -text "Reverse Domain Transition"
+    }
+
     set results [_analyze]
     _clearResultsDisplay $f
     _renderResults $f $results
