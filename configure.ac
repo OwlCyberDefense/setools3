@@ -703,11 +703,20 @@ if test "x${build_gui}" = xyes; then
 fi
 
 have_cunit="no"
-AC_CHECK_LIB(cunit, CU_initialize_registry, have_cunit="yes", AC_MSG_WARN([CUnit not found; `make check' will fail.]))
-if test ${have_cunit} = "yes"; then
-  CUNIT_LIB_FLAG="-lcunit"
-  AC_SUBST(CUNIT_LIB_FLAG)
-fi
+AC_CHECK_LIB(cunit, 
+    CU_initialize_registry, 
+    [have_cunit="yes"
+     CUNIT_LIB_FLAG="-lcunit"],
+    [AC_CHECK_LIB(cunit,
+         CU_curses_run_tests,
+         [have_cunit="yes"
+          CUNIT_LIB_FLAG="-lcunit -lncurses"],
+         AC_MSG_WARN([Compatible CUnit not found; "make check" will fail.]),
+         -lncurses)
+    ]
+)
+AC_SUBST([CUNIT_LIB_FLAG])
+
 #AC_MSG_CHECKING([for FUSE])
 #pkg-config --exists fuse
 #if test $? -ne 0; then
