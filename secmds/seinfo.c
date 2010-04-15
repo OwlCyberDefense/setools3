@@ -49,6 +49,9 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2007 Tresys Technology, LLC"
 
+/* placeholder for empty set in constraint statements */
+#define CONSTRAIN_NULL_SET "<empty set>"
+
 static char *policy_file = NULL;
 
 static void print_type_attrs(FILE * fp, const qpol_type_t * type_datum, const apol_policy_t * policydb, const int expand);
@@ -67,7 +70,7 @@ enum opt_values
 	OPT_INITIALSID, OPT_FS_USE, OPT_GENFSCON,
 	OPT_NETIFCON, OPT_NODECON, OPT_PORTCON, OPT_PROTOCOL,
 	OPT_PERMISSIVE, OPT_POLCAP,
-	OPT_ALL, OPT_STATS
+	OPT_ALL, OPT_STATS, OPT_CONSTRAIN
 };
 
 static struct option const longopts[] = {
@@ -79,6 +82,7 @@ static struct option const longopts[] = {
 	{"role", optional_argument, NULL, 'r'},
 	{"user", optional_argument, NULL, 'u'},
 	{"bool", optional_argument, NULL, 'b'},
+	{"constrain", no_argument, NULL, OPT_CONSTRAIN},
 	{"initialsid", optional_argument, NULL, OPT_INITIALSID},
 	{"fs_use", optional_argument, NULL, OPT_FS_USE},
 	{"genfscon", optional_argument, NULL, OPT_GENFSCON},
@@ -90,6 +94,7 @@ static struct option const longopts[] = {
 	{"protocol", required_argument, NULL, OPT_PROTOCOL},
 	{"stats", no_argument, NULL, OPT_STATS},
 	{"all", no_argument, NULL, OPT_ALL},
+	{"line-breaks", no_argument, NULL, 'l'},
 	{"expand", no_argument, NULL, 'x'},
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'V'},
@@ -120,6 +125,8 @@ void usage(const char *program_name, int brief)
 	printf("  -r[NAME], --role[=NAME]          print roles\n");
 	printf("  -u[NAME], --user[=NAME]          print users\n");
 	printf("  -b[NAME], --bool[=NAME]          print conditional booleans\n");
+	printf("  --constrain                      print constrain statements\n");
+	printf("  -l, --line-breaks                print line breaks in constrain statements\n");
 	printf("  --initialsid[=NAME]              print initial SIDs\n");
 	printf("  --fs_use[=TYPE]                  print fs_use statements\n");
 	printf("  --genfscon[=TYPE]                print genfscon statements\n");
@@ -1333,10 +1340,316 @@ static int print_polcaps(FILE * fp, const char *name, int expand, const apol_pol
 	return retval;
 }
 
+static const char *get_attr_string(int attr)
+{
+	const char *string = "";
+	switch (attr)
+	{
+		case QPOL_CEXPR_SYM_USER:
+			string = "u1";
+			break;
+		case QPOL_CEXPR_SYM_ROLE:
+			string = "r1";
+			break;
+		case QPOL_CEXPR_SYM_TYPE:
+			string = "t1";
+			break;
+
+		case QPOL_CEXPR_SYM_USER+QPOL_CEXPR_SYM_TARGET:
+			string = "u2";
+			break;
+		case QPOL_CEXPR_SYM_ROLE+QPOL_CEXPR_SYM_TARGET:
+			string = "r2";
+			break;
+		case QPOL_CEXPR_SYM_TYPE+QPOL_CEXPR_SYM_TARGET:
+			string = "t2";
+			break;
+
+		case QPOL_CEXPR_SYM_USER+QPOL_CEXPR_SYM_XTARGET:
+			string = "u3";
+			break;
+		case QPOL_CEXPR_SYM_ROLE+QPOL_CEXPR_SYM_XTARGET:
+			string = "r3";
+			break;
+		case QPOL_CEXPR_SYM_TYPE+QPOL_CEXPR_SYM_XTARGET:
+			string = "t3";
+			break;
+
+		case QPOL_CEXPR_SYM_L1L2:
+			string = "l1 l2";
+			break;
+		case QPOL_CEXPR_SYM_L1H2:
+			string = "l1 h2";
+			break;
+		case QPOL_CEXPR_SYM_H1L2:
+			string = "h1 l2";
+			break;
+		case QPOL_CEXPR_SYM_H1H2:
+			string = "h1 h2";
+			break;
+		case QPOL_CEXPR_SYM_L1H1:
+			string = "l1 h1";
+			break;
+		case QPOL_CEXPR_SYM_L2H2:
+			string = "l2 h2";
+			break;
+	}
+
+	return string;
+}
+
+static const char *get_op_string(int op)
+{
+	char *string = "";
+
+	switch (op)
+	{
+		case QPOL_CEXPR_OP_EQ:
+			string = "==";
+			break;
+		case QPOL_CEXPR_OP_NEQ:
+			string = "!=";
+			break;
+		case QPOL_CEXPR_OP_DOM:
+			string = "dom";
+			break;
+		case QPOL_CEXPR_OP_DOMBY:
+			string = "domby";
+			break;
+		case QPOL_CEXPR_OP_INCOMP:
+			string = "incomp";
+			break;
+	}
+
+	return string;
+}
+
+static int print_constraints(FILE * fp, int expand, const apol_policy_t * policydb, int linebreaks)
+{
+	int retval = -1;
+	const char *class_name = NULL;
+	char *constrain_type;
+	char *perm_list = "No Perms Extracted";
+	const qpol_constraint_expr_node_t *expr = NULL;
+	qpol_iterator_t *policy_iter = NULL;	// Iterates over all constraints in a policy
+	qpol_iterator_t *perm_iter = NULL;		// Iterates over permissions in a constraint
+	qpol_iterator_t *expr_iter = NULL;		// Iterates over expression in a constraint
+	qpol_policy_t *q = apol_policy_get_qpol(policydb);
+	qpol_constraint_t *constraint = NULL;
+	const qpol_class_t *class;
+	size_t n_constraints = 0;
+	int expr_type = 0;
+	int sym_type = 0;		// 'attr' in struct constraint_expr
+	int op = 0;
+
+	if (qpol_policy_get_constraint_iter(q, &policy_iter) != 0)
+	{
+		ERR (policydb, "%s", "Policy constraint iterator not accessible");
+		return retval;
+	}
+	if (qpol_iterator_get_size(policy_iter, &n_constraints) != 0)
+	{
+		ERR(policydb, "%s", "Policy size computation failed");
+		goto cleanup;
+	}
+
+	fprintf(fp, "\nConstraints: %zd\n", n_constraints);
+
+	// Iterate through constraints
+	for (; qpol_iterator_end(policy_iter) == 0; qpol_iterator_next(policy_iter))
+	{
+		constrain_type = "";
+		if (qpol_iterator_get_item(policy_iter, (void **)&constraint) != 0)
+		{
+			ERR(policydb, "%s", "Can't get constraint from iterator\n");
+			goto cleanup;
+		}
+
+		if (qpol_constraint_get_class(q, constraint, &class) != 0)
+		{
+			ERR(policydb, "%s", "Can't get class from constraint\n");
+			goto cleanup;
+		}
+
+		if (qpol_class_get_name(q, class, &class_name) != 0)
+		{
+			ERR(policydb, "%s", "Can't get class name from constraint\n");
+			goto cleanup;
+		}
+
+		// Get expression, we need to look into it.
+		if (qpol_constraint_get_expr_iter (q, constraint, &expr_iter) != 0)
+		{
+			ERR(policydb, "%s", "Can't get expression from constraint\n");
+			goto cleanup;
+		}
+		// Traverse the iterator to see if this is mlsconstrain
+		for (; qpol_iterator_end(expr_iter) == 0; qpol_iterator_next(expr_iter))
+		{
+			if (qpol_iterator_get_item(expr_iter, (void **)&expr) != 0)
+			{
+				ERR(policydb, "%s", "Can't get expression from iterator\n");
+				goto cleanup;
+			}
+
+			if (qpol_constraint_expr_node_get_sym_type(q, expr, &sym_type) != 0)
+			{
+				ERR(policydb, "%s", "Can't get sym_type from expression\n");
+				goto cleanup;
+			}
+
+			if (sym_type >= QPOL_CEXPR_SYM_L1L2)
+			{
+				constrain_type = "mls";
+				break;
+			}
+		}
+
+	// print permissions
+		fprintf (fp, "%sconstrain { %s } { ", constrain_type, class_name);
+
+		if (qpol_constraint_get_perm_iter (q, constraint, &perm_iter) != 0)
+		{
+			ERR(policydb, "%s", "Can't get permissions from constraint\n");
+			goto cleanup;
+		}
+
+		for (; qpol_iterator_end(perm_iter) == 0; qpol_iterator_next(perm_iter))
+		{
+			if (qpol_iterator_get_item(perm_iter, (void **)&perm_list) != 0)
+			{
+				ERR(policydb, "%s", "Can't get permissions from iterator\n");
+				goto cleanup;
+			}
+
+			fprintf (fp, "%s ", perm_list);
+			free (perm_list);		// Strdup created the string.
+		}
+		fprintf (fp, " } ");
+
+		// dump RPN expressions
+		if (qpol_constraint_get_expr_iter (q, constraint, &expr_iter) != 0)
+		{
+			ERR(policydb, "%s", "Can't get expression from constraint\n");
+			goto cleanup;
+		}
+
+		fprintf (fp, "\n( ");
+		for (; qpol_iterator_end(expr_iter) == 0; qpol_iterator_next(expr_iter))
+		{
+			qpol_iterator_t *names_iter = NULL;
+
+			if (qpol_iterator_get_item(expr_iter, (void **)&expr) != 0)
+			{
+				ERR(policydb, "%s", "Can't get expression from iterator\n");
+				goto cleanup;
+			}
+
+			if (qpol_constraint_expr_node_get_op (q, expr, &op) != 0)
+			{
+				ERR(policydb, "%s", "Can't get op from expression\n");
+				goto cleanup;
+			}
+
+			if (qpol_constraint_expr_node_get_sym_type(q, expr, &sym_type) != 0)
+			{
+				ERR(policydb, "%s", "Can't get sym_type from expression\n");
+				goto cleanup;
+			}
+
+			if (qpol_constraint_expr_node_get_expr_type(q, expr, &expr_type) != 0)
+			{
+				ERR(policydb, "%s", "Can't get expr_type from expression\n");
+				goto cleanup;
+			}
+
+			if (linebreaks)
+				fprintf (fp, "\n\t");
+
+			if (expr_type == QPOL_CEXPR_TYPE_NOT)
+			{
+				fprintf (fp, " ! ");
+			}
+			if (expr_type == QPOL_CEXPR_TYPE_AND)
+			{
+				fprintf (fp, " && ");
+			}
+			if (expr_type == QPOL_CEXPR_TYPE_OR)
+			{
+				fprintf (fp, " || ");
+			}
+			if (expr_type == QPOL_CEXPR_TYPE_ATTR)
+			{
+				fprintf (fp, " %s ", get_attr_string(sym_type));
+				fprintf (fp, "%s ", get_attr_string(sym_type | QPOL_CEXPR_SYM_TARGET));
+				fprintf (fp, "%s ", get_op_string(op));
+			}
+			if (expr_type == QPOL_CEXPR_TYPE_NAMES)
+			{
+				size_t name_size=0;
+
+				fprintf (fp, " %s ", get_attr_string(sym_type));
+
+				if (qpol_constraint_expr_node_get_names_iter (q, expr, &names_iter) != 0)
+				{
+					ERR(policydb, "%s", "Can't get names iterator from expression\n");
+					goto cleanup;
+				}
+
+				if (qpol_iterator_get_size(names_iter, &name_size) != 0)
+				{
+					ERR(policydb, "%s", "Can't get size from names iterator\n");
+					goto cleanup;
+				}
+				if (name_size > 0)
+				{
+					if (name_size > 1)
+						fprintf (fp, "{ ");
+
+					for (; qpol_iterator_end(names_iter) == 0; qpol_iterator_next(names_iter))
+					{
+						char *lname = NULL;
+
+						if (qpol_iterator_get_item (names_iter, (void **)&lname) != 0)
+						{
+							ERR(policydb, "%s", "Can't get names from iterator\n");
+							goto cleanup;
+						}
+
+						fprintf (fp, "%s ", lname);
+						free (lname);
+
+					}
+					if (name_size > 1)
+						fprintf (fp, "} ");
+				} else {
+					fprintf (fp, "%s ", CONSTRAIN_NULL_SET);
+				}
+
+				fprintf (fp, "%s ", get_op_string(op));
+			}
+		}
+		if (linebreaks)
+			fprintf (fp, "\n);\n\n");
+		else
+			fprintf (fp, ");\n\n");
+	}
+
+	retval = 0;
+
+cleanup:	// close and destroy iterators etc.
+	if (policy_iter != NULL) qpol_iterator_destroy(&policy_iter);
+	if (perm_iter != NULL) qpol_iterator_destroy(&perm_iter);
+	if (expr_iter != NULL) qpol_iterator_destroy(&expr_iter);
+
+	return retval;
+}
+
+
 int main(int argc, char **argv)
 {
 	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids, bools, sens, cats, fsuse, genfs, netif,
-		node, port, permissives, polcaps;
+		node, port, permissives, polcaps, constrain, linebreaks;
 	apol_policy_t *policydb = NULL;
 	apol_policy_path_t *pol_path = NULL;
 	apol_vector_t *mod_paths = NULL;
@@ -1348,8 +1661,8 @@ int main(int argc, char **argv)
 	class_name = type_name = attrib_name = role_name = user_name = isid_name = bool_name = sens_name = cat_name = fsuse_type =
 		genfs_type = netif_name = node_addr = port_num = permissive_name = polcap_name = NULL;
 	classes = types = attribs = roles = users = all = expand = stats = isids = bools = sens = cats = fsuse = genfs = netif =
-		node = port = permissives = polcaps = 0;
-	while ((optc = getopt_long(argc, argv, "c::t::a::r::u::b::xhV", longopts, NULL)) != -1) {
+		node = port = permissives = polcaps = constrain = linebreaks = 0;
+	while ((optc = getopt_long(argc, argv, "c::t::a::r::u::b::lxhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -1443,6 +1756,12 @@ int main(int argc, char **argv)
 		case 'x':	       /* expand */
 			expand = 1;
 			break;
+		case 'l':	/* Print line breaks in constraints */
+			linebreaks=1;
+			break;
+		case OPT_CONSTRAIN:	/* Print constraints */
+			constrain=1;
+			break;
 		case OPT_STATS:
 			stats = 1;
 			break;
@@ -1465,7 +1784,7 @@ int main(int argc, char **argv)
 	}
 
 	/* if no options, then show stats */
-	if (classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + permissives + polcaps + all < 1) {
+	if (classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + permissives + polcaps + constrain + all < 1) {
 		stats = 1;
 	}
 
@@ -1567,6 +1886,8 @@ int main(int argc, char **argv)
 		print_permissives(stdout, permissive_name, expand, policydb);
 	if (polcaps || all)
 		print_polcaps(stdout, polcap_name, expand, policydb);
+	if (constrain || all)
+		print_constraints(stdout, expand, policydb, linebreaks);
 
 	apol_policy_destroy(&policydb);
 	apol_policy_path_destroy(&pol_path);
