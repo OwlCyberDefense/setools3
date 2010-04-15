@@ -751,6 +751,7 @@ int qpol_constraint_expr_node_get_names_iter(const qpol_policy_t * policy, const
 {
 	constraint_expr_t *internal_expr = NULL;
 	cexpr_name_state_t *cns = NULL;
+	int policy_type = 0;
 
 	if (iter)
 		*iter = NULL;
@@ -760,6 +761,9 @@ int qpol_constraint_expr_node_get_names_iter(const qpol_policy_t * policy, const
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+
+	if (qpol_policy_get_type(policy, &policy_type))
+		return STATUS_ERR;
 
 	internal_expr = (constraint_expr_t *) expr;
 
@@ -775,8 +779,12 @@ int qpol_constraint_expr_node_get_names_iter(const qpol_policy_t * policy, const
 		return STATUS_ERR;
 	}
 	if (internal_expr->attr & QPOL_CEXPR_SYM_TYPE) {
-		cns->inc = &(internal_expr->type_names->types);
-		cns->sub = &(internal_expr->type_names->negset);
+		if (policy_type == QPOL_POLICY_KERNEL_BINARY) {
+			cns->inc = &(internal_expr->names);
+		} else {
+			cns->inc = &(internal_expr->type_names->types);
+			cns->sub = &(internal_expr->type_names->negset);
+		}
 	} else {
 		cns->inc = &(internal_expr->names);
 	}

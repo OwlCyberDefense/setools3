@@ -34,6 +34,7 @@
 #include "policy-21-tests.h"
 #include "role-tests.h"
 #include "terule-tests.h"
+#include "constrain-tests.h"
 #include "user-tests.h"
 
 int main(void)
@@ -43,20 +44,14 @@ int main(void)
 	}
 
 	CU_SuiteInfo suites[] = {
-		{"Policy Version 21", policy_21_init, policy_21_cleanup, policy_21_tests}
-		,
-		{"AV Rule Query", avrule_init, avrule_cleanup, avrule_tests}
-		,
-		{"Domain Transition Analysis", dta_init, dta_cleanup, dta_tests}
-		,
-		{"Infoflow Analysis", infoflow_init, infoflow_cleanup, infoflow_tests}
-		,
-		{"Role Query", role_init, role_cleanup, role_tests}
-		,
-		{"TE Rule Query", terule_init, terule_cleanup, terule_tests}
-		,
-		{"User Query", user_init, user_cleanup, user_tests}
-		,
+		{"Policy Version 21", policy_21_init, policy_21_cleanup, policy_21_tests},
+		{"AV Rule Query", avrule_init, avrule_cleanup, avrule_tests},
+		{"Domain Transition Analysis", dta_init, dta_cleanup, dta_tests},
+		{"Infoflow Analysis", infoflow_init, infoflow_cleanup, infoflow_tests},
+		{"Role Query", role_init, role_cleanup, role_tests},
+		{"TE Rule Query", terule_init, terule_cleanup, terule_tests},
+		{"User Query", user_init, user_cleanup, user_tests},
+		{"Constrain query", constrain_init, constrain_cleanup, constrain_tests},
 		CU_SUITE_INFO_NULL
 	};
 
