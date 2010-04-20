@@ -140,10 +140,12 @@ proc Apol_Cond_Rules::_toggleSearchBools {name1 name2 op} {
 proc Apol_Cond_Rules::_search {} {
     variable vals
     variable widgets
+    .mainframe.frame.nb.frules.nb.fApol_Cond_Rules.top.obox.f.ok configure -state disabled
 
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
+        .mainframe.frame.nb.frules.nb.fApol_Cond_Rules.top.obox.f.ok configure -state normal
         return
     }
 
@@ -157,6 +159,7 @@ proc Apol_Cond_Rules::_search {} {
     }
     if {$avrule_selection == 0 && $terule_selection == 0} {
             tk_messageBox -icon error -type ok -title "Error" -message "At least one rule must be selected."
+            .mainframe.frame.nb.frules.nb.fApol_Cond_Rules.top.obox.f.ok configure -state normal
             return
     }
 
@@ -164,6 +167,7 @@ proc Apol_Cond_Rules::_search {} {
     if {$vals(enable_bool)} {
         if {[set bool_name $vals(name)] == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No booleean selected."
+            .mainframe.frame.nb.frules.nb.fApol_Cond_Rules.top.obox.f.ok configure -state normal
             return
         }
     }
@@ -191,7 +195,8 @@ proc Apol_Cond_Rules::_search {} {
         append text " match the search criteria.  Expressions are in Reverse Polish Notation.\n\n"
     }
     Apol_Widget::appendSearchResultText $widgets(results) $text
-    Apol_Progress_Dialog::wait "Conditional Expressions" "Rendering conditionals" \
+    if {![info exists apol_progress]} {
+        Apol_Progress_Dialog::wait "Conditional Expressions" "Rendering conditionals" \
         {
             if {[ApolTop::is_capable "syntactic rules"]} {
                 $::ApolTop::qpolicy build_syn_rule_table
@@ -205,6 +210,8 @@ proc Apol_Cond_Rules::_search {} {
                 incr counter
             }
         }
+    }
+    .mainframe.frame.nb.frules.nb.fApol_Cond_Rules.top.obox.f.ok configure -state normal
 }
 
 proc Apol_Cond_Rules::_renderConditional {cond avrules terules cond_number} {

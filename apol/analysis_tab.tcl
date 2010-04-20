@@ -199,6 +199,8 @@ proc Apol_Analysis::_analyze {which_button} {
     variable vals
     variable widgets
     variable tabs
+    $widgets(new) configure -state disabled
+    $widgets(update) configure -state disabled
 
     set m [$widgets(search_opts) raise]
     set retval [Apol_Progress_Dialog::wait "$vals($m:name) Analysis" \
@@ -222,6 +224,8 @@ proc Apol_Analysis::_analyze {which_button} {
     } else {
         $widgets(update) configure -state normal
     }
+    
+    $widgets(new) configure -state normal
 }
 
 proc Apol_Analysis::_reset {} {
