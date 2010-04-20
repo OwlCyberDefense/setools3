@@ -1081,15 +1081,16 @@ static int print_nodecon(FILE * fp, const char *addr, const apol_policy_t * poli
 		goto cleanup;
 
 	n_nodecons = apol_vector_get_size(v);
-	if (!n_nodecons) {
-		ERR(policydb, "Provided address (%s) is not valid.", addr);
+
+	if (!addr) {
+		fprintf(fp, "Nodecon: %zd\n", n_nodecons);
+	} else if (!n_nodecons) {
+		ERR(policydb, "No matching nodecon for address %s.", addr);
+		retval = 1;
 		goto cleanup;
 	}
 
-	if (!addr)
-		fprintf(fp, "Nodecon: %zd\n", n_nodecons);
-
-	for (i = 0; i < apol_vector_get_size(v); i++) {
+	for (i = 0; i < n_nodecons; i++) {
 		nodecon = apol_vector_get_element(v, i);
 		tmp = apol_nodecon_render(policydb, nodecon);
 		if (!tmp)
@@ -1097,9 +1098,6 @@ static int print_nodecon(FILE * fp, const char *addr, const apol_policy_t * poli
 		fprintf(fp, "   %s\n", tmp);
 		free(tmp);
 	}
-
-	if (addr && !n_nodecons)
-		ERR(policydb, "No matching nodecon for address %s.", addr);
 
 	retval = 0;
       cleanup:
