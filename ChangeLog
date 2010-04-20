@@ -3,6 +3,17 @@
 	* Fix seinfo to correctly handle cases where there are
 	  no nodecon statements in the policy.
 
+2010-04-20  Spencer Shimko <sshimko@tresys.com>
+
+	* Fixes error conditions that prevent apol from exiting.  If 
+	  window/tab was already destroyed on exit
+	  then apol threw an error and refused to exit. 
+
+2010-04-15  Spencer Shimko <sshimko@tresys.com>
+
+	* Add support for displaying constraints to seinfo.
+	* Add constraint CUnit tests.
+
 2010-03-12  John Oliver <joliver@tresys.com>
 
 	* Ensure architecture independent parts of python SWIG wrapper
