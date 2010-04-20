@@ -322,12 +322,15 @@ proc Apol_Analysis_domaintrans::_maybeEnableAccess {} {
 ################# functions that do access filters #################
 
 proc Apol_Analysis_domaintrans::_createAccessDialog {} {
+    variable widgets
+    $widgets(access) configure -state disabled
     destroy .domaintrans_adv
     set d [Dialog .domaintrans_adv -modal local -separator 1 -title "Domain Transition Access Filter" -parent .]
     $d add -text "Close"
     _createAccessTargets [$d getframe]
     _createAccessClasses [$d getframe]
     $d draw
+    $widgets(access) configure -state normal
 }
 
 proc Apol_Analysis_domaintrans::_createAccessTargets {f} {

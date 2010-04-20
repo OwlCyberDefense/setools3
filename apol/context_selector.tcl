@@ -123,11 +123,14 @@ proc Apol_Widget::_toggle_context_selector {path cb name1 name2 op} {
 
 proc Apol_Widget::_show_context_dialog {path} {
     variable vars
+    $path.context.button configure -state disabled
     set new_context [Apol_Context_Dialog::getContext $vars($path:context) $vars($path:attribute)]
     if {$new_context != {}} {
         set vars($path:context) [lindex $new_context 0]
         set vars($path:attribute) [lindex $new_context 1]
     }
+    
+    $path.context.button configure -state normal
     # the trace on this variable will trigger [_update_context_display] to execute
 }
 

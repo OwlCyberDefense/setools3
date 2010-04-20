@@ -35,10 +35,13 @@ proc Apol_Progress_Dialog::wait {title initialtext lambda} {
     if {$text_width < 32} {
         set text_width 32
     }
-    ProgressDlg .apol_progress -title $title \
-        -type normal -stop {} -separator 1 -parent . -maximum 2 \
-        -width $text_width -textvariable Apol_Progress_Dialog::text \
-        -variable Apol_Progress_Dialog::val
+
+    if {[info exists .apol_progress] == 0} {
+        ProgressDlg .apol_progress -title $title \
+            -type normal -stop {} -separator 1 -parent . -maximum 2 \
+            -width $text_width -textvariable Apol_Progress_Dialog::text \
+            -variable Apol_Progress_Dialog::val
+    }
 
     set orig_cursor [. cget -cursor]
     . configure -cursor watch

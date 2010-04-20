@@ -310,6 +310,8 @@ proc Apol_Analysis_transflow::_toggleAdvancedSelected {name1 name2 op} {
 ################# functions that do advanced filters #################
 
 proc Apol_Analysis_transflow::_createAdvancedDialog {} {
+    variable widgets
+    $widgets(advanced) configure -state disabled
     destroy .transflow_adv
     variable vals
 
@@ -317,7 +319,7 @@ proc Apol_Analysis_transflow::_createAdvancedDialog {} {
     if {[ApolTop::is_policy_open] && ![Apol_Perms_Map::is_pmap_loaded]} {
         if {![ApolTop::openDefaultPermMap]} {
             return "This analysis requires that a permission map is loaded."
-	}
+        }
     }
 
     set d [Dialog .transflow_adv -modal local -separator 1 -title "Transitive Information Flow Advanced Filters" -parent .]
@@ -351,8 +353,9 @@ proc Apol_Analysis_transflow::_createAdvancedDialog {} {
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
     _attribEnabled $attrib_box
-
+    
     $d draw
+    $widgets(advanced) configure -state normal
 }
 
 proc Apol_Analysis_transflow::_createClassFilter {f} {
@@ -385,6 +388,7 @@ proc Apol_Analysis_transflow::_createClassFilter {f} {
     grid configure $f -sticky ew
     set cb [checkbutton $f.cb -text "Exclude permissions with weights below:" \
                 -variable Apol_Analysis_transflow::vals(classes:threshold_enable)]
+    
     set weight [spinbox $f.threshold -from 1 -to 10 -increment 1 \
                     -width 2 -bg white -justify right \
                     -textvariable Apol_Analysis_transflow::vals(classes:threshold)]
@@ -626,7 +630,7 @@ proc Apol_Analysis_transflow::_checkParams {} {
     if {![Apol_Perms_Map::is_pmap_loaded]} {
         if {![ApolTop::openDefaultPermMap]} {
             return "This analysis requires that a permission map is loaded."
-	}
+        }
         apol_tcl_clear_info_string
     }
 

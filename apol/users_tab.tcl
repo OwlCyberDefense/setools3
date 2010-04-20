@@ -155,7 +155,7 @@ proc Apol_Users::_initializeVars {} {
 proc Apol_Users::_toggleRolesCheckbutton {path name1 name2 op} {
     variable opts
     if {$opts($name2)} {
-	$path configure -state normal -entrybg white
+    $path configure -state normal -entrybg white
     } else {
         $path configure -state disabled -entrybg $ApolTop::default_bg_color
     }
@@ -174,11 +174,13 @@ proc Apol_Users::_toggleDefaultCheckbutton {cb display button name1 name2 op} {
 
 proc Apol_Users::_show_level_dialog {} {
     variable opts
+    .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.default.button configure -state disabled
     set new_level [Apol_Level_Dialog::getLevel $opts(default_level)]
     if {$new_level != {}} {
         set opts(default_level) $new_level
         $opts(default_level) -acquire
     }
+    .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.default.button configure -state normal
 }
 
 proc Apol_Users::_updateDefaultDisplay {display name1 name2 op} {
@@ -204,15 +206,18 @@ proc Apol_Users::_popupUserInfo {which user} {
 proc Apol_Users::_searchUsers {} {
     variable opts
     variable widgets
+    .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.ok configure -state disabled
 
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
+        .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.ok configure -state normal
         return
     }
     if {$opts(useRole)} {
         if {$opts(role) == ""} {
             tk_messageBox -icon error -type ok -title "Error" -message "No role selected."
+            .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.ok configure -state normal
             return
         }
         set role $opts(role)
@@ -222,6 +227,7 @@ proc Apol_Users::_searchUsers {} {
     if {$opts(enable_default)} {
         if {$opts(default_level) == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No default level selected."
+            .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.ok configure -state normal
             return
         }
         set default $opts(default_level)
@@ -234,6 +240,7 @@ proc Apol_Users::_searchUsers {} {
     if {$range_enabled} {
         if {$range == {}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No range selected."
+            .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.ok configure -state normal
             return
         }
         # the user query will handle destroying the apol_mls_range object
@@ -266,6 +273,7 @@ proc Apol_Users::_searchUsers {} {
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $text
+    .mainframe.frame.nb.fcomponents.nb.fApol_Users.pw.f1.frame.obox.f.ok configure -state normal
 }
 
 proc Apol_Users::_renderUser {user_name show_all} {

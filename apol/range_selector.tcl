@@ -130,11 +130,14 @@ proc Apol_Widget::_toggle_range_selector {path cb name1 name2 op} {
 }
 
 proc Apol_Widget::_show_mls_range_dialog {path} {
+    $path.range.button configure -state disabled
     set range [Apol_Range_Dialog::getRange $Apol_Widget::vars($path:range)]
     if {$range != {}} {
         set Apol_Widget::vars($path:range) $range
         $range -acquire
     }
+    
+    $path.range.button configure -state normal
     # the trace on this variable will trigger [_update_range_display]
     # to execute
 }
