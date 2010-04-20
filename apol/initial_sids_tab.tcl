@@ -104,11 +104,14 @@ proc Apol_Initial_SIDS::_search {} {
     }
 
     set q [new_apol_isid_query_t]
+    
     if {[Apol_Widget::getContextSelectorState $widgets(context)]} {
         foreach {context range_match attribute} [Apol_Widget::getContextSelectorValue $widgets(context)] {break}
         $q set_context $::ApolTop::policy $context $range_match
     }
+    
     set v [$q run $::ApolTop::policy]
+    
     $q -acquire
     $q -delete
     set isids [isid_vector_to_list $v]
@@ -123,6 +126,7 @@ proc Apol_Initial_SIDS::_search {} {
             append results "\n[_render_isid $i]"
         }
     }
+    
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 

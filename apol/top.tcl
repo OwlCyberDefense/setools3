@@ -477,6 +477,7 @@ proc ApolTop::_toplevel_update_stats {} {
         "types" new_apol_type_query_t
         "attribs" new_apol_attr_query_t
     }
+    
     foreach {key func} $query_funcs {
         set q [$func]
         set v [$q run $::ApolTop::policy]
@@ -577,6 +578,7 @@ proc ApolTop::_exit {} {
     if {$policy != {}} {
         _close_policy
     }
+    
     Apol_File_Contexts::close
     _write_configuration_file
     exit

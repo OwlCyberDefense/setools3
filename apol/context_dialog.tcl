@@ -28,6 +28,7 @@ namespace eval Apol_Context_Dialog {
 proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} {parent .}} {
     variable dialog
     variable vars
+    
     if {![winfo exists $dialog]} {
         _create_dialog $parent
     }
@@ -37,7 +38,7 @@ proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} 
     set type {}
     set low_level {}
     set high_level {}
-
+    
     # initialize widget states
     array set vars [list $dialog:low_enable 0  $dialog:high_enable 0]
     if {$defaultContext != {}} {
@@ -61,6 +62,8 @@ proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} 
     } else {
         set vars($dialog:user_enable) 1
     }
+    
+    
 
     $vars($dialog:role_box) configure -values [Apol_Roles::getRoles]
     set vars($dialog:role) $role
@@ -126,8 +129,10 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
     set user_f [frame $left_f.user]
     set vars($dialog:user_cb) [checkbutton $user_f.enable -text "User" \
                                   -variable Apol_Context_Dialog::vars($dialog:user_enable)]
-    set vars($dialog:user_box) [ComboBox $user_f.user -entrybg white -width 12 \
-                                   -textvariable Apol_Context_Dialog::vars($dialog:user) -autopost 1]
+    set vars($dialog:user_box) [ComboBox $user_f.user -entrybg white \
+                                   -width 12 \
+                                   -textvariable Apol_Context_Dialog::vars($dialog:user) \
+                                   -autopost 1]
     trace add variable Apol_Context_Dialog::vars($dialog:user_enable) write \
         [list Apol_Context_Dialog::_user_changed $dialog]
     pack $vars($dialog:user_cb) -anchor nw

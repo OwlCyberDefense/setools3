@@ -326,6 +326,8 @@ proc Apol_Analysis_relabel::_toggleAdvancedSelected {name1 name2 op} {
 ################# functions that do advanced filters #################
 
 proc Apol_Analysis_relabel::_createAdvancedDialog {} {
+    variable widgets
+    $widgets(advanced) configure -state disabled
     destroy .relabel_analysis_adv
     variable vals
 
@@ -372,6 +374,7 @@ proc Apol_Analysis_relabel::_createAdvancedDialog {} {
     }
 
     $d draw
+    $widgets(advanced) configure -state normal
 }
 
 proc Apol_Analysis_relabel::_createAdvancedFilter {f title varname disabled} {
