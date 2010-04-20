@@ -1,3 +1,8 @@
+2010-04-20  Chris PeBenito <cpebenito@tresys.com>
+
+	* Fix seinfo to correctly handle cases where there are
+	  no nodecon statements in the policy.
+
 2010-03-12  John Oliver <joliver@tresys.com>
 
 	* Ensure architecture independent parts of python SWIG wrapper
