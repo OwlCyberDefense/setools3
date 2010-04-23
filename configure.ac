@@ -717,6 +717,12 @@ AC_CHECK_LIB(cunit,
 )
 AC_SUBST([CUNIT_LIB_FLAG])
 
+AC_CHECK_LIB(bz2,
+	BZ2_bzReadOpen, ,
+	AC_MSG_ERROR([could not find libbz2 - make sure bzip2-libs is installed]),
+	-lbz2
+)
+
 #AC_MSG_CHECKING([for FUSE])
 #pkg-config --exists fuse
 #if test $? -ne 0; then

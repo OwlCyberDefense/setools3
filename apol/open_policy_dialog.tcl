@@ -43,9 +43,9 @@ proc Apol_Open_Policy_Dialog::getPolicyPath {defaultPath} {
         set vars(last_module) $vars(primary_file)
         foreach m $modules {
             if {[catch {getModuleInfo $m} info]} {
-                tk_messageBox -icon error -type ok -title "Open Module" -message $info
+                tk_messageBox -icon error -type ok -title "Open Module" -message $info -detail "Module file $m" -parent [$dialog getframe]
             } else {
-                foreach {name vers} $info {break}
+                foreach {name vers type} $info {break}
                 lappend vars(mod_names) $name
                 lappend vars(mod_vers) $vers
                 lappend vars(mod_paths) $m
@@ -198,10 +198,16 @@ proc Apol_Open_Policy_Dialog::browsePrimary {} {
     .open_policy_dialog.frame.primary.f.b configure -state disabled
     if {$vars(path_type) == "monolithic"} {
         set title "Open Monolithic Policy"
+		set initDirName {}
     } else {
         set title "Open Modular Policy"
+		if {$vars(primary_file) != {} } {
+			set initDirName [file dirname $vars(primary_file)]
+		} else {
+			set initDirName [file dirname $vars(last_module)]
+		}
     }
-    set f [tk_getOpenFile -initialdir [file dirname $vars(primary_file)] \
+    set f [tk_getOpenFile -initialdir $initDirName \
                -initialfile $vars(primary_file) -parent $dialog -title $title]
     if {$f != {}} {
         set vars(primary_file) $f
@@ -213,14 +219,23 @@ proc Apol_Open_Policy_Dialog::browsePrimary {} {
 proc Apol_Open_Policy_Dialog::browseModule {} {
     variable vars
     variable dialog
-    set paths [tk_getOpenFile -initialdir [file dirname $vars(last_module)] \
+
+	if {$vars(last_module) != {} } {
+		set initDirName [file dirname $vars(last_module)]
+	} else {
+		set initDirName [file dirname $vars(primary_file)]
+	}
+    set paths [tk_getOpenFile -initialdir $initDirName \
                    -initialfile $vars(last_module) -parent $dialog \
                    -title "Open Module" -multiple 1]
     if {$paths == {}} {
         return
     }
     foreach f $paths {
-        addModule $f
+		# tk_getOpenFile returns "initialfile" as a selected file, so skip it.
+		if { $f != $vars(last_module) } { 
+			addModule $f
+		}
     }
 }
 
@@ -228,13 +243,23 @@ proc Apol_Open_Policy_Dialog::addModule {f} {
     variable vars
     variable widgets
     if {[lsearch $vars(mod_paths) $f] >= 0} {
-        tk_messageBox -icon error -type ok -title "Open Module" -message "Module $f was already added."
+        tk_messageBox -icon error -type ok -title "Open Module" -message "Module $f was already added." -parent .open_policy_dialog
         return
     }
     if {[catch {getModuleInfo $f} info]} {
-        tk_messageBox -icon error -type ok -title "Open Module" -message $info
+        tk_messageBox -icon error -type ok -title "Open Module" -message $info -detail "Module file $f" -parent .open_policy_dialog
     } else {
-        foreach {name vers} $info {break}
+        foreach {name vers type} $info {break}
+		if {$type == 1} {
+			if {$vars(primary_file) != {}} {
+				if {$vars(primary_file) != $f} {
+				tk_messageBox -icon error -type ok -title "Open Module" -message "Base already set" -detail "Current $vars(primary_file)\n\nNew file $f\n\nIgnoring new file." -parent .open_policy_dialog
+				}
+				return
+			}
+			set vars(primary_file) $f
+			return
+		}
         set vars(mod_names) [lsort [concat $vars(mod_names) $name]]
         set i [lsearch $vars(mod_names) $name]
         set vars(mod_vers) [linsert $vars(mod_vers) $i $vers]
@@ -352,11 +377,11 @@ proc Apol_Open_Policy_Dialog::tryOpenPolicy {} {
 }
 
 # Retrieve information about a policy module file, either source or
-# binary, from disk.  This will be a 2-ple of module name and version.
+# binary, from disk.  This will be a 3-ple of module name, version and type.
 # The policy module will be closed afterwards.
 proc Apol_Open_Policy_Dialog::getModuleInfo {f} {
     set mod [new_qpol_module_t $f]
-    set retval [list [$mod get_name] [$mod get_version]]
+    set retval [list [$mod get_name] [$mod get_version] [$mod get_type]]
     $mod -acquire
     $mod -delete
     return $retval

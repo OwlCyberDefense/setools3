@@ -4,7 +4,7 @@
  * This file is based upon checkpolicy/policy_scan.l fram NSA's SVN
  * repository.  It has been modified to support older policy formats.
  *
- * Author : Stephen Smalley, <sds@epoch.ncsc.mil>
+ * Author : Stephen Smalley, <sds@epoch.ncsc.mil> 
  *
  * Updated: David Caplan, <dac@tresys.com>
  *
@@ -99,6 +99,8 @@ TYPEALIAS |
 typealias			{ return(TYPEALIAS); }
 TYPEATTRIBUTE |
 typeattribute			{ return(TYPEATTRIBUTE); }
+TYPEBOUNDS |
+typebounds			{ return(TYPEBOUNDS); }
 TYPE |
 type				{ return(TYPE); }
 BOOL |
@@ -186,6 +188,14 @@ nodecon |
 NODECON				{ return(NODECON);}
 fs_use_psid |
 FS_USE_PSID			{ return(FSUSEPSID);}
+pirqcon |
+PIRQCON  		        { return(PIRQCON);}
+iomemcon |
+IOMEMCON            		{ return(IOMEMCON);}
+ioportcon |
+IOPORTCON           		{ return(IOPORTCON);}
+pcidevicecon |
+PCIDEVICECON           		{ return(PCIDEVICECON);}
 fs_use_xattr |
 FS_USE_XATTR			{ return(FSUSEXATTR);}
 fs_use_task |
@@ -224,9 +234,9 @@ policycap |
 POLICYCAP			{ return(POLICYCAP); }
 permissive |
 PERMISSIVE			{ return(PERMISSIVE); }
-"/"({alnum}|[_.-/])*	        { return(PATH); }
-{letter}({alnum}|[_-])*([.]?({alnum}|[_-]))*	{ return(IDENTIFIER); }
-{digit}+                        { return(NUMBER); }
+"/"({alnum}|[_\.\-/])*	        { return(PATH); }
+{letter}({alnum}|[_\-])*([\.]?({alnum}|[_\-]))*	{ return(IDENTIFIER); }
+{digit}+|0x{hexval}+            { return(NUMBER); }
 {digit}{1,3}(\.{digit}{1,3}){3}    { return(IPV4_ADDR); }
 {hexval}{0,4}":"{hexval}{0,4}":"({hexval}|[:.])*  { return(IPV6_ADDR); }
 {digit}+(\.({alnum}|[_.])*)?    { return(VERSION_IDENTIFIER); }
