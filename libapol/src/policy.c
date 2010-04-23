@@ -105,9 +105,8 @@ apol_policy_t *apol_policy_create_from_policy_path(const apol_policy_path_t * pa
 
 	if (apol_policy_path_get_type(path) == APOL_POLICY_PATH_TYPE_MODULAR) {
 		if (!qpol_policy_has_capability(policy->p, QPOL_CAP_MODULES)) {
-			ERR(policy, "%s is not a base policy.", primary_path);
-			apol_policy_destroy(&policy);
-			return NULL;
+			INFO(policy, "%s is not a base policy.", primary_path);
+			return policy;
 		}
 		const apol_vector_t *modules = apol_policy_path_get_modules(path);
 		size_t i;

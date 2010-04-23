@@ -110,12 +110,12 @@ static char *tcl_get_error(void)
 	apol_policy_t *apol_tcl_open_policy(const apol_policy_path_t *ppath, Tcl_Interp *interp) {
 		apol_policy_t *p = apol_policy_create_from_policy_path(ppath, QPOL_POLICY_OPTION_NO_NEVERALLOWS,
 								       apol_tcl_route_apol_to_string, interp);
-		if (p == NULL) {
-			if (errno != 0) {
-                SWIG_exception(SWIG_RuntimeError, strerror(errno));
-            } else {
-			    SWIG_exception(SWIG_RuntimeError, "The selected file does not appear to be a valid SELinux Policy.");
-            }
+		if (p == NULL && message == NULL) {  // Assume lower level has generated error message
+			if (errno != 0) {   // otherwise take a guess at it
+				SWIG_exception(SWIG_RuntimeError, strerror(errno));
+			} else {
+				SWIG_exception(SWIG_RuntimeError, "The selected file does not appear to be a valid SELinux Policy.");
+			}
 		}
 	fail:
 		return p;
@@ -447,3 +447,5 @@ extern void apol_tcl_clear_info_string(void);
 extern int apol_tcl_get_info_level(void);
 extern char *apol_tcl_get_info_string(void);
 extern void apol_tcl_set_info_string(apol_policy_t *p, const char *s);
+
+// vim:ft=c noexpandtab

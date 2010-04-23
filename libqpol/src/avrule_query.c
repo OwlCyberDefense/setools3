@@ -47,11 +47,13 @@ int qpol_policy_get_avrule_iter(const qpol_policy_t * policy, uint32_t rule_type
 		return STATUS_ERR;
 	}
 
+#if 1	// Seems to make sediff/sediffx work better without breaking things
 	if (!qpol_policy_has_capability(policy, QPOL_CAP_RULES_LOADED)) {
 		ERR(policy, "%s", "Cannot get avrules: Rules not loaded");
 		errno = ENOTSUP;
 		return STATUS_ERR;
 	}
+#endif
 
 	if ((rule_type_mask & QPOL_RULE_NEVERALLOW) && !qpol_policy_has_capability(policy, QPOL_CAP_NEVERALLOW)) {
 		ERR(policy, "%s", "Cannot get avrules: Neverallow rules requested but not available");

@@ -231,6 +231,7 @@ typedef struct qpol_module {} qpol_module_t;
 	qpol_module_t(const char *path) {
 		qpol_module_t *m;
 		BEGIN_EXCEPTION
+		errno=0;
 		if (qpol_module_create_from_file(path, &m)) {
 			SWIG_exception(SWIG_IOError, "Error opening module");
 		}
@@ -2876,3 +2877,4 @@ typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 		return (qpol_syn_terule_t*)x;
 	};
 %}
+// vim:ft=c noexpandtab

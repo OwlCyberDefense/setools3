@@ -337,6 +337,20 @@ int qpol_is_file_binpol(FILE * fp)
 	return rt;
 }
 
+int qpol_is_data_mod_pkg(char * data)
+{
+	size_t sz;
+	__u32 ubuf;
+
+	memcpy(&ubuf, data, sizeof(__u32));
+
+	ubuf = le32_to_cpu(ubuf);
+	if (ubuf == SEPOL_MODULE_PACKAGE_MAGIC)
+		return 1;
+
+	return 0;
+}
+
 int qpol_is_file_mod_pkg(FILE * fp)
 {
 	size_t sz;
@@ -920,6 +934,7 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 		return -1;
 	}
 
+    errno = 0;
 	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
 		error = errno;
 		ERR(NULL, "%s", strerror(error));
@@ -965,6 +980,7 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 
 	sepol_policy_file_set_handle(pfile, (*policy)->sh);
 
+    errno=0;
 	if (qpol_is_file_binpol(infile)) {
 		(*policy)->type = retv = QPOL_POLICY_KERNEL_BINARY;
 		sepol_policy_file_set_fp(pfile, infile);
@@ -979,13 +995,9 @@ int qpol_policy_open_from_file_opt(const char *path, qpol_policy_t ** policy, qp
 			error = errno;
 			goto err;
 		}
-	} else if (qpol_is_file_mod_pkg(infile)) {
+	} else if (qpol_module_create_from_file(path, &mod) == STATUS_SUCCESS) {
 		(*policy)->type = retv = QPOL_POLICY_MODULE_BINARY;
-		if (qpol_module_create_from_file(path, &mod)) {
-			error = errno;
-			ERR(*policy, "%s", strerror(error));
-			goto err;
-		}
+
 		if (qpol_policy_append_module(*policy, mod)) {
 			error = errno;
 			goto err;

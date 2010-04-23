@@ -50,6 +50,10 @@ extern "C"
  */
 	extern int qpol_default_policy_find(char **path);
 
+/* bunzip() a file to '*data', returning the total number of uncompressed bytes
+ * in the file.  Returns -1 if file could not be decompressed. */
+	extern ssize_t qpol_bunzip(FILE *f, char **data);
+
 #ifdef	__cplusplus
 }
 #endif
