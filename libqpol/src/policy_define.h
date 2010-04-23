@@ -9,9 +9,9 @@
 #ifndef _POLICY_DEFINE_H_
 #define _POLICY_DEFINE_H_
 
-/*
+/* 
  * We need the following so we have a valid error return code in yacc
- * when we have a parse error for a conditional rule.  We can't check
+ * when we have a parse error for a conditional rule.  We can't check 
  * for NULL (ie 0) because that is a potentially valid return.
  */
 #define COND_ERR ((avrule_t *)-1)
@@ -50,6 +50,10 @@ int define_netif_context(void);
 int define_permissive(void);
 int define_polcap(void);
 int define_port_context(unsigned int low, unsigned int high);
+int define_pirq_context(unsigned int pirq);
+int define_iomem_context(unsigned long low, unsigned long high);
+int define_ioport_context(unsigned long low, unsigned long high);
+int define_pcidevice_context(unsigned long device);
 int define_range_trans(int class_specified);
 int define_role_allow(void);
 int define_role_trans(void);
@@ -58,6 +62,7 @@ int define_sens(void);
 int define_te_avtab(int which);
 int define_typealias(void);
 int define_typeattribute(void);
+int define_typebounds(void);
 int define_type(int alias);
 int define_user(void);
 int define_validatetrans(constraint_expr_t * expr);

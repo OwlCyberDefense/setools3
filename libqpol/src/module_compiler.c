@@ -10,7 +10,7 @@
  *
  * Copyright (C) 2004 - 2005 Tresys Technology, LLC
  *	This program is free software; you can redistribute it and/or modify
- *	it under the terms of the GNU General Public License as published by
+ *  	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, version 2.
  */
 
@@ -91,7 +91,7 @@ int define_policy(int pass, int module_header_given)
 		}
 	}
 	/* the first declaration within the global avrule
-	 * block will always have an id of 1 */
+	   block will always have an id of 1 */
 	next_decl_id = 2;
 
 	/* reset the scoping stack */
@@ -137,7 +137,7 @@ int declare_symbol(uint32_t symbol_type, hashtab_key_t key, hashtab_datum_t datu
 		return -1;
 	}
 	retval = symtab_insert(policydbp, symbol_type, key, datum, SCOPE_DECL, decl->decl_id, dest_value);
-	if (retval == 1) {
+	if (retval == 1 && dest_value) {
 		symtab_datum_t *s = (symtab_datum_t *) hashtab_search(policydbp->symtab[symbol_type].table,
 								      key);
 		assert(s != NULL);
@@ -159,6 +159,40 @@ int declare_symbol(uint32_t symbol_type, hashtab_key_t key, hashtab_datum_t datu
 		}
 	}
 	return retval;
+}
+
+static int role_implicit_bounds(hashtab_t roles_tab, char *role_id, role_datum_t * role)
+{
+	role_datum_t *bounds;
+	char *bounds_id, *delim;
+
+	delim = strrchr(role_id, '.');
+	if (!delim)
+		return 0;	       /* no implicit boundary */
+
+	bounds_id = strdup(role_id);
+	if (!bounds_id) {
+		yyerror("out of memory");
+		return -1;
+	}
+	bounds_id[(size_t) (delim - role_id)] = '\0';
+
+	bounds = hashtab_search(roles_tab, bounds_id);
+	if (!bounds) {
+		yyerror2("role %s doesn't exist, is implicit bounds of %s", bounds_id, role_id);
+		return -1;
+	}
+
+	if (!role->bounds)
+		role->bounds = bounds->s.value;
+	else if (role->bounds != bounds->s.value) {
+		yyerror2("role %s has inconsistent bounds %s/%s",
+			 role_id, bounds_id, policydbp->p_role_val_to_name[role->bounds - 1]);
+		return -1;
+	}
+	free(bounds_id);
+
+	return 0;
 }
 
 role_datum_t *declare_role(void)
@@ -211,6 +245,12 @@ role_datum_t *declare_role(void)
 			}
 			role_datum_init(dest_role);
 			dest_role->s.value = value;
+			if (role_implicit_bounds(roles_tab, dest_id, dest_role)) {
+				free(dest_id);
+				role_datum_destroy(dest_role);
+				free(dest_role);
+				return NULL;
+			}
 			if (hashtab_insert(roles_tab, dest_id, dest_role)) {
 				yyerror("Out of memory!");
 				free(dest_id);
@@ -225,35 +265,29 @@ role_datum_t *declare_role(void)
 		free(dest_id);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return NULL;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of role");
 		return NULL;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not declare role here");
 		return NULL;
 	}
-	case 0:
-	{
+	case 0:{
 		if (ebitmap_set_bit(&dest_role->dominates, role->s.value - 1, 1)) {
 			yyerror("out of memory");
 			return NULL;
 		}
 		return dest_role;
 	}
-	case 1:
-	{
+	case 1:{
 		return dest_role;      /* role already declared for this block */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -299,31 +333,60 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr)
 		free(typdatum);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return NULL;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror2("duplicate declaration of type/attribute");
 		return NULL;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not declare type/attribute here");
 		return NULL;
 	}
 	case 0:
-	case 1:
-	{
+	case 1:{
 		return typdatum;
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
+}
+
+static int user_implicit_bounds(hashtab_t users_tab, char *user_id, user_datum_t * user)
+{
+	user_datum_t *bounds;
+	char *bounds_id, *delim;
+
+	delim = strrchr(user_id, '.');
+	if (!delim)
+		return 0;	       /* no implicit boundary */
+
+	bounds_id = strdup(user_id);
+	if (!bounds_id) {
+		yyerror("out of memory");
+		return -1;
+	}
+	bounds_id[(size_t) (delim - user_id)] = '\0';
+
+	bounds = hashtab_search(users_tab, bounds_id);
+	if (!bounds) {
+		yyerror2("user %s doesn't exist, is implicit bounds of %s", bounds_id, user_id);
+		return -1;
+	}
+
+	if (!user->bounds)
+		user->bounds = bounds->s.value;
+	else if (user->bounds != bounds->s.value) {
+		yyerror2("user %s has inconsistent bounds %s/%s",
+			 user_id, bounds_id, policydbp->p_role_val_to_name[user->bounds - 1]);
+		return -1;
+	}
+	free(bounds_id);
+
+	return 0;
 }
 
 user_datum_t *declare_user(void)
@@ -377,6 +440,12 @@ user_datum_t *declare_user(void)
 			}
 			user_datum_init(dest_user);
 			dest_user->s.value = value;
+			if (user_implicit_bounds(users_tab, dest_id, dest_user)) {
+				free(dest_id);
+				user_datum_destroy(dest_user);
+				free(dest_user);
+				return NULL;
+			}
 			if (hashtab_insert(users_tab, dest_id, dest_user)) {
 				yyerror("Out of memory!");
 				free(dest_id);
@@ -391,31 +460,25 @@ user_datum_t *declare_user(void)
 		free(dest_id);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return NULL;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of user");
 		return NULL;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not declare user here");
 		return NULL;
 	}
-	case 0:
-	{
+	case 0:{
 		return dest_user;
 	}
-	case 1:
-	{
+	case 1:{
 		return dest_user;      /* user already declared for this block */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -619,29 +682,25 @@ int require_class(int pass)
 	}
 	ret = require_symbol(SYM_CLASSES, class_id, datum, &datum->s.value, &datum->s.value);
 	switch (ret) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		free(class_id);
 		class_datum_destroy(datum);
 		goto cleanup;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of class");
 		free(class_id);
 		class_datum_destroy(datum);
 		goto cleanup;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not require class here");
 		free(class_id);
 		class_datum_destroy(datum);
 		goto cleanup;
 	}
-	case 0:
-	{
+	case 0:{
 		/* a new class was added; reindex everything */
 		if (policydb_index_classes(policydbp)) {
 			yyerror("Out of memory!");
@@ -649,16 +708,14 @@ int require_class(int pass)
 		}
 		break;
 	}
-	case 1:
-	{
+	case 1:{
 		class_datum_destroy(datum);
 		datum = hashtab_search(policydbp->p_classes.table, class_id);
 		assert(datum);	       /* the class datum should have existed */
 		free(class_id);
 		break;
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -738,23 +795,19 @@ int require_role(int pass)
 		free(role);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return -1;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of role");
 		return -1;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not require role here");
 		return -1;
 	}
-	case 0:
-	{
+	case 0:{
 		/* all roles dominate themselves */
 		if (ebitmap_set_bit(&role->dominates, role->s.value - 1, 1)) {
 			yyerror("Out of memory");
@@ -762,12 +815,10 @@ int require_role(int pass)
 		}
 		return 0;
 	}
-	case 1:
-	{
+	case 1:{
 		return 0;	       /* role already required */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -800,31 +851,25 @@ static int require_type_or_attribute(int pass, unsigned char isattr)
 		free(type);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return -1;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of type/attribute");
 		return -1;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not require type/attribute here");
 		return -1;
 	}
-	case 0:
-	{
+	case 0:{
 		return 0;
 	}
-	case 1:
-	{
+	case 1:{
 		return 0;	       /* type already required */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -865,31 +910,25 @@ int require_user(int pass)
 		user_datum_destroy(user);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return -1;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of user");
 		return -1;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not require user here");
 		return -1;
 	}
-	case 0:
-	{
+	case 0:{
 		return 0;
 	}
-	case 1:
-	{
+	case 1:{
 		return 0;	       /* user already required */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -918,31 +957,25 @@ int require_bool(int pass)
 		cond_destroy_bool(id, booldatum, NULL);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return -1;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of boolean");
 		return -1;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not require boolean here");
 		return -1;
 	}
-	case 0:
-	{
+	case 0:{
 		return 0;
 	}
-	case 1:
-	{
+	case 1:{
 		return 0;	       /* boolean already required */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -986,31 +1019,25 @@ int require_sens(int pass)
 		free(level);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return -1;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of sensitivity");
 		return -1;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not require sensitivity here");
 		return -1;
 	}
-	case 0:
-	{
+	case 0:{
 		return 0;
 	}
-	case 1:
-	{
+	case 1:{
 		return 0;	       /* sensitivity already required */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -1044,31 +1071,25 @@ int require_cat(int pass)
 		free(cat);
 	}
 	switch (retval) {
-	case -3:
-	{
+	case -3:{
 		yyerror("Out of memory!");
 		return -1;
 	}
-	case -2:
-	{
+	case -2:{
 		yyerror("duplicate declaration of category");
 		return -1;
 	}
-	case -1:
-	{
+	case -1:{
 		yyerror("could not require category here");
 		return -1;
 	}
-	case 0:
-	{
+	case 0:{
 		return 0;
 	}
-	case 1:
-	{
+	case 1:{
 		return 0;	       /* category already required */
 	}
-	default:
-	{
+	default:{
 		assert(0);	       /* should never get here */
 	}
 	}
@@ -1289,7 +1310,7 @@ int begin_optional_else(int pass)
 		stack_top->decl->next = decl;
 	} else {
 		/* pick the (hopefully last) declaration of this
-		 * avrule block, built from pass 1 */
+		   avrule block, built from pass 1 */
 		decl = stack_top->decl->next;
 		assert(decl != NULL && decl->next == NULL && decl->decl_id == next_decl_id);
 	}
@@ -1384,14 +1405,12 @@ static int push_stack(int stack_type, ...)
 	}
 	va_start(ap, stack_type);
 	switch (s->type = stack_type) {
-	case 1:
-	{
+	case 1:{
 		s->u.avrule = va_arg(ap, avrule_block_t *);
 		s->decl = va_arg(ap, avrule_decl_t *);
 		break;
 	}
-	case 2:
-	{
+	case 2:{
 		s->u.cond_list = va_arg(ap, cond_list_t *);
 		break;
 	}

@@ -67,7 +67,7 @@ $(tmp_sepol): $(sepol_srcdir)/libsepol.a
 	(cd $@; ar x libsepol.a)
 
 $(qpolso_DATA): $(tmp_sepol) $(libqpol_so_OBJS) libqpol.map
-	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/libsepol.a -Wl,--no-whole-archive @SELINUX_LIB_FLAG@ -lselinux -lsepol
+	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(AM_LDFLAGS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/libsepol.a -Wl,--no-whole-archive @SELINUX_LIB_FLAG@ -lselinux -lsepol -lbz2
 	$(LN_S) -f $@ @libqpol_soname@
 	$(LN_S) -f $@ libqpol.so
 

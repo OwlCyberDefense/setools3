@@ -127,7 +127,7 @@ proc ApolTop::openPolicyPath {ppath} {
                         apol_tcl_open_policy $ppath
                     } \
                 } p] || $p == "NULL"} {
-        tk_messageBox -icon error -type ok -title "Open Policy" -parent .open_policy_dialog \
+        tk_messageBox -icon error -type ok -title "Open Policy" -parent . \
             -message "[apol_tcl_get_error_string]"
         return -1  ;# indicates failed to open policy
     }
@@ -231,7 +231,7 @@ proc ApolTop::_create_toplevel {} {
     set menus {
         "&File" {} file 0 {
             {command "&Open..." {} "Open a new policy" {Ctrl o} -command ApolTop::_open_policy}
-            {command "&Close" {tag_policy_open} "Close current polocy" {Ctrl w} -command ApolTop::_close_policy}
+            {command "&Close" {tag_policy_open} "Close current polocy" {Ctrl w} -command ApolTop::_user_close_policy}
             {separator}
             {cascade "&Recent Files" {} recent 0 {}}
             {separator}
@@ -540,6 +540,13 @@ proc ApolTop::_toplevel_update_stats {} {
 proc ApolTop::_open_policy {} {
     variable last_policy_path
     Apol_Open_Policy_Dialog::getPolicyPath $last_policy_path
+}
+
+proc ApolTop::_user_close_policy {} {
+	variable last_policy_path
+
+	_close_policy
+	set last_policy_path {}
 }
 
 proc ApolTop::_close_policy {} {
@@ -1133,31 +1140,50 @@ proc handle_args {argv0 argv} {
         }
         incr argvp
     }
-    if {[llength $argv] - $argvp > 0} {
+
+	set arglen [expr [llength $argv]-$argvp]
+    set ppath {}
+	if {$arglen <= 0} {
+		return {}
+	} elseif {$arglen == 1} {
         set path_type $::APOL_POLICY_PATH_TYPE_MONOLITHIC
         set policy_file [lindex $argv $argvp]
-        set ppath {}
-        if {[llength $argv] - $argvp > 1} {
-            set path_type $::APOL_POLICY_PATH_TYPE_MODULAR
-            set mod_paths [list_to_str_vector [lrange $argv [expr {$argvp + 1}] end]]
-        } else {
-            set mod_paths [list_to_str_vector {}]
-            if {[apol_file_is_policy_path_list $policy_file]} {
-                set ppath [new_apol_policy_path_t $policy_file]
-            }
-        }
-        if {$ppath == {}} {
-            set ppath [new_apol_policy_path_t $path_type $policy_file $mod_paths]
-        }
-        if {$ppath == {}} {
-            puts stderr "Error loading $policy_file."
-        } else {
-            $ppath -acquire
-        }
-        return $ppath
-    } else {
-        return {}
+		set mod_paths [list_to_str_vector {}]
+		if {[apol_file_is_policy_path_list $policy_file]} {
+			set ppath [new_apol_policy_path_t $policy_file]
+		}
+	} elseif {$arglen > 1} {
+		set path_type $::APOL_POLICY_PATH_TYPE_MODULAR
+		set policy_file {} 
+		foreach f [lrange $argv $argvp end] {
+			if {[catch {Apol_Open_Policy_Dialog::getModuleInfo $f} modinfo]} {
+				tk_messageBox -icon error -type ok -title "Module access error" -message $modinfo
+			} else {
+				foreach {name vers type} $modinfo {break}
+				if {$type == 1} {	;# This file is a base 'module'
+					if {$policy_file != {} && $policy_file != $f} {
+							set rsp [tk_messageBox -icon error -type okcancel -title "Open Module" -message "Multiple base entries found." -detail "Current file: $policy_file\n\nNew file: $f\n\nClick OK to ignore new file, Cancel to exit"]
+							if {$rsp == "cancel"} { exit 1}
+					} else {
+						set policy_file $f
+					}
+				} else {	;# Append regular modules to the list.
+					lappend module_list $f
+				}
+			}
+		}
+		set mod_paths [list_to_str_vector $module_list]
+	}
+
+    if {$ppath == {}} {
+        set ppath [new_apol_policy_path_t $path_type $policy_file $mod_paths]
     }
+    if {$ppath == {}} {
+        puts stderr "Error loading $policy_file."
+    } else {
+        $ppath -acquire
+    }
+    return $ppath
 }
 
 proc print_help {program_name verbose} {

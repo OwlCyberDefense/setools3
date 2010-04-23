@@ -1,3 +1,13 @@
+2010-04-23  Spencer Shimko <sshimko@tresys.com>
+
+	* Rebase module loading code on upstream userspace.
+
+	* Automatically detect base module instead of asking
+	  user to identify the base.
+
+	* Support for bzipped policy packages (.pp) found in 
+	  Fedora 12 and later.
+
 2010-04-20  Chris PeBenito <cpebenito@tresys.com>
 
 	* Fix seinfo to correctly handle cases where there are
