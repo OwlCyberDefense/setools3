@@ -42,7 +42,7 @@ proc Apol_Context_Dialog::getContext {{defaultContext {}} {defaultAttribute {}} 
     # initialize widget states
     array set vars [list $dialog:low_enable 0  $dialog:high_enable 0]
     if {$defaultContext != {}} {
-        set user [$defaultContext get_user]
+        set user [$defaultContext get_user] #line causing segfault. most likely the entire $defaultContext doesn't exist
         set role [$defaultContext get_role]
         set type [$defaultContext get_type]
         if {$defaultAttribute != {}} {
