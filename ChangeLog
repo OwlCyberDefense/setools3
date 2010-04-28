@@ -1,3 +1,7 @@
+2010-04-28 Spencer Shimko <sshimko@tresys.com>
+
+	* Switch to a non-modal advanced filtering window.
+
 2010-04-23  Spencer Shimko <sshimko@tresys.com>
 
 	* Rebase module loading code on upstream userspace.

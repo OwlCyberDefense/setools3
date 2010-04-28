@@ -554,12 +554,14 @@ proc ApolTop::_close_policy {} {
     variable policy_stats_summary {}
 
     wm title . "SELinux Policy Analysis"
-
+    set i 0
     Apol_Progress_Dialog::wait "apol" "Closing policy." \
         {
             variable tabs
             foreach tab $tabs {
-                [lindex $tab 0]::close
+                if {[catch [lindex $tab 0]::close]} {
+                set i [expr $i+2]
+                }
             }
             Apol_Perms_Map::close
             variable policy
