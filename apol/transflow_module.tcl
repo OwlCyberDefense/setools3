@@ -322,8 +322,7 @@ proc Apol_Analysis_transflow::_createAdvancedDialog {} {
         }
     }
 
-    set d [Dialog .transflow_adv -modal local -separator 1 -title "Transitive Information Flow Advanced Filters" -parent .]
-    $d add -text "Close"
+    set d [Dialog .transflow_adv -modal none -separator 1 -title "Transitive Information Flow Advanced Filters" -parent .]
 
     set tf [TitleFrame [$d getframe].classes -text "Filter By Object Class Permissions"]
     pack $tf -side top -expand 1 -fill both -padx 2 -pady 4
@@ -356,6 +355,14 @@ proc Apol_Analysis_transflow::_createAdvancedDialog {} {
     
     $d draw
     $widgets(advanced) configure -state normal
+}
+
+proc Apol_Analysis_transflow::_closeAdvancedDialog {d} {
+    $d configure -modal local
+    #$d setfocus 0
+    #tk_messageBox -icon error -type ok -title "Modality set" -message [$d cget -modal]
+    $d configure -title [$d cget -modal]
+    $d enddialog 0
 }
 
 proc Apol_Analysis_transflow::_createClassFilter {f} {
