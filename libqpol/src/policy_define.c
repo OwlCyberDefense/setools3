@@ -3368,10 +3368,12 @@ int define_fs_context(unsigned int major, unsigned int minor)
 {
 	ocontext_t *newc, *c, *head;
 
+#ifdef SEPOL_TARGET_XEN
 	if (policydbp->target_platform != SEPOL_TARGET_SELINUX) {
 		yyerror("fscon not supported for target");
 		return -1;
 	}
+#endif
 
 	if (pass == 1) {
 		parse_security_context(NULL);
@@ -3429,6 +3431,10 @@ int define_pirq_context(unsigned int pirq)
 	ocontext_t *newc, *c, *l, *head;
 	char *id;
 
+#ifndef SEPOL_TARGET_XEN
+	yyerror("pirqcon not supported for target");
+	return -1;
+#else
 	if (policydbp->target_platform != SEPOL_TARGET_XEN) {
 		yyerror("pirqcon not supported for target");
 		return -1;
@@ -3476,6 +3482,7 @@ int define_pirq_context(unsigned int pirq)
       bad:
 	free(newc);
 	return -1;
+#endif
 }
 
 int define_iomem_context(unsigned long low, unsigned long high)
@@ -3483,6 +3490,10 @@ int define_iomem_context(unsigned long low, unsigned long high)
 	ocontext_t *newc, *c, *l, *head;
 	char *id;
 
+#ifndef SEPOL_TARGET_XEN
+	yyerror("iomemcon not supported for target");
+	return -1;
+#else
 	if (policydbp->target_platform != SEPOL_TARGET_XEN) {
 		yyerror("iomemcon not supported for target");
 		return -1;
@@ -3538,6 +3549,7 @@ int define_iomem_context(unsigned long low, unsigned long high)
       bad:
 	free(newc);
 	return -1;
+#endif
 }
 
 int define_ioport_context(unsigned long low, unsigned long high)
@@ -3545,6 +3557,10 @@ int define_ioport_context(unsigned long low, unsigned long high)
 	ocontext_t *newc, *c, *l, *head;
 	char *id;
 
+#ifndef SEPOL_TARGET_XEN
+	yyerror("ioportcon not supported for target");
+	return -1;
+#else
 	if (policydbp->target_platform != SEPOL_TARGET_XEN) {
 		yyerror("ioportcon not supported for target");
 		return -1;
@@ -3600,6 +3616,7 @@ int define_ioport_context(unsigned long low, unsigned long high)
       bad:
 	free(newc);
 	return -1;
+#endif
 }
 
 int define_pcidevice_context(unsigned long device)
@@ -3607,6 +3624,10 @@ int define_pcidevice_context(unsigned long device)
 	ocontext_t *newc, *c, *l, *head;
 	char *id;
 
+#ifndef SEPOL_TARGET_XEN
+	yyerror("pcidevicecon not supported for target");
+	return -1;
+#else
 	if (policydbp->target_platform != SEPOL_TARGET_XEN) {
 		yyerror("pcidevicecon not supported for target");
 		return -1;
@@ -3654,6 +3675,7 @@ int define_pcidevice_context(unsigned long device)
       bad:
 	free(newc);
 	return -1;
+#endif
 }
 
 int define_port_context(unsigned int low, unsigned int high)
@@ -3662,10 +3684,12 @@ int define_port_context(unsigned int low, unsigned int high)
 	unsigned int protocol;
 	char *id;
 
+#ifdef SEPOL_TARGET_XEN
 	if (policydbp->target_platform != SEPOL_TARGET_SELINUX) {
 		yyerror("portcon not supported for target");
 		return -1;
 	}
+#endif
 
 	if (pass == 1) {
 		id = (char *)queue_remove(id_queue);
@@ -3748,10 +3772,12 @@ int define_netif_context(void)
 {
 	ocontext_t *newc, *c, *head;
 
+#ifdef SEPOL_TARGET_XEN
 	if (policydbp->target_platform != SEPOL_TARGET_SELINUX) {
 		yyerror("netifcon not supported for target");
 		return -1;
 	}
+#endif
 
 	if (pass == 1) {
 		free(queue_remove(id_queue));
@@ -3808,10 +3834,12 @@ int define_ipv4_node_context()
 	struct in_addr addr, mask;
 	ocontext_t *newc, *c, *l, *head;
 
+#ifdef SEPOL_TARGET_XEN
 	if (policydbp->target_platform != SEPOL_TARGET_SELINUX) {
 		yyerror("nodecon not supported for target");
 		return -1;
 	}
+#endif
 
 	if (pass == 1) {
 		free(queue_remove(id_queue));
@@ -3894,10 +3922,12 @@ int define_ipv6_node_context(void)
 	struct in6_addr addr, mask;
 	ocontext_t *newc, *c, *l, *head;
 
+#ifdef SEPOL_TARGET_XEN
 	if (policydbp->target_platform != SEPOL_TARGET_SELINUX) {
 		yyerror("nodecon not supported for target");
 		return -1;
 	}
+#endif
 
 	if (pass == 1) {
 		free(queue_remove(id_queue));
@@ -3979,10 +4009,12 @@ int define_fs_use(int behavior)
 {
 	ocontext_t *newc, *c, *head;
 
+#ifdef SEPOL_TARGET_XEN
 	if (policydbp->target_platform != SEPOL_TARGET_SELINUX) {
 		yyerror("fsuse not supported for target");
 		return -1;
 	}
+#endif
 
 	if (pass == 1) {
 		free(queue_remove(id_queue));
@@ -4037,10 +4069,12 @@ int define_genfs_context_helper(char *fstype, int has_type)
 	char *type = NULL;
 	int len, len2;
 
+#ifdef SEPOL_TARGET_XEN
 	if (policydbp->target_platform != SEPOL_TARGET_SELINUX) {
 		yyerror("genfs not supported for target");
 		return -1;
 	}
+#endif
 
 	if (pass == 1) {
 		free(fstype);
