@@ -1,16 +1,20 @@
 %define setools_maj_ver 3.3
-%define setools_min_ver 6
-%define setools_release 0
-%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
+%define setools_min_ver 7
+%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Name: setools
 Version: %{setools_maj_ver}.%{setools_min_ver}
-Release: %{setools_release}
+Release: 1%{?dist}
 License: GPLv2
 URL: http://oss.tresys.com/projects/setools
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Source: http://oss.tresys.com/projects/setools/chrome/site/dists/setools-%{setools_maj_ver}.%{setools_min_ver}/setools-%{setools_maj_ver}.%{setools_min_ver}.tar.gz
+Source: http://oss.tresys.com/projects/setools/chrome/site/dists/setools-%{version}/setools-%{version}.tar.bz2
+Source1: setools.pam
+Source2: apol.desktop
+Source3: seaudit.desktop
+Source4: sediffx.desktop
+Patch1: setools-python.patch
 Summary: Policy analysis tools for SELinux
 Group: System Environment/Base
 Requires: setools-libs = %{version}-%{release} setools-libs-tcl = %{version}-%{release} setools-gui = %{version}-%{release} setools-console = %{version}-%{release}
@@ -27,14 +31,6 @@ Requires: setools-libs = %{version}-%{release} setools-libs-tcl = %{version}-%{r
 %define swig_ver 1.3.28
 %define tcltk_ver 8.4.9
 
-# auxillary files
-%define seaudit_pam packages/rpm/seaudit.pam
-%define setools_desktop1 packages/rpm/apol.desktop
-%define setools_desktop2 packages/rpm/seaudit.desktop
-%define setools_desktop3 packages/rpm/sediffx.desktop
-
-Patch0: fc9-compile.patch
-
 %description
 SETools is a collection of graphical tools, command-line tools, and
 libraries designed to facilitate SELinux policy analysis.
@@ -47,10 +43,12 @@ License: LGPLv2
 Summary: Policy analysis support libraries for SELinux
 Group: System Environment/Libraries
 Requires: libselinux >= %{selinux_ver} libsepol >= %{sepol_ver} sqlite >= %{sqlite_ver}
-BuildRequires: flex bison pkgconfig
+BuildRequires: flex  bison  pkgconfig
 BuildRequires: glibc-devel libstdc++-devel gcc gcc-c++
 BuildRequires: libselinux-devel >= %{selinux_ver} libsepol-devel >= %{sepol_ver}
+BuildRequires: libsepol-static >= %{sepol_ver}
 BuildRequires: sqlite-devel >= %{sqlite_ver} libxml2-devel
+BuildRequires: tcl-devel >= %{tcltk_ver}
 BuildRequires: autoconf >= %{autoconf_ver} automake
 
 %description libs
@@ -108,7 +106,7 @@ License: LGPLv2
 Summary: Tcl bindings for SELinux policy analysis
 Group: Development/Languages
 Requires: setools-libs = %{version}-%{release} tcl >= %{tcltk_ver}
-BuildRequires: tcl-devel >= %{tcltk_ver} tk-devel >= %{tcltk_ver} swig >= %{swig_ver}
+BuildRequires: tcl-devel >= %{tcltk_ver} swig >= %{swig_ver}
 
 %description libs-tcl
 SETools is a collection of graphical tools, command-line tools, and
@@ -167,7 +165,7 @@ Group: System Environment/Base
 Requires: tcl >= %{tcltk_ver} tk >= %{tcltk_ver} bwidget >= %{bwidget_ver}
 Requires: setools-libs = %{version}-%{release} setools-libs-tcl = %{version}-%{release}
 Requires: glib2 gtk2 >= %{gtk_ver} usermode
-BuildRequires: gtk2-devel >= %{gtk_ver} libglade2-devel libxml2-devel
+BuildRequires: gtk2-devel >= %{gtk_ver} libglade2-devel libxml2-devel tk-devel >= %{tcltk_ver}
 BuildRequires: desktop-file-utils
 
 %description gui
@@ -187,13 +185,19 @@ This package includes the following graphical tools:
 %define tcllibdir %{_libdir}/setools
 
 %prep
-%setup -q -n setools-%{setools_maj_ver}.%{setools_min_ver}
-if test ! -z %{?fc9: 1}; then
-%patch0 -p0
-fi
+%setup -q
+%patch1 -p 1 -b .python
 
 %build
-%configure --libdir=%{_libdir} --disable-bwidget-check --disable-selinux-check --enable-swig-python --enable-swig-java --enable-swig-tcl
+%configure --libdir=%{_libdir} --disable-bwidget-check --disable-selinux-check \
+    --enable-swig-python --enable-swig-java --enable-swig-tcl --with-java-prefix=/usr/lib/jvm/java
+# work around issue with gcc 4.3 + gnu99 + swig-generated code:
+sed -i -e 's:$(CC):gcc -std=gnu89:' libseaudit/swig/python/Makefile
+%ifarch sparc sparcv9 sparc64 s390 s390x                                                                                                
+    for file in `find . -name Makefile`; do                                                                                             
+        sed -i -e 's:-fpic:-fPIC:' $file;                                                                                               
+    done                                                                                                                                
+%endif           
 make %{?_smp_mflags}
 
 %install
@@ -202,14 +206,15 @@ make DESTDIR=${RPM_BUILD_ROOT} INSTALL="install -p" install
 mkdir -p ${RPM_BUILD_ROOT}%{_datadir}/applications
 mkdir -p ${RPM_BUILD_ROOT}%{_datadir}/pixmaps
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d
-install -p -m 644 %{seaudit_pam} ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d/seaudit
+install -p -m 644 %{SOURCE1} ${RPM_BUILD_ROOT}%{_sysconfdir}/pam.d/seaudit
 install -d -m 755 ${RPM_BUILD_ROOT}%{_sysconfdir}/security/console.apps
 install -p -m 644 packages/rpm/seaudit.console ${RPM_BUILD_ROOT}%{_sysconfdir}/security/console.apps/seaudit
 install -d -m 755 ${RPM_BUILD_ROOT}%{_datadir}/applications
 install -p -m 644 apol/apol.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/apol.png
 install -p -m 644 seaudit/seaudit.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/seaudit.png
 install -p -m 644 sediff/sediffx.png ${RPM_BUILD_ROOT}%{_datadir}/pixmaps/sediffx.png
-desktop-file-install --vendor=Tresys --dir ${RPM_BUILD_ROOT}%{_datadir}/applications %{setools_desktop1} %{setools_desktop2} %{setools_desktop3}
+desktop-file-install --dir ${RPM_BUILD_ROOT}%{_datadir}/applications %{SOURCE2} %{SOURCE3} %{SOURCE4}
+ln -sf consolehelper ${RPM_BUILD_ROOT}/%{_bindir}/seaudit
 # replace absolute symlinks with relative symlinks
 ln -sf ../setools-%{setools_maj_ver}/qpol.jar ${RPM_BUILD_ROOT}/%{javajardir}/qpol.jar
 ln -sf ../setools-%{setools_maj_ver}/apol.jar ${RPM_BUILD_ROOT}/%{javajardir}/apol.jar
@@ -222,11 +227,6 @@ rm -f ${RPM_BUILD_ROOT}/%{_libdir}/*.a
 chmod 0755 ${RPM_BUILD_ROOT}/%{_libdir}/*.so.*
 chmod 0755 ${RPM_BUILD_ROOT}/%{_libdir}/%{name}/*/*.so.*
 chmod 0755 ${RPM_BUILD_ROOT}/%{pkg_py_arch}/*.so.*
-# coreutils version >= 6 changed chmod such that it generates an error if
-# the linked-to file does not exist, so the following order is important.
-chmod 0755 ${RPM_BUILD_ROOT}/%{_bindir}/*
-ln -sf consolehelper ${RPM_BUILD_ROOT}/%{_bindir}/seaudit
-chmod 0755 ${RPM_BUILD_ROOT}/%{_sbindir}/*
 chmod 0755 ${RPM_BUILD_ROOT}/%{setoolsdir}/seaudit-report-service
 chmod 0644 ${RPM_BUILD_ROOT}/%{tcllibdir}/*/pkgIndex.tcl
 
@@ -239,25 +239,26 @@ rm -rf ${RPM_BUILD_ROOT}
 %files libs
 %defattr(-,root,root,-)
 %doc AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL KNOWN-BUGS NEWS README
+%{_libdir}/libqpol.so.*
 %{_libdir}/libapol.so.*
 %{_libdir}/libpoldiff.so.*
-%{_libdir}/libqpol.so.*
-%{_libdir}/libseaudit.so.*
 %{_libdir}/libsefs.so.*
+%{_libdir}/libseaudit.so.*
 %dir %{setoolsdir}
 
 %files libs-python
 %defattr(-,root,root,-)
 %{pkg_py_lib}/
-%ifarch x86_64 ppc64
+%ifarch x86_64 ppc64 sparc64 s390x
 %{pkg_py_arch}/
 %endif
+%{python_sitearch}/setools*.egg-info
 
 %files libs-java
 %defattr(-,root,root,-)
+%{_libdir}/libjqpol.so.*
 %{_libdir}/libjapol.so.*
 %{_libdir}/libjpoldiff.so.*
-%{_libdir}/libjqpol.so.*
 %{_libdir}/libjseaudit.so.*
 %{_libdir}/libjsefs.so.*
 %{setoolsdir}/*.jar
@@ -265,9 +266,10 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files libs-tcl
 %defattr(-,root,root,-)
+%dir %{tcllibdir}
+%{tcllibdir}/qpol/
 %{tcllibdir}/apol/
 %{tcllibdir}/poldiff/
-%{tcllibdir}/qpol/
 %{tcllibdir}/seaudit/
 %{tcllibdir}/sefs/
 
@@ -275,22 +277,22 @@ rm -rf ${RPM_BUILD_ROOT}
 %defattr(-,root,root,-)
 %{_libdir}/*.so
 %{_libdir}/pkgconfig/*
+%{_includedir}/qpol/
 %{_includedir}/apol/
 %{_includedir}/poldiff/
-%{_includedir}/qpol/
 %{_includedir}/seaudit/
 %{_includedir}/sefs/
 
 %files console
 %defattr(-,root,root,-)
-%{_bindir}/findcon
-%{_bindir}/indexcon
-%{_bindir}/replcon
-%{_bindir}/seaudit-report
-%{_bindir}/sechecker
-%{_bindir}/sediff
 %{_bindir}/seinfo
 %{_bindir}/sesearch
+%{_bindir}/indexcon
+%{_bindir}/findcon
+%{_bindir}/replcon
+%{_bindir}/sechecker
+%{_bindir}/sediff
+%{_bindir}/seaudit-report
 %{setoolsdir}/sechecker-profiles/
 %{setoolsdir}/sechecker_help.txt
 %{setoolsdir}/seaudit-report-service
@@ -307,18 +309,18 @@ rm -rf ${RPM_BUILD_ROOT}
 
 %files gui
 %defattr(-,root,root,-)
-%{_bindir}/apol
 %{_bindir}/seaudit
 %{_bindir}/sediffx
+%{_bindir}/apol
 %{tcllibdir}/apol_tcl/
+%{setoolsdir}/sediff_help.txt
 %{setoolsdir}/apol_help.txt
-%{setoolsdir}/apol_perm_mapping_*
 %{setoolsdir}/domaintrans_help.txt
 %{setoolsdir}/file_relabel_help.txt
 %{setoolsdir}/infoflow_help.txt
-%{setoolsdir}/seaudit_help.txt
-%{setoolsdir}/sediff_help.txt
 %{setoolsdir}/types_relation_help.txt
+%{setoolsdir}/apol_perm_mapping_*
+%{setoolsdir}/seaudit_help.txt
 %{setoolsdir}/*.glade
 %{setoolsdir}/*.png
 %{setoolsdir}/apol.gif
@@ -345,17 +347,58 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun libs-tcl -p /sbin/ldconfig
 
 %changelog
-* Fri Aug 15 2008 Jason Tang <selinux@tresys.com> 3.3.5-0
-- Update to SETools 3.3.5 release.
+* Fri Apr 30 2010 Spencer Shimko <sshimko@tresys.com> 3.3.7-1
+- New release w/ constraint support and module loading fixes.
+- Dropping qpol patch since it was fixed upstream.
 
-* Fri Mar 7 2008 Jason Tang <selinux@tresys.com> 3.3.4-0
-- Update to SETools 3.3.4 release.
+* Tue Aug 11 2009 Dan Walsh <dwalsh@redhat.com> 3.3.6-4
+- Add python bindings for sesearch and seinfo
 
-* Thu Feb 21 2008 Jason Tang <selinux@tresys.com> 3.3.3-0
-- Update to SETools 3.3.3 release.
+* Tue Jul 28 2009 Dan Walsh <dwalsh@redhat.com> 3.3.6-3
+- Fix qpol install of include files
 
-* Thu Nov 1 2007 Jason Tang <selinux@tresys.com> 3.3.2-0
-- Update to SETools 3.3.2 release.
+* Sun Jul 26 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.3.6-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
+* Wed Jul 22 2009 Chris PeBenito <cpebenito@tresys.com> 3.3.6-1
+- New upstream release.
+
+* Sun Apr  5 2009 Dan Horák <dan[at]danny.cz> - 3.3.5-8
+- don't expect that java-devel resolves as gcj
+
+* Sun Apr  5 2009 Dan Horák <dan[at]danny.cz> - 3.3.5-7
+- add support for s390x
+
+* Wed Feb 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 3.3.5-6
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
+
+* Thu Dec 04 2008 Ignacio Vazquez-Abrams <ivazqueznet+rpm@gmail.com> - 3.3.5-5
+- Rebuild for Python 2.6
+
+* Mon Dec  1 2008 Michael Schwendt <mschwendt@fedoraproject.org> - 3.3.5-4
+- Include %%tcllibdir directory in -libs-tcl package.
+
+* Sat Nov 29 2008 Ignacio Vazquez-Abrams <ivazqueznet+rpm@gmail.com> - 3.3.5-3
+- Rebuild for Python 2.6
+
+* Wed Sep 17 2008 Dennis Gilmore <dennis@ausil.us> 3.3.5-2
+- fix building in sparc and s390 arches
+
+* Tue Aug 26 2008 Chris PeBenito <cpebenito@tresys.com> 3.3.5-1
+- Update to upstream version 3.3.5.
+
+* Wed Feb 27 2008 Chris PeBenito <cpebenito@tresys.com> 3.3.4-1
+- Fixes gcc 4.3, glibc 2.7, tcl 8.5, and libsepol 2.0.20 issues.
+- Fix policy loading when policy on disk is higher version than the kernel.
+
+* Tue Feb 19 2008 Fedora Release Engineering <rel-eng@fedoraproject.org> - 3.3.2-3
+- Autorebuild for GCC 4.3
+
+* Tue Jan 29 2008 Chris Pebenito <cpebenito@tresys.com> 3.3.2-2.fc9
+- Bump to pick up new libsepol and policy 22.
+
+* Wed Nov 28 2007 Chris Pebenito <cpebenito@tresys.com> 3.3.2-1.fc9
+- Update for 3.3.2.
 
 * Thu Oct 18 2007 Chris PeBenito <cpebenito@tresys.com> 3.3.1-7.fc8
 - Rebuild to fix ppc64 issue.
@@ -365,9 +408,6 @@ rm -rf ${RPM_BUILD_ROOT}
 
 * Tue Aug 28 2007 Fedora Release Engineering <rel-eng at fedoraproject dot org> - 3.2-4
 - Rebuild for selinux ppc32 issue.
-
-* Thu Aug 02 2007 Jason Tang <selinux@tresys.com> 3.3-0
-- update to SETools 3.3 release
 
 * Fri Jul 20 2007 Dan Walsh <dwalsh@redhat.com> 3.2-3
 - Move to Tresys spec file
