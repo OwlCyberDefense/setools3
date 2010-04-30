@@ -231,7 +231,6 @@ typedef struct qpol_module {} qpol_module_t;
 	qpol_module_t(const char *path) {
 		qpol_module_t *m;
 		BEGIN_EXCEPTION
-		errno=0;
 		if (qpol_module_create_from_file(path, &m)) {
 			SWIG_exception(SWIG_IOError, "Error opening module");
 		}
