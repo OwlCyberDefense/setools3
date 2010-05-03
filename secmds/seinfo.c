@@ -126,7 +126,6 @@ void usage(const char *program_name, int brief)
 	printf("  -u[NAME], --user[=NAME]          print users\n");
 	printf("  -b[NAME], --bool[=NAME]          print conditional booleans\n");
 	printf("  --constrain                      print constrain statements\n");
-	printf("  -l, --line-breaks                print line breaks in constrain statements\n");
 	printf("  --initialsid[=NAME]              print initial SIDs\n");
 	printf("  --fs_use[=TYPE]                  print fs_use statements\n");
 	printf("  --genfscon[=TYPE]                print genfscon statements\n");
@@ -140,6 +139,7 @@ void usage(const char *program_name, int brief)
 	printf("OPTIONS:\n");
 	printf("  -x, --expand                     show more info for specified components\n");
 	printf("  --stats                          print useful policy statistics\n");
+	printf("  -l, --line-breaks                print line breaks in constrain statements\n");
 	printf("  -h, --help                       print this help text and exit\n");
 	printf("  -V, --version                    print version information and exit\n");
 	printf("\n");
