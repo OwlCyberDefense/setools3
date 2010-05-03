@@ -57,7 +57,6 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	-I$(top_srcdir)/libqpol/include
 AM_JFLAGS = @DEBUGJFLAGS@ @WARNJFLAGS@
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @QPOL_LIB_FLAG@
-DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
 
 $(firstword $(BUILT_SOURCES)): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_JAVA_OPT) -package $(package_name) -o $@ -I$(top_srcdir)/libqpol/include $<
