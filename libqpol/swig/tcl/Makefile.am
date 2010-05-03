@@ -13,7 +13,6 @@ AM_CFLAGS = @DEBUGCFLAGS@ @WARNCFLAGS@ @PROFILECFLAGS@ @SELINUX_CFLAGS@ \
 	-I$(top_builddir) -fpic \
 	-I$(top_srcdir)/libqpol/include
 AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@ @QPOL_LIB_FLAG@ @TCL_LIB_SPEC@
-DEPENDENCIES = $(top_builddir)/libqpol/src/libqpol.so
 
 $(BUILT_SOURCES): $(dist_noinst_DATA) $(DEPENDENCIES)
 	$(SWIG) $(SWIG_TCL_OPT) -pkgversion @libqpol_version@ -o $@ $<
