@@ -81,6 +81,9 @@ Print a list of port contexts or, if PORT is provided, print the statement for p
 There is no expanded information for this component.
 .IP "--protocol=PROTO"
 Print only portcon statements for the protocol PROTO. This option is ignored if portcon statements are not printed or if no statement exists for the requested port.
+.IP "--constrain"
+Print a list of constraints.
+There is no expanded information for this component.
 .IP "--all"
 Print all components.
 .SH OPTIONS
@@ -90,6 +93,8 @@ These details include the types assigned to an attribute or role and the permiss
 This option is not available for all component types; see the description of each component for the details this option will provide.
 .IP "--stats"
 Print policy statistics including policy type and version information and counts of all components and rules.
+.IP "-l"
+Print line breaks when displaying constraint statements.
 .IP "-h, --help"
 Print help information and exit.
 .IP "-V, --version"
@@ -97,7 +102,7 @@ Print version information and exit.
 .SH AUTHOR
 This manual page was written by Jeremy A. Mowery <jmowery@tresys.com>.
 .SH COPYRIGHT
-Copyright(C) 2003-2008 Tresys Technology, LLC
+Copyright(C) 2003-2010 Tresys Technology, LLC
 .SH BUGS
 Please report bugs via an email to setools-bugs@tresys.com.
 .SH SEE ALSO
