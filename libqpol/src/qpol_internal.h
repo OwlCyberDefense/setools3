@@ -105,6 +105,12 @@ extern "C"
  */
 	int qpol_binpol_version(FILE * fp);
 
+/**
+ * Returns true if the file is a module package.
+ * @return Returns 1 for module packages, 0 otherwise.
+ */
+	int qpol_is_data_mod_pkg(char * data);
+
 #define ERR(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_ERR, format, __VA_ARGS__)
 #define WARN(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_WARN, format, __VA_ARGS__)
 #define INFO(policy, format, ...) qpol_handle_msg(policy, QPOL_MSG_INFO, format, __VA_ARGS__)
