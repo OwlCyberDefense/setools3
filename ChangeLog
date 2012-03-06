@@ -1,3 +1,5 @@
+	* Fix compile errors on new parameter in libsepol role_set_expand().
+
 2010-05-07  Spencer Shimko <sshimko@tresys.com>
 
 	* SETools 3.3.7.

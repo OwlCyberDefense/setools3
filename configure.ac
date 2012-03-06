@@ -497,9 +497,25 @@ sepol_save_CPPFLAGS="${CPPFLAGS}"
 CFLAGS="${CFLAGS} ${SELINUX_CFLAGS} ${SELINUX_LIB_FLAG}"
 CPPFLAGS="${CPPFLAGS} ${SELINUX_CFLAGS}"
 
-dnl check for user and role mapping, added in libsepol version 2.0.29
-AC_MSG_CHECKING([for user and role mappings])
+dnl check for role attribute, added in libsepol 2.0.46
+AC_MSG_CHECKING([for libsepol role_set_expand() role attribute support])
 AC_COMPILE_IFELSE(
+                  [AC_LANG_SOURCE([
+#include <sepol/policydb/expand.h>
+int main () {
+  return role_set_expand(NULL, NULL, NULL, NULL, NULL);
+}])],
+                  sepol_role_attrs="yes",
+                  sepol_role_attrs="no")
+AC_MSG_RESULT([${sepol_role_attrs}])
+
+if test ${sepol_role_attrs} == "yes"; then
+	sepol_new_user_role_mapping="yes"
+	sepol_role_set_expand_base="yes"
+else
+    dnl check for user and role mapping, added in libsepol version 2.0.29
+    AC_MSG_CHECKING([for libsepol role_set_expand() user and role mappings])
+    AC_COMPILE_IFELSE(
                   [AC_LANG_SOURCE([
 #include <sepol/policydb/expand.h>
 int main () {
@@ -507,7 +523,28 @@ int main () {
 }])],
                   sepol_new_user_role_mapping="yes",
                   sepol_new_user_role_mapping="no")
-AC_MSG_RESULT([${sepol_new_user_role_mapping}])
+    AC_MSG_RESULT([${sepol_new_user_role_mapping}])
+
+    if test ${sepol_new_user_role_mapping} == "no"; then
+        dnl if this is not the original role_set_expand(), this libsepol is too new
+        AC_MSG_CHECKING([for libsepol role_set_expand() original version])
+        AC_COMPILE_IFELSE(
+                  [AC_LANG_SOURCE([
+#include <sepol/policydb/expand.h>
+int main () {
+  return role_set_expand(NULL, NULL, NULL);
+}])],
+                  sepol_role_set_expand_base="yes",
+                  sepol_role_set_expand_base="no")
+        AC_MSG_RESULT([${sepol_role_set_expand_base}])
+
+        if test ${sepol_role_set_expand_base} == "no"; then
+           AC_MSG_ERROR([this version of libsepol is incompatible with SETools])
+        fi
+    else
+        sepol_role_set_expand_base="yes"
+    fi
+fi
 
 dnl check for permissive types, added in libsepol version 2.0.26
 AC_CHECK_DECL([TYPE_FLAGS_PERMISSIVE],
@@ -818,6 +855,9 @@ if test ${sepol_new_permissive_types} == "yes"; then
 fi
 if test ${sepol_new_user_role_mapping} == "yes"; then
    AC_DEFINE(HAVE_SEPOL_USER_ROLE_MAPPING, 1, [if users and roles are mapped during policy expansion])
+fi
+if test ${sepol_role_attrs} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_ROLE_ATTRS, 1, [if role attributes are supported])
 fi
 
 if test ${use_shared} == "yes"; then
