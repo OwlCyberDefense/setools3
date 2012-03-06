@@ -2132,7 +2132,9 @@ int define_role_trans(void)
 	free(id);
 
 	/* This ebitmap business is just to ensure that there are not conflicting role_trans rules */
-#ifdef HAVE_SEPOL_USER_ROLE_MAPPING
+#ifdef HAVE_SEPOL_ROLE_ATTRS
+	if (role_set_expand(&roles, &e_roles, policydbp, NULL, NULL))
+#elif HAVE_SEPOL_USER_ROLE_MAPPING
 	if (role_set_expand(&roles, &e_roles, policydbp, NULL))
 #else
 	if (role_set_expand(&roles, &e_roles, policydbp))
