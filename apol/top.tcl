@@ -618,9 +618,7 @@ proc ApolTop::_goto {} {
 }
 
 proc ApolTop::_open_query_file {} {
-    set types {
-        {"Query files" {$ApolTop::query_file_ext}}
-    }
+    set types " {\"Query files\" { $ApolTop::query_file_ext }} "
     set query_file [tk_getOpenFile -filetypes $types -title "Open Apol Query" \
                         -defaultextension $ApolTop::query_file_ext -parent .]
     if {$query_file != {}} {
@@ -657,9 +655,7 @@ proc ApolTop::_open_query_file {} {
 }
 
 proc ApolTop::_save_query_file {} {
-    set types {
-        {"Query files" {$ApolTop::query_file_ext}}
-    }
+    set types " {\"Query files\" {$ApolTop::query_file_ext}} "
     set query_file [tk_getSaveFile -title "Save Apol Query" \
                         -defaultextension $ApolTop::query_file_ext \
                         -filetypes $types -parent .]
