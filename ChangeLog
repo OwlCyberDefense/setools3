@@ -1,3 +1,7 @@
+2012-03-26  Chris PeBenito <cpebenito@tresys.com>
+	* Fix file type drop down list for open/close Apol query.
+
+2012-03-06  Chris PeBenito <cpebenito@tresys.com>
 	* Fix compile errors on new parameter in libsepol role_set_expand().
 
 2010-05-07  Spencer Shimko <sshimko@tresys.com>
