@@ -88,7 +88,7 @@ int apol_filename_trans_get_by_query(const apol_policy_t * p, const apol_filenam
 	}
 
 	if (qpol_policy_get_filename_trans_iter(p->p, &iter) < 0) {
-		return -1;
+		goto cleanup;
 	}
 
 	if ((*v = apol_vector_create(NULL)) == NULL) {
@@ -97,12 +97,13 @@ int apol_filename_trans_get_by_query(const apol_policy_t * p, const apol_filenam
 	}
 
 	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		int match_source = 0, match_target = 0, match_default = 0;
+		size_t i;
+
 		qpol_filename_trans_t *filename_trans;
 		if (qpol_iterator_get_item(iter, (void **)&filename_trans) < 0) {
 			goto cleanup;
 		}
-		int match_source = 0, match_target = 0, match_default = 0;
-		size_t i;
 
 		if (source_list == NULL) {
 			match_source = 1;
@@ -186,6 +187,7 @@ int apol_filename_trans_get_by_query(const apol_policy_t * p, const apol_filenam
 		apol_vector_destroy(&default_list);
 	}
 	apol_vector_destroy(&class_list);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -200,23 +202,26 @@ apol_filename_trans_query_t *apol_filename_trans_query_create(void)
 	return t;
 }
 
-void apol_filename_trans_query_destroy(apol_filename_trans_query_t ** r)
+void apol_filename_trans_query_destroy(apol_filename_trans_query_t ** t)
 {
-	if (r != NULL && *r != NULL) {
-		free((*r)->source);
-		free((*r)->target);
-		free((*r)->default_type);
-		free((*r)->name);
-		free(*r);
-		*r = NULL;
+	if (t != NULL && *t != NULL) {
+		free((*t)->source);
+		free((*t)->target);
+		free((*t)->default_type);
+		free((*t)->name);
+		apol_vector_destroy(&(*t)->classes);
+		free(*t);
+		*t = NULL;
 	}
 }
 
 int apol_filename_trans_query_set_source(const apol_policy_t * p, apol_filename_trans_query_t * t, const char *filename, int is_indirect)
 {
-	apol_query_set_flag(p, &t->flags, is_indirect, APOL_QUERY_TARGET_INDIRECT);
+	apol_query_set_flag(p, &t->flags, is_indirect, APOL_QUERY_SOURCE_INDIRECT);
 	return apol_query_set(p, &t->source, NULL, filename);
 }
+
+//TODO is the equivilent terule_query_set_{source,target}_compoenent needed?
 
 int apol_filename_trans_query_set_target(const apol_policy_t * p, apol_filename_trans_query_t * t, const char *type, int is_indirect)
 {
@@ -333,22 +338,18 @@ char *apol_filename_trans_render(const apol_policy_t * policy, const qpol_filena
 		goto err;
 	}
 
+	/* filename */
 	if (qpol_filename_trans_get_filename(policy->p, filename_trans, &tmp_name)) {
 		error = errno;
 		goto err;
 	}
 
-	if (apol_str_appendf(&tmp, &tmp_sz, " \"%s\"", tmp_name)) {
+	if (apol_str_appendf(&tmp, &tmp_sz, " \"%s\";", tmp_name)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
 
-	if (apol_str_appendf(&tmp, &tmp_sz, ";")) {
-		error = errno;
-		ERR(policy, "%s", strerror(error));
-		goto err;
-	}
 	return tmp;
 
       err:
