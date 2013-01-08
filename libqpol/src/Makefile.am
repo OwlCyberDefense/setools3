@@ -48,6 +48,7 @@ libqpol_a_SOURCES = \
 	syn_rule_internal.h \
 	syn_rule_query.c \
 	terule_query.c \
+	ftrule_query.c \
 	type_query.c \
 	user_query.c \
 	util.c \

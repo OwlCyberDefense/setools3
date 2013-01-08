@@ -34,6 +34,7 @@ VERS_4.0{
 		apol_protocol_to_str;
 		apol_qpol_context_render;
 		apol_range_trans_*;
+		apol_filename_trans_*;
 		apol_relabel_*;
 		apol_role_*;
 		apol_role_allow_*;
