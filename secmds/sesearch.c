@@ -296,7 +296,10 @@ static void print_syn_av_results(const apol_policy_t * policy, const options_t *
 				tmp = apol_cond_expr_render(policy, cond);
 				enable_char = (enabled ? 'E' : 'D');
 				branch_char = ((is_true && enabled) || (!is_true && !enabled) ? 'T' : 'F');
-				asprintf(&expr, "[ %s ]", tmp);
+				if (asprintf(&expr, "[ %s ]", tmp) < 0) {
+					expr = NULL;
+					goto cleanup;
+				}
 				free(tmp);
 				tmp = NULL;
 				if (!expr)
@@ -359,7 +362,10 @@ static void print_av_results(const apol_policy_t * policy, const options_t * opt
 				qpol_iterator_destroy(&iter);
 				enable_char = (enabled ? 'E' : 'D');
 				branch_char = (list ? 'T' : 'F');
-				asprintf(&expr, "[ %s ]", tmp);
+				if (asprintf(&expr, "[ %s ]", tmp) < 0) {
+					expr = NULL;
+					goto cleanup;
+				}
 				free(tmp);
 				tmp = NULL;
 				if (!expr)
@@ -493,11 +499,14 @@ static void print_syn_te_results(const apol_policy_t * policy, const options_t *
 				tmp = apol_cond_expr_render(policy, cond);
 				enable_char = (enabled ? 'E' : 'D');
 				branch_char = ((is_true && enabled) || (!is_true && !enabled) ? 'T' : 'F');
-				asprintf(&expr, "[ %s ]", tmp);
+				if (asprintf(&expr, "[ %s ]", tmp) < 0) {
+					expr = NULL;
+					goto cleanup;
+				}
 				free(tmp);
 				tmp = NULL;
 				if (!expr)
-					break;
+					goto cleanup;
 			}
 		}
 		if (!(rule_str = apol_syn_terule_render(policy, rule)))
@@ -558,7 +567,10 @@ static void print_te_results(const apol_policy_t * policy, const options_t * opt
 				qpol_iterator_destroy(&iter);
 				enable_char = (enabled ? 'E' : 'D');
 				branch_char = (list ? 'T' : 'F');
-				asprintf(&expr, "[ %s ]", tmp);
+				if (asprintf(&expr, "[ %s ]", tmp) < 0) {
+					expr = NULL;
+					goto cleanup;
+				}
 				free(tmp);
 				tmp = NULL;
 				if (!expr)
