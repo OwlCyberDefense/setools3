@@ -24,8 +24,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef APOL_FILENAMERULE_QUERY_H
-#define APOL_FILENAMERULE_QUERY_H
+#ifndef APOL_FTRULE_QUERY_H
+#define APOL_FTRULE_QUERY_H
 
 #ifdef	__cplusplus
 extern "C"
@@ -88,7 +88,7 @@ extern "C"
  * matches rule with any of the attribute's types.
  *
  * @param p Policy handler, to report errors.
- * @param t TE rule query to set.
+ * @param t FT rule query to set.
  * @param symbol Limit query to rules with this symbol as their
  * source, or NULL to unset this field.
  * @param is_indirect If non-zero, perform indirect matching.
@@ -108,7 +108,7 @@ extern "C"
  * matches rule with any of the attribute's types.
  *
  * @param p Policy handler, to report errors.
- * @param r Role trans query to set.
+ * @param r FT rule query to set.
  * @param symbol Limit query to rules with this type or attribute as
  * their target, or NULL to unset this field.
  * @param is_indirect If non-zero, perform indirect matching.
@@ -124,7 +124,7 @@ extern "C"
  * apol_filename_trans_query_set_source_any() is set to non-zero.
  *
  * @param p Policy handler, to report errors.
- * @param r Role trans query to set.
+ * @param r FT rule query to set.
  * @param filename Limit query to rules with this filename as their default, or
  * NULL to unset this field.
  *
@@ -142,7 +142,7 @@ extern "C"
 
  *
  * @param p Policy handler, to report errors.
- * @param t TE rule query to set.
+ * @param t FT rule query to set.
  * @param obj_class Name of object class to add to search set.
  *
  * @return 0 on success, negative on error.
@@ -157,7 +157,7 @@ extern "C"
  * this flag does not affect its searching.
  *
  * @param p Policy handler, to report errors.
- * @param r Role trans query to set.
+ * @param r FT rule query to set.
  * @param is_any Non-zero to use source symbol for source or default
  * field, 0 to keep source as only source.
  *
@@ -172,7 +172,7 @@ extern "C"
  * occur against the type name or any of its aliases.
  *
  * @param p Policy handler, to report errors.
- * @param r Role trans query to set.
+ * @param r FT rule query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.

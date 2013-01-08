@@ -1,6 +1,6 @@
 /**
  *  @file
- *  Defines public interface for iterating over RBAC rules.
+ *  Defines public interface for iterating over filename transition rules.
  *
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
@@ -202,29 +202,6 @@ int qpol_filename_trans_get_object_class(const qpol_policy_t * policy, const qpo
 	ft = (filename_trans_t *) rule;
 
 	*obj_class = (qpol_class_t *) db->class_val_to_struct[ft->tclass - 1];
-
-	return STATUS_SUCCESS;
-}
-
-int qpol_filename_trans_get_trans_type(const qpol_policy_t * policy, const qpol_filename_trans_t * rule, const qpol_type_t ** output_type)
-{
-	policydb_t *db = NULL;
-	filename_trans_t *ft = NULL;
-
-	if (output_type) {
-		*output_type = NULL;
-	}
-
-	if (!policy || !rule || !output_type) {
-		ERR(policy, "%s", strerror(EINVAL));
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	db = &policy->p->p;
-	ft = (filename_trans_t *) rule;
-
-	*output_type = (qpol_type_t *) db->type_val_to_struct[ft->otype - 1];
 
 	return STATUS_SUCCESS;
 }

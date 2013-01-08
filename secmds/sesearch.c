@@ -653,35 +653,27 @@ static void print_ft_results(const apol_policy_t * policy, const options_t * opt
 {
 	size_t i, num_filename_trans = 0;
 	const qpol_filename_trans_t *filename_trans = NULL;
-	char *tmp = NULL, *filename_trans_str = NULL, *expr = NULL;
-	char enable_char = ' ', branch_char = ' ';
+	char *filename_trans_str = NULL;
 	qpol_iterator_t *iter = NULL;
-	const qpol_cond_t *cond = NULL;
-	uint32_t enabled = 0, list = 0;
 
 	if (!(num_filename_trans = apol_vector_get_size(v)))
 		goto cleanup;
 
-	fprintf(stdout, "Found %zd named file transition filename_trans:\n", num_filename_trans);
+	fprintf(stdout, "Found %zd named file transition rules:\n", num_filename_trans);
 
 	for (i = 0; i < num_filename_trans; i++) {
-		enable_char = branch_char = ' ';
 		if (!(filename_trans = apol_vector_get_element(v, i)))
 			goto cleanup;
 
 		if (!(filename_trans_str = apol_filename_trans_render(policy, filename_trans)))
 			goto cleanup;
-		fprintf(stdout, "%s %s\n", filename_trans_str, expr ? expr : "");
+		fprintf(stdout, "%s\n", filename_trans_str);
 		free(filename_trans_str);
 		filename_trans_str = NULL;
-		free(expr);
-		expr = NULL;
 	}
 
       cleanup:
-	free(tmp);
 	free(filename_trans_str);
-	free(expr);
 }
 
 static int perform_ra_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
@@ -1238,13 +1230,12 @@ int main(int argc, char **argv)
 		fprintf(stdout, "\n");
 	}
 
-	if (cmd_opts.all || cmd_opts.type) {
-		apol_vector_destroy(&v);
-		if (perform_ft_query(policy, &cmd_opts, &v)) {
-			rt = 1;
-			goto cleanup;
-		}
-
+	apol_vector_destroy(&v);
+	if (perform_ft_query(policy, &cmd_opts, &v)) {
+		rt = 1;
+		goto cleanup;
+	}
+	if (v) {
 		print_ft_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
