@@ -98,6 +98,7 @@ extern char *qpol_src_inputlim;/* end of data */
 %type <require_func> require_decl_def
 
 %token PATH
+%token FILENAME
 %token CLONE
 %token COMMON
 %token CLASS
@@ -360,7 +361,10 @@ cond_rule_def           : cond_transition_def
 			| require_block
 			{ $$ = NULL; }
                         ;
-cond_transition_def	: TYPE_TRANSITION names names ':' names identifier ';'
+cond_transition_def	: TYPE_TRANSITION names names ':' names identifier filename ';'
+                        { $$ = define_cond_filename_trans() ;
+                          if ($$ == COND_ERR) return -1;}
+                        | TYPE_TRANSITION names names ':' names identifier ';'
                         { $$ = define_cond_compute_type(AVRULE_TRANSITION) ;
                           if ($$ == COND_ERR) return -1;}
                         | TYPE_MEMBER names names ':' names identifier ';'
@@ -395,7 +399,9 @@ cond_dontaudit_def	: DONTAUDIT names names ':' names names ';'
 			{ $$ = define_cond_te_avtab(AVRULE_DONTAUDIT);
                           if ($$ == COND_ERR) return -1; }
 		        ;
-transition_def		: TYPE_TRANSITION names names ':' names identifier ';'
+transition_def		: TYPE_TRANSITION  names names ':' names identifier filename ';'
+			{if (define_filename_trans()) return -1; }
+			| TYPE_TRANSITION names names ':' names identifier ';'
                         {if (define_compute_type(AVRULE_TRANSITION)) return -1;}
                         | TYPE_MEMBER names names ':' names identifier ';'
                         {if (define_compute_type(AVRULE_MEMBER)) return -1;}
@@ -751,6 +757,9 @@ identifier		: IDENTIFIER
 			;
 path     		: PATH
 			{ if (insert_id(yytext,0)) return -1; }
+			;
+filename		: FILENAME
+			{ yytext[strlen(yytext) - 1] = '\0'; if (insert_id(yytext + 1,0)) return -1; }
 			;
 number			: NUMBER 
 			{ $$ = strtoul(yytext,NULL,0); }
