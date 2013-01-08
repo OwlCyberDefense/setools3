@@ -1,3 +1,11 @@
+2013-01-08 Steve Lawrence <slawrence@tresys.com>
+
+	* Add python bindings for seinfo and sesearch by Dan Walsh.
+	* seinfo exits with an error status by Dan Walsh.
+	* Support for named file transition rules by Dan Walsh.
+	* Add support for default types in sesearch by Steve Lawrence.
+	* Man page updates for seinfo, seaudit, and sediff by Dan Walsh.
+
 2012-03-26  Chris PeBenito <cpebenito@tresys.com>
 	* Fix file type drop down list for open/close Apol query.
 
