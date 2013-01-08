@@ -194,7 +194,7 @@ AC_ARG_ENABLE(swig-java,
               enable_jswig="$enableval")
 if test "x${enable_jswig}" = xyes; then
    if test ${do_swigify} = no; then
-      AC_PROG_SWIG(1.3.28)
+      AC_PROG_SWIG(2.0.0)
    fi
    AC_JAVA_OPTIONS
    if test "x$JAVAPREFIX" = x; then
@@ -216,21 +216,23 @@ if test "x${enable_jswig}" = xyes; then
    do_swigify_java=yes
    do_swigify=yes
 fi
+
+AM_PATH_PYTHON(2.7)
+
 AC_ARG_ENABLE(swig-python,
               AC_HELP_STRING([--enable-swig-python],
                              [build SWIG interfaces for Python]),
               enable_pyswig="$enableval")
 if test "x${enable_pyswig}" = xyes; then
    if test ${do_swigify} = no; then
-      AC_PROG_SWIG(1.3.28)
+      AC_PROG_SWIG(2.0.0)
    fi
-   AM_PATH_PYTHON(2.3)
    SWIG_PYTHON
    do_swigify_python=yes
    do_swigify=yes
 fi
 if test ${do_swigify} = "yes"; then
-   AC_PROG_SWIG(1.3.28)
+   AC_PROG_SWIG(2.0.0)
 fi
 build_apol=yes
 AC_ARG_ENABLE(swig-tcl,
@@ -239,7 +241,7 @@ AC_ARG_ENABLE(swig-tcl,
               enable_tclswig="$enableval", enable_tclswig="yes")
 if test "x${enable_tclswig}" = xyes; then
    if test ${do_swigify} = no; then
-      AC_PROG_SWIG(1.3.28)
+      AC_PROG_SWIG(2.0.0)
    fi
    TEA_INIT(3.5)
    TEA_PATH_TCLCONFIG
@@ -928,6 +930,8 @@ AC_CONFIG_FILES([Makefile VERSION \
                  sediff/Makefile \
                  man/Makefile \
                  debian/Makefile \
+                 python/Makefile \
+                 python/setools/Makefile \
                  packages/Makefile packages/rpm/Makefile \
                  packages/libqpol.pc packages/libapol.pc packages/libpoldiff.pc packages/libseaudit.pc packages/libsefs.pc])
 
