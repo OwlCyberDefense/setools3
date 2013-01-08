@@ -23,8 +23,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef QPOL_FTRULERULE_QUERY
-#define QPOL_FTRULERULE_QUERY
+#ifndef QPOL_FTRULE_QUERY
+#define QPOL_FTRULE_QUERY
 
 #ifdef	__cplusplus
 extern "C"
@@ -44,7 +44,7 @@ extern "C"
  *  to free memory used by this iterator.
  *  It is important to note that this iterator is only valid as long as
  *  the policy is unmodifed.
- *  @returm 0 on success and < 0 on failure; if the call fails,
+ *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
 	extern int qpol_policy_get_filename_trans_iter(const qpol_policy_t * policy, qpol_iterator_t ** iter);
@@ -74,36 +74,36 @@ extern "C"
 						   const qpol_type_t ** target);
 
 /**
- *  Get the default type from a type rule.
+ *  Get the default type from a filename transition rule.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the default type.
  *  @param dflt Pointer in which to store the default type.
  *  The caller should not free this pointer.
- *  @returm 0 on success and < 0 on failure; if the call fails,
+ *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dflt will be NULL.
  */
 	extern int qpol_filename_trans_get_default_type(const qpol_policy_t * policy, const qpol_filename_trans_t * rule,
 						const qpol_type_t ** dflt);
 
 /**
- *  Get the object class from a type rule.
+ *  Get the object class from a filename transition rule.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the object class.
  *  @param obj_class Pointer in which to store the object class.
  *  The caller should not free this pointer.
- *  @returm 0 on success and < 0 on failure; if the call fails,
+ *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
 	extern int qpol_filename_trans_get_object_class(const qpol_policy_t * policy, const qpol_filename_trans_t * rule,
 						const qpol_class_t ** obj_class);
 
 /**
- *  Get the transition filename type from a type rule.
+ *  Get the filename from a filename transition rule.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the transition filename.
- *  @param target Pointer in which to store the transition filename.
+ *  @param target Pointer in which to store the filename.
  *  The caller should not free this pointer.
- *  @returm 0 on success and < 0 on failure; if the call fails,
+ *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
 	extern int qpol_filename_trans_get_filename(const qpol_policy_t * policy, const qpol_filename_trans_t * rule,
@@ -113,4 +113,4 @@ extern "C"
 }
 #endif
 
-#endif				       /* QPOL_FTRULERULE_QUERY */
+#endif				       /* QPOL_FTRULE_QUERY */
