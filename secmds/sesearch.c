@@ -575,6 +575,115 @@ static void print_te_results(const apol_policy_t * policy, const options_t * opt
 	free(expr);
 }
 
+static int perform_ft_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
+{
+	apol_filename_trans_query_t *ftq = NULL;
+	int error = 0;
+
+	if (!policy || !opt || !v) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!opt->type && !opt->all) {
+		*v = NULL;
+		return 0;	       /* no search to do */
+	}
+
+	ftq = apol_filename_trans_query_create();
+	if (!ftq) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	apol_filename_trans_query_set_regex(policy, ftq, opt->useregex);
+	if (opt->src_name) {
+		if (apol_filename_trans_query_set_source(policy, ftq, opt->src_name, opt->indirect)) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	if (opt->tgt_name) {
+		if (apol_filename_trans_query_set_target(policy, ftq, opt->tgt_name, opt->indirect)) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	if (opt->class_name) {
+		if (opt->class_vector == NULL) {
+			if (apol_filename_trans_query_append_class(policy, ftq, opt->class_name)) {
+				error = errno;
+				goto err;
+			}
+		} else {
+			for (size_t i = 0; i < apol_vector_get_size(opt->class_vector); ++i) {
+				char *class_name;
+				class_name = apol_vector_get_element(opt->class_vector, i);
+				if (!class_name)
+					continue;
+				if (apol_filename_trans_query_append_class(policy, ftq, class_name)) {
+					error = errno;
+					goto err;
+				}
+			}
+		}
+	}
+
+	if (apol_filename_trans_get_by_query(policy, ftq, v)) {
+		error = errno;
+		goto err;
+	}
+
+	apol_filename_trans_query_destroy(&ftq);
+	return 0;
+
+      err:
+	apol_vector_destroy(v);
+	apol_filename_trans_query_destroy(&ftq);
+	ERR(policy, "%s", strerror(error));
+	errno = error;
+	return -1;
+}
+
+static void print_ft_results(const apol_policy_t * policy, const options_t * opt, const apol_vector_t * v)
+{
+	size_t i, num_filename_trans = 0;
+	const qpol_filename_trans_t *filename_trans = NULL;
+	char *tmp = NULL, *filename_trans_str = NULL, *expr = NULL;
+	char enable_char = ' ', branch_char = ' ';
+	qpol_iterator_t *iter = NULL;
+	const qpol_cond_t *cond = NULL;
+	uint32_t enabled = 0, list = 0;
+
+	if (!(num_filename_trans = apol_vector_get_size(v)))
+		goto cleanup;
+
+	fprintf(stdout, "Found %zd named file transition filename_trans:\n", num_filename_trans);
+
+	for (i = 0; i < num_filename_trans; i++) {
+		enable_char = branch_char = ' ';
+		if (!(filename_trans = apol_vector_get_element(v, i)))
+			goto cleanup;
+
+		if (!(filename_trans_str = apol_filename_trans_render(policy, filename_trans)))
+			goto cleanup;
+		fprintf(stdout, "%s %s\n", filename_trans_str, expr ? expr : "");
+		free(filename_trans_str);
+		filename_trans_str = NULL;
+		free(expr);
+		expr = NULL;
+	}
+
+      cleanup:
+	free(tmp);
+	free(filename_trans_str);
+	free(expr);
+}
+
 static int perform_ra_query(const apol_policy_t * policy, const options_t * opt, apol_vector_t ** v)
 {
 	apol_role_allow_query_t *raq = NULL;
@@ -1128,6 +1237,18 @@ int main(int argc, char **argv)
 			print_te_results(policy, &cmd_opts, v);
 		fprintf(stdout, "\n");
 	}
+
+	if (cmd_opts.all || cmd_opts.type) {
+		apol_vector_destroy(&v);
+		if (perform_ft_query(policy, &cmd_opts, &v)) {
+			rt = 1;
+			goto cleanup;
+		}
+
+		print_ft_results(policy, &cmd_opts, v);
+		fprintf(stdout, "\n");
+	}
+
 	apol_vector_destroy(&v);
 	if (perform_ra_query(policy, &cmd_opts, &v)) {
 		rt = 1;

@@ -34,6 +34,7 @@ VERS_1.2 {
 		qpol_policy_reevaluate_conds;
 		qpol_portcon_*;
 		qpol_range_trans_*;
+		qpol_filename_trans_*;
 		qpol_role_*;
 		qpol_syn_avrule_*;
 		qpol_syn_terule_*;

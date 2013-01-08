@@ -27,6 +27,7 @@ apol_HEADERS = \
 	relabel-analysis.h \
 	render.h \
 	role-query.h \
+	ftrule-query.h \
 	terule-query.h \
 	type-query.h \
 	types-relation-analysis.h \
