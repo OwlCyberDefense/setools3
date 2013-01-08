@@ -72,6 +72,7 @@ static struct option const longopts[] = {
 
 	{"source", required_argument, NULL, 's'},
 	{"target", required_argument, NULL, 't'},
+	{"default", required_argument, NULL, 'D'},
 	{"role_source", required_argument, NULL, EXPR_ROLE_SOURCE},
 	{"role_target", required_argument, NULL, EXPR_ROLE_TARGET},
 	{"class", required_argument, NULL, 'c'},
@@ -92,6 +93,7 @@ typedef struct options
 {
 	char *src_name;
 	char *tgt_name;
+	char *default_name;
 	char *src_role_name;
 	char *tgt_role_name;
 	char *class_name;
@@ -136,6 +138,7 @@ void usage(const char *program_name, int brief)
 	printf("EXPRESSIONS:\n");
 	printf("  -s NAME, --source=NAME    rules with type/attribute NAME as source\n");
 	printf("  -t NAME, --target=NAME    rules with type/attribute NAME as target\n");
+	printf("  -D NAME, --default=NAME   rules with type NAME as default\n");
 	printf("  --role_source=NAME        rules with role NAME as source\n");
 	printf("  --role_target=NAME        rules with role NAME as target\n");
 	printf("  -c NAME, --class=NAME     rules with class NAME as the object class\n");
@@ -412,6 +415,8 @@ static int perform_te_query(const apol_policy_t * policy, const options_t * opt,
 		apol_terule_query_set_target(policy, teq, opt->tgt_name, opt->indirect);
 	if (opt->bool_name)
 		apol_terule_query_set_bool(policy, teq, opt->bool_name);
+	if (opt->default_name)
+		apol_terule_query_set_default(policy, teq, opt->default_name);
 	if (opt->class_name) {
 		if (opt->class_vector == NULL) {
 			if (apol_terule_query_append_class(policy, teq, opt->class_name)) {
@@ -613,6 +618,13 @@ static int perform_ft_query(const apol_policy_t * policy, const options_t * opt,
 		}
 	}
 
+	if (opt->default_name) {
+		if (apol_filename_trans_query_set_default(policy, ftq, opt->default_name)) {
+			error = errno;
+			goto err;
+		}
+	}
+
 	if (opt->class_name) {
 		if (opt->class_vector == NULL) {
 			if (apol_filename_trans_query_append_class(policy, ftq, opt->class_name)) {
@@ -790,6 +802,13 @@ static int perform_rt_query(const apol_policy_t * policy, const options_t * opt,
 		}
 	}
 
+	if (opt->default_name) {
+		if (apol_role_trans_query_set_default(policy, rtq, opt->default_name)) {
+			error = errno;
+			goto err;
+		}
+	}
+
 	if (apol_role_trans_get_by_query(policy, rtq, v)) {
 		error = errno;
 		goto err;
@@ -942,7 +961,7 @@ int main(int argc, char **argv)
 
 	memset(&cmd_opts, 0, sizeof(cmd_opts));
 	cmd_opts.indirect = true;
-	while ((optc = getopt_long(argc, argv, "ATs:t:c:p:b:dRnSChV", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "ATs:t:c:p:b:dD:RnSChV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -967,6 +986,18 @@ int main(int argc, char **argv)
 			cmd_opts.tgt_name = strdup(optarg);
 			if (!cmd_opts.tgt_name) {
 				fprintf(stderr, "%s\n", strerror(errno));
+				exit(1);
+			}
+			break;
+		case 'D':	       /* default */
+			if (optarg == 0) {
+				usage(argv[0], 1);
+				printf("Missing default type for -D (--default)\n");
+				exit(1);
+			}
+			cmd_opts.default_name = strdup(optarg);
+			if (!cmd_opts.default_name) {
+		
 				exit(1);
 			}
 			break;
@@ -1274,6 +1305,7 @@ int main(int argc, char **argv)
 	apol_policy_path_destroy(&pol_path);
 	free(cmd_opts.src_name);
 	free(cmd_opts.tgt_name);
+	free(cmd_opts.default_name);
 	free(cmd_opts.class_name);
 	free(cmd_opts.permlist);
 	free(cmd_opts.bool_name);
