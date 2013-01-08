@@ -100,7 +100,7 @@ static void seaudit_report_info_usage(const char *program_name, int brief)
 	printf("  -s, --stdin              read log data from standard input\n");
 	printf("  -m, --malformed          include malformed log messages\n");
 	printf("  -o FILE, --output=FILE   output to FILE\n");
-	printf("  --config=FILE            read configuration from FILE\n");
+	printf("  -c FILE, --config=FILE   read configuration from FILE\n");
 	printf("  --html                   set output format to HTML\n");
 	printf("  --stylesheet=FILE        HTML style sheet for formatting HTML report\n");
 	printf("                           (ignored if --html is not given)\n");

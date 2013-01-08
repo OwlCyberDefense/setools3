@@ -420,7 +420,7 @@ int main(int argc, char **argv)
 	poldiff_t *diff = NULL;
 	size_t total = 0;
 
-	while ((optc = getopt_long(argc, argv, "ctarubANDLMCRqhV", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "ctarubAqhV", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
