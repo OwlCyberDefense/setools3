@@ -99,10 +99,11 @@ void progress_hide(progress_t * progress)
 
 int progress_wait(progress_t * progress)
 {
-	GTimeVal wait_time = { 0, 50000 };
+	gint64 end_time;
 	g_mutex_lock(progress->mutex);
 	while (!progress->done) {
-		g_cond_timed_wait(progress->cond, progress->mutex, &wait_time);
+		end_time = g_get_monotonic_time () + 50000; // need to be set before each wait
+		g_cond_wait_until(progress->cond, progress->mutex, end_time);
 		if (progress->s != NULL) {
 			gtk_label_set_text(GTK_LABEL(progress->label2), progress->s);
 			free(progress->s);
