@@ -1,4 +1,4 @@
-AC_INIT(setools, 3.3.7, [Tresys Technology <setools@tresys.com>], [setools])
+AC_INIT(setools, 3.3.8, [Tresys Technology <setools@tresys.com>], [setools])
 AC_PREREQ([2.59])
 AC_CONFIG_SRCDIR(libqpol/src/policy.c)
 AC_CONFIG_HEADER(config.h)
@@ -8,19 +8,19 @@ AM_INIT_AUTOMAKE([-Wno-portability])
 dnl *** update these variables as versions change; also update AC_INIT ***
 
 libqpol_soversion=1
-libqpol_version=1.6
+libqpol_version=1.7
 
 libapol_soversion=4
-libapol_version=4.3
+libapol_version=4.4
 
 libpoldiff_soversion=1
-libpoldiff_version=1.3.2
+libpoldiff_version=1.3.3
 
 libsefs_soversion=4
-libsefs_version=4.0.3
+libsefs_version=4.0.4
 
 libseaudit_soversion=4
-libseaudit_version=4.4
+libseaudit_version=4.5
 
 setoolsdir='${prefix}/share/setools-3.3'
 javadir='${prefix}/share/java'
