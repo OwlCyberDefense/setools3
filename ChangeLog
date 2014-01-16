@@ -1,3 +1,6 @@
+2014-01-16
+	* Fix bug preventing sediffx from starting.
+
 2013-01-08 Steve Lawrence <slawrence@tresys.com>
 
 	* SETools 3.3.8
