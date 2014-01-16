@@ -99,7 +99,7 @@ void progress_hide(progress_t * progress)
 
 int progress_wait(progress_t * progress)
 {
-	GTimeVal wait_time = { 0, 50000 };
+	gint64 wait_time;
 	g_mutex_lock(progress->mutex);
 	while (!progress->done) {
 		if (progress->s != NULL) {
@@ -111,7 +111,8 @@ int progress_wait(progress_t * progress)
 		// still be loading, and this dialog should not block
 		// until the entire source has been read
 		gtk_main_iteration_do(FALSE);
-		g_cond_timed_wait(progress->cond, progress->mutex, &wait_time);
+		wait_time = g_get_monotonic_time () + 50000;
+		g_cond_wait_until(progress->cond, progress->mutex, wait_time);
 	}
 	g_mutex_unlock(progress->mutex);
 	if (progress->done < 0) {
