@@ -376,6 +376,13 @@ typedef enum qpol_capability
 		(void)qpol_policy_get_policy_version(self, &v); /* only error is on null parameters neither can be here */
 		return (int) v;
 	};
+
+	int get_handle_unknown () {
+		unsigned int h;
+		(void)qpol_policy_get_policy_handle_unknown(self, &h);
+		return (int) h;
+	};
+
 	int get_type () {
 		int t;
 		(void)qpol_policy_get_type(self, &t); /* only error is on null parameters neither can be here */
@@ -705,6 +712,18 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
+	%newobject get_polcap_iter();
+	qpol_iterator_t *get_polcap_iter() {
+		BEGIN_EXCEPTION
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_polcap_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+	}
+		return iter;
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
 };
 
 /* qpol iterator */
@@ -864,6 +883,17 @@ typedef struct qpol_type {} qpol_type_t;
 		END_EXCEPTION
 	fail:
 		return iter;
+	};
+	const char *get_name(qpol_policy_t *p) {
+		BEGIN_EXCEPTION
+		const char *name;
+		if (qpol_permissive_get_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get permissive type name");
+		}
+		return name;
+		END_EXCEPTION
+	fail:
+		return NULL;
 	};
  };
 %inline %{
@@ -2968,6 +2998,38 @@ typedef struct qpol_filename_trans {} qpol_filename_trans_t;
 %inline %{
 	qpol_filename_trans_t *qpol_filename_trans_from_void(void *x) {
 		return (qpol_filename_trans_t*)x;
+	};
+%}
+
+/* qpol polcap */
+typedef struct qpol_polcap {} qpol_polcap_t;
+%extend qpol_polcap_t {
+	qpol_polcap() {
+		BEGIN_EXCEPTION
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_polcap_t objects");
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
+	~qpol_polcap() {
+		/* no op */
+		return;
+	};
+	const char *get_name(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_polcap_get_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get polcap name rule");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+
+};
+%inline %{
+	qpol_polcap_t *qpol_polcap_from_void(void *x) {
+		return (qpol_polcap_t*)x;
 	};
 %}
 // vim:ft=c noexpandtab

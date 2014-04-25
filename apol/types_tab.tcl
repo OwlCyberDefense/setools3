@@ -15,6 +15,7 @@
 
 namespace eval Apol_Types {
     variable typelist {}
+    variable permissivelist {}
     variable attriblist {}
     variable opts
     variable widgets
@@ -60,7 +61,8 @@ proc Apol_Types::create {tab_name nb} {
     set ofm [$obox getframe]
     set fm_types_select [frame $ofm.to]
     set fm_attribs_select [frame $ofm.ao]
-    pack $fm_types_select $fm_attribs_select -side left -padx 4 -pady 2 -anchor nw
+    set fm_permissive_select [frame $ofm.po]
+    pack $fm_types_select $fm_attribs_select $fm_permissive_select -side left -padx 4 -pady 2 -anchor nw
 
     set types_select [checkbutton $fm_types_select.type -text "Show types" -variable Apol_Types::opts(types)]
     set typeattribs [checkbutton $fm_types_select.typeattribs -text "Include attributes" \
@@ -80,6 +82,12 @@ proc Apol_Types::create {tab_name nb} {
     pack $a_types $a_typeattribs -anchor w -padx 8
     trace add variable Apol_Types::opts(attribs) write \
         [list Apol_Types::_toggleCheckbuttons [list $a_typeattribs $a_types]]
+
+    set permissive_select [checkbutton $fm_permissive_select.type -text "Show permissive types" \
+        -variable Apol_Types::opts(permissive)]
+    pack $permissive_select -anchor w
+    trace add variable Apol_Types::opts(permissive:show_names) write \
+        [list Apol_Types::_toggleCheckbuttons $permissive_select]
 
     set widgets(regexp) [Apol_Widget::makeRegexpEntry $ofm.regexpf]
     Apol_Widget::setRegexpEntryState $widgets(regexp) 1
@@ -118,6 +126,7 @@ proc Apol_Types::close {} {
 
     _initializeVars
     set Apol_Types::typelist {}
+    set Apol_Types::permissivelist {}
     set Apol_Types::attriblist {}
     Apol_Widget::clearSearchResults $widgets(results)
 }
@@ -164,6 +173,9 @@ proc Apol_Types::isAttributeInPolicy {attrib} {
 proc Apol_Types::getTypes {} {
     variable typelist
     set typelist
+
+    variable permissivelist
+    set permissivelist
 }
 
 # Return a list of all attribute names within the current policy.  If
@@ -180,12 +192,14 @@ proc Apol_Types::_initializeVars {} {
     array set opts {
         types 1    types:show_attribs 1  types:show_aliases 1
         attribs 0  attribs:show_types 1  attribs:show_attribs 1
+        permissive 1  permissive:show_names 1  permissive:show_names 1
     }
 }
 
 proc Apol_Types::_toggleCheckbuttons {w name1 name2 op} {
     variable opts
     variable widgets
+
     if {$opts($name2)} {
         foreach x $w {
             $x configure -state normal
@@ -195,7 +209,7 @@ proc Apol_Types::_toggleCheckbuttons {w name1 name2 op} {
             $x configure -state disabled
         }
     }
-    if {!$opts(types) && !$opts(attribs)} {
+    if {!$opts(types) && !$opts(attribs) && !$opts(permissive)} {
         Apol_Widget::setRegexpEntryState $widgets(regexp) 0
     } else {
         Apol_Widget::setRegexpEntryState $widgets(regexp) 1
@@ -210,7 +224,7 @@ proc Apol_Types::_popupTypeInfo {which ta} {
         set entry_vector {}
         set index_file_loaded 0
     }
-
+puts "AT POPUP"
     if {$which == "type"} {
         set info_ta [_renderType $ta 1 1]
     } else {
@@ -283,7 +297,7 @@ proc Apol_Types::_searchTypes {} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
-    if {$opts(types) == 0 && $opts(attribs) == 0} {
+    if {$opts(types) == 0 && $opts(attribs) == 0 && $opts(permissive) == 0} {
         tk_messageBox -icon error -type ok -title "Error" -message "No search options provided."
         return
     }
@@ -332,6 +346,24 @@ proc Apol_Types::_searchTypes {} {
             append results "[_renderAttrib $a $opts(attribs:show_types) $opts(attribs:show_attribs)]\n"
         }
     }
+    if {$opts(permissive)} {
+        set q [new_apol_permissive_query_t]
+        $q set_name $::ApolTop::policy $regexp
+        $q set_regex $::ApolTop::policy $use_regexp
+        set v [$q run $::ApolTop::policy]
+        $q -acquire
+        $q -delete
+        set permissive_data [type_vector_to_list $v]
+        $v -acquire
+        $v -delete
+        if {$opts(types) || $opts(attribs)} {
+            append results "\n\n"
+        }
+        append results "PERMISSIVE TYPES ([llength $permissive_data]):\n\n"
+        foreach p [lsort $permissive_data] {
+            append results "[_renderType $p 0 0]\n"
+        }
+    }
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
@@ -369,6 +401,9 @@ proc Apol_Types::_renderType {type_name show_attribs show_aliases} {
 }
 
 proc Apol_Types::_renderAttrib {attrib_name show_types show_attribs} {
+
+    set permissive {}
+
     set qpol_type_datum [new_qpol_type_t $::ApolTop::qpolicy $attrib_name]
 
     set text "$attrib_name"

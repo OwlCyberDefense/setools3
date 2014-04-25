@@ -18,8 +18,9 @@ set COPYRIGHT_INFO "Copyright (C) 2001-2008 Tresys Technology, LLC"
 namespace eval ApolTop {
     variable policy {} ;# handle to an apol_policy, or {} if none opened
     variable qpolicy {} ;# handle to policy's qpol_policy_t, or {} if none opened
-    # these three are shown on the status line of the toplevel window
+    # these four are shown on the status line of the toplevel window
     variable policy_version_string {}
+    variable policy_handle_unknown_string {}
     variable policy_source_linenum {}
     variable policy_stats_summary {}
     variable policy_stats  ;# array of statistics for the current policy
@@ -68,6 +69,7 @@ namespace eval ApolTop {
         {Apol_Initial_SIDS components {}}
         {Apol_NetContexts components {}}
         {Apol_FSContexts components {}}
+        {Apol_Polcaps components {}}
         {Apol_TE rules {tag_query_saveable}}
         {Apol_Cond_Rules rules {tag_conditionals}}
         {Apol_Constraint rules {tag_query_saveable}}
@@ -377,6 +379,23 @@ proc ApolTop::_toplevel_policy_open {ppath} {
 
     _toplevel_update_stats
     variable policy_version_string [$::ApolTop::policy get_version_type_mls_str]
+# Set how to handle unknown class/perms.
+#define SEPOL_DENY_UNKNOWN	    0
+#define SEPOL_REJECT_UNKNOWN	    2
+#define SEPOL_ALLOW_UNKNOWN	    4
+    variable policy_handle_unknown_string
+    set policy_handle_unknown -1
+    set policy_handle_unknown [$::ApolTop::policy get_policy_handle_unknown]
+
+    if {$policy_handle_unknown == 0} {
+        set policy_handle_unknown_string "deny"
+    } elseif {$policy_handle_unknown == 2} {
+        set policy_handle_unknown_string "reject"
+    } elseif {$policy_handle_unknown == 4} {
+        set policy_handle_unknown_string "allow"
+    } else {
+        set policy_handle_unknown_string "unknown"
+    }
 
     set primary_file [$ppath get_primary]
     wm title . "SELinux Policy Analysis - $primary_file"
@@ -468,6 +487,8 @@ proc ApolTop::_toplevel_update_stats {} {
         "nodecons" get_nodecon_iter
         "genfscons" get_genfscon_iter
         "fs_uses" get_fs_use_iter
+        "permissive" get_permissive_iter
+        "polcap" get_polcap_iter
     }
     foreach {key func} $iter_funcs {
         set i [$::ApolTop::qpolicy $func]
@@ -570,6 +591,7 @@ proc ApolTop::_user_close_policy {} {
 
 proc ApolTop::_close_policy {} {
     variable policy_version_string {}
+    variable policy_handle_unknown {}
     variable policy_stats_summary {}
 
     wm title . "SELinux Policy Analysis"
@@ -697,6 +719,7 @@ proc ApolTop::_save_query_file {} {
 
 proc ApolTop::_show_policy_summary {} {
     variable policy_version_string
+    variable policy_handle_unknown_string
     variable policy_stats
 
     if {![regexp -- {^([^\(]+) \(([^,]+), ([^\)]+)} $ApolTop::policy_version_string -> policy_version policy_type policy_mls_type]} {
@@ -715,8 +738,8 @@ proc ApolTop::_show_policy_summary {} {
 
     label $w.title -text "Policy Summary Statistics"
     set f [frame $w.summary]
-    label $f.l -justify left -text "    Policy Version:\n    Policy Type:\n    MLS Status:"
-    label $f.r -justify left -text "$policy_version\n$policy_type\n$policy_mls_type"
+    label $f.l -justify left -text "    Policy Version:\n    Policy Type:\n    MLS Status:\n    Handle unknown Class/Perms:"
+    label $f.r -justify left -text "$policy_version\n$policy_type\n$policy_mls_type\n$policy_handle_unknown_string"
     grid $f.l $f.r -sticky w
     grid configure $f.r -padx 30
     grid $w.title - -sticky w -padx 8
@@ -733,6 +756,7 @@ proc ApolTop::_show_policy_summary {} {
         }
         "Number of Types and Attributes" {
             "Types" types
+            "   that includes permissive types" permissive
             "Attributes" attribs
         }
         "Number of Type Enforcement Rules" {
@@ -800,6 +824,9 @@ proc ApolTop::_show_policy_summary {} {
             "NodeCons" nodecons
             "GenFSCons" genfscons
             "fs_use statements" fs_uses
+        }
+        "Number of Policy Capabilities" {
+            "polcap" polcap
         }
     } {
         set ltext "$title:"

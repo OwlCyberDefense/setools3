@@ -47,6 +47,7 @@ EXTRA_DIST = \
 	netcontexts_tab.tcl \
 	open_policy_dialog.tcl \
 	perms_map.tcl \
+	polcap_tab.tcl \
 	policyconf.tcl \
 	progress_dialog.tcl \
 	range_dialog.tcl \
