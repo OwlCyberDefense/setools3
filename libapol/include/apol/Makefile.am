@@ -3,6 +3,7 @@ apoldir = $(includedir)/apol
 apol_HEADERS = \
 	avrule-query.h \
 	bool-query.h \
+	bounds-query.h \
 	bst.h \
 	class-perm-query.h \
 	condrule-query.h \

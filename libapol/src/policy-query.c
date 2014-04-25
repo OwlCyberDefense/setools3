@@ -188,6 +188,29 @@ int apol_compare_polcap(const apol_policy_t * p, const qpol_polcap_t * polcap, c
 	return compval;
 }
 
+int apol_compare_typebounds(const apol_policy_t * p, const qpol_typebounds_t * typebounds, const char *name, unsigned int flags,
+		      regex_t ** typebounds_regex)
+{
+	const char *typebounds_parent_name = NULL;
+	const char *typebounds_child_name = NULL;
+
+	int compval = 0;
+
+	qpol_typebounds_get_parent_name(p->p, typebounds, &typebounds_parent_name);
+	qpol_typebounds_get_child_name(p->p, typebounds, &typebounds_child_name);
+
+	if (typebounds_parent_name != NULL) {
+		compval = apol_compare(p, typebounds_parent_name, name, flags, typebounds_regex);
+	}
+	if (typebounds_child_name != NULL && compval == 0) {
+		compval = apol_compare(p, typebounds_child_name, name, flags, typebounds_regex);
+		return compval;
+	} else {
+		return compval;
+	}
+	return 0;
+}
+
 int apol_compare_cond_expr(const apol_policy_t * p, const qpol_cond_t * cond, const char *name, unsigned int flags,
 			   regex_t ** bool_regex)
 {

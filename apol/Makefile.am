@@ -27,6 +27,7 @@ dist_setools_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
 
 EXTRA_DIST = \
 	analysis_tab.tcl \
+	bounds_tab.tcl \
 	classes_perms_tab.tcl \
 	common_widgets.tcl \
 	cond_bools_tab.tcl \

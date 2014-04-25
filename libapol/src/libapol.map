@@ -83,5 +83,8 @@ VERS_4.1{
 VERS_4.2{
 	global:
 		apol_permissive_*;
+		apol_typebounds_*;
+		apol_rolebounds_*;
+		apol_userbounds_*;
 		apol_polcap_*;
 } VERS_4.1;
