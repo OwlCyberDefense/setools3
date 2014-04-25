@@ -215,10 +215,10 @@ void apol_filename_trans_query_destroy(apol_filename_trans_query_t ** t)
 	}
 }
 
-int apol_filename_trans_query_set_source(const apol_policy_t * p, apol_filename_trans_query_t * t, const char *filename, int is_indirect)
+int apol_filename_trans_query_set_source(const apol_policy_t * p, apol_filename_trans_query_t * t, const char *type, int is_indirect)
 {
 	apol_query_set_flag(p, &t->flags, is_indirect, APOL_QUERY_SOURCE_INDIRECT);
-	return apol_query_set(p, &t->source, NULL, filename);
+	return apol_query_set(p, &t->source, NULL, type);
 }
 
 //TODO is the equivilent terule_query_set_{source,target}_compoenent needed?

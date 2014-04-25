@@ -130,7 +130,19 @@ extern "C"
  *
  * @return 0 on success, negative on error.
  */
-	extern int apol_filename_trans_query_set_default(const apol_policy_t * p, apol_filename_trans_query_t * r, const char *filename);
+	extern int apol_filename_trans_query_set_default(const apol_policy_t * p, apol_filename_trans_query_t * r, const char *type);
+
+/**
+ * Set a filename trans query to the filename.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r FT rule query to set.
+ * @param is_any Non-zero to use source symbol for source or default
+ * field, 0 to keep source as only source.
+ *
+ * @return Always 0.
+ */
+	extern int apol_filename_trans_query_set_name(const apol_policy_t * p, apol_filename_trans_query_t * t, const char *filename);
 
 /**
  * Set at filename_trans query to return rules with this object (non-common)
