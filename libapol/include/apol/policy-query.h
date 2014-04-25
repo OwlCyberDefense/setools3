@@ -66,6 +66,7 @@ extern "C"
 #include "context-query.h"
 #include "permissive-query.h"
 #include "polcap-query.h"
+#include "bounds-query.h"
 
 #include "avrule-query.h"
 #include "terule-query.h"

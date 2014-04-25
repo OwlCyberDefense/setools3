@@ -712,6 +712,18 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
+	%newobject get_typebounds_iter();
+	qpol_iterator_t *get_typebounds_iter() {
+		BEGIN_EXCEPTION
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_typebounds_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+	}
+		return iter;
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
 	%newobject get_polcap_iter();
 	qpol_iterator_t *get_polcap_iter() {
 		BEGIN_EXCEPTION
@@ -3030,6 +3042,129 @@ typedef struct qpol_polcap {} qpol_polcap_t;
 %inline %{
 	qpol_polcap_t *qpol_polcap_from_void(void *x) {
 		return (qpol_polcap_t*)x;
+	};
+%}
+
+/* qpol typebounds */
+typedef struct qpol_typebounds {} qpol_typebounds_t;
+%extend qpol_typebounds_t {
+	qpol_typebounds() {
+		BEGIN_EXCEPTION
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_typebounds_t objects");
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
+	~qpol_typebounds() {
+		/* no op */
+		return;
+	};
+	const char *get_parent_name(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_typebounds_get_parent_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get parent name");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+	const char *get_child_name(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_typebounds_get_child_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get child name");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+};
+%inline %{
+	qpol_typebounds_t *qpol_typebounds_from_void(void *x) {
+		return (qpol_typebounds_t*)x;
+	};
+%}
+
+/* qpol rolebounds */
+typedef struct qpol_rolebounds {} qpol_rolebounds_t;
+%extend qpol_rolebounds_t {
+	qpol_rolebounds() {
+		BEGIN_EXCEPTION
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_rolebounds_t objects");
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
+	~qpol_rolebounds() {
+		/* no op */
+		return;
+	};
+	const char *get_parent_name(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_rolebounds_get_parent_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get parent name");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+	const char *get_child_name(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_rolebounds_get_child_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get child name");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+};
+%inline %{
+	qpol_rolebounds_t *qpol_rolebounds_from_void(void *x) {
+		return (qpol_rolebounds_t*)x;
+	};
+%}
+
+/* qpol userbounds */
+typedef struct qpol_userbounds {} qpol_userbounds_t;
+%extend qpol_userbounds_t {
+	qpol_userbounds() {
+		BEGIN_EXCEPTION
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_userbounds_t objects");
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
+	~qpol_userbounds() {
+		/* no op */
+		return;
+	};
+	const char *get_parent_name(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_userbounds_get_parent_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get parent name");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+	const char *get_child_name(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_userbounds_get_child_name(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get child name");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+};
+%inline %{
+	qpol_userbounds_t *qpol_userbounds_from_void(void *x) {
+		return (qpol_userbounds_t*)x;
 	};
 %}
 // vim:ft=c noexpandtab

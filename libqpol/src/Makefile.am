@@ -35,6 +35,7 @@ libqpol_a_SOURCES = \
 	netifcon_query.c \
 	nodecon_query.c \
 	permissive_query.c \
+	bounds_query.c \
 	polcap_query.c \
 	policy.c \
 	policy_define.c policy_define.h \

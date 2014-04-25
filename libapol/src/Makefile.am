@@ -14,6 +14,7 @@ AM_LDFLAGS = @DEBUGLDFLAGS@ @WARNLDFLAGS@ @PROFILELDFLAGS@
 libapol_a_SOURCES = \
 	avrule-query.c \
 	bool-query.c \
+	bounds-query.c \
 	bst.c \
 	class-perm-query.c \
 	condrule-query.c \

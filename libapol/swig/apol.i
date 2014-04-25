@@ -2702,6 +2702,107 @@ typedef struct apol_polcap_query {} apol_polcap_query_t;
 	};
 };
 
+/* apol typebounds query */
+typedef struct apol_typebounds_query {} apol_typebounds_query_t;
+%extend apol_typebounds_query_t {
+	apol_typebounds_query() {
+		apol_typebounds_query_t *arq;
+		BEGIN_EXCEPTION
+		arq = apol_typebounds_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return arq;
+	};
+	~apol_typebounds_query() {
+		apol_typebounds_query_destroy(&self);
+	};
+	%newobject run(apol_policy_t*);
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		BEGIN_EXCEPTION
+		if (apol_typebounds_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run typebounds query");
+		}
+		END_EXCEPTION
+	fail:
+		return v;
+	};
+	void set_name(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
+		if (apol_typebounds_query_set_name(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_typebounds_query_set_regex(p, self, regex);
+	};
+};
+
+/* apol rolebounds query */
+typedef struct apol_rolebounds_query {} apol_rolebounds_query_t;
+%extend apol_rolebounds_query_t {
+	apol_rolebounds_query() {
+		apol_rolebounds_query_t *arq;
+		BEGIN_EXCEPTION
+		arq = apol_rolebounds_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return arq;
+	};
+	~apol_rolebounds_query() {
+		apol_rolebounds_query_destroy(&self);
+	};
+	%newobject run(apol_policy_t*);
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		BEGIN_EXCEPTION
+		if (apol_rolebounds_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run rolebounds query");
+		}
+		END_EXCEPTION
+	fail:
+		return v;
+	};
+};
+
+/* apol userbounds query */
+typedef struct apol_userbounds_query {} apol_userbounds_query_t;
+%extend apol_userbounds_query_t {
+	apol_userbounds_query() {
+		apol_userbounds_query_t *arq;
+		BEGIN_EXCEPTION
+		arq = apol_userbounds_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return arq;
+	};
+	~apol_userbounds_query() {
+		apol_userbounds_query_destroy(&self);
+	};
+	%newobject run(apol_policy_t*);
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		BEGIN_EXCEPTION
+		if (apol_userbounds_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run userbounds query");
+		}
+		END_EXCEPTION
+	fail:
+		return v;
+	};
+};
 
 /* domain transition analysis */
 #define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01

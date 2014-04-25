@@ -52,6 +52,7 @@ extern "C"
 #include <qpol/netifcon_query.h>
 #include <qpol/nodecon_query.h>
 #include <qpol/permissive_query.h>
+#include <qpol/bounds_query.h>
 #include <qpol/polcap_query.h>
 #include <qpol/portcon_query.h>
 #include <qpol/rbacrule_query.h>
@@ -254,6 +255,15 @@ extern "C"
  *  @return Non-zero if the policy has the specified capability, and zero otherwise.
  */
 	extern int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e cap);
+
+/**
+ *  Get the handle_unknown classes/perms flag for the policy.
+ *  @param policy The policy for which to get the version.
+ *  @param handle_unknown Pointer to the integer to set to the version number.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *handle_unknown will be 0.
+ */
+	extern int qpol_policy_get_policy_handle_unknown(const qpol_policy_t * policy, unsigned int *handle_unknown);
 
 #ifdef	__cplusplus
 }

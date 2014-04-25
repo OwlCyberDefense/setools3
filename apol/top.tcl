@@ -75,6 +75,7 @@ namespace eval ApolTop {
         {Apol_Constraint rules {tag_query_saveable}}
         {Apol_RBAC rules {}}
         {Apol_Range rules {tag_mls}}
+        {Apol_Bounds rules {}}
         {Apol_File_Contexts {} {}}
         {Apol_Analysis {} {tag_query_saveable}}
         {Apol_PolicyConf {} {tag_source}}
@@ -558,6 +559,57 @@ proc ApolTop::_toplevel_update_stats {} {
         set policy_stats(mlsvalidatetrans) 0
     }
 
+    # Determine number of typebounds statements
+    set q [new_apol_typebounds_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -acquire
+    $q -delete
+    set counter 0
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+            set q [qpol_typebounds_from_void [$v get_element $i]]
+            set parent [$q get_parent_name $::ApolTop::qpolicy]
+            if {$parent != ""} {
+                set counter [expr $counter + 1]
+            }
+        }
+    }
+    set policy_stats(typebounds) $counter
+
+    # Determine number of rolebounds statements
+    set q [new_apol_rolebounds_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -acquire
+    $q -delete
+    set counter 0
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+            set q [qpol_rolebounds_from_void [$v get_element $i]]
+            set parent [$q get_parent_name $::ApolTop::qpolicy]
+            if {$parent != ""} {
+                set counter [expr $counter + 1]
+            }
+        }
+    }
+    set policy_stats(rolebounds) $counter
+
+    # Determine number of userbounds statements
+    set q [new_apol_userbounds_query_t]
+    set v [$q run $::ApolTop::policy]
+    $q -acquire
+    $q -delete
+    set counter 0
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+            set q [qpol_userbounds_from_void [$v get_element $i]]
+            set parent [$q get_parent_name $::ApolTop::qpolicy]
+            if {$parent != ""} {
+                set counter [expr $counter + 1]
+            }
+        }
+    }
+    set policy_stats(userbounds) $counter
+
     set policy_stats_summary ""
     append policy_stats_summary "Classes: $policy_stats(classes)   "
     append policy_stats_summary "Perms: $policy_stats(perms)   "
@@ -757,6 +809,7 @@ proc ApolTop::_show_policy_summary {} {
         "Number of Types and Attributes" {
             "Types" types
             "   that includes permissive types" permissive
+            "   that includes bounded types" typebounds
             "Attributes" attribs
         }
         "Number of Type Enforcement Rules" {
@@ -771,6 +824,7 @@ proc ApolTop::_show_policy_summary {} {
         }
         "Number of Roles" {
             "Roles" roles
+            "   that includes bounded roles" rolebounds
         }
         "Number of RBAC Rules" {
             "allows" role_allow
@@ -798,6 +852,7 @@ proc ApolTop::_show_policy_summary {} {
     foreach {title block} {
         "Number of Users" {
             "Users" users
+            "   that includes bounded users" userbounds
         }
         "Number of Booleans" {
             "Booleans" bools
