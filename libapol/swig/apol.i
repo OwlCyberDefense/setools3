@@ -2523,6 +2523,92 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 %newobject apol_range_trans_render(apol_policy_t*, qpol_range_trans_t*);
 char *apol_range_trans_render(apol_policy_t * policy, qpol_range_trans_t * rule);
 
+/* apol filename transition rule query */
+typedef struct apol_filename_trans_query {} apol_filename_trans_query_t;
+%extend apol_filename_trans_query_t {
+	apol_filename_trans_query() {
+		apol_filename_trans_query_t *arq;
+		BEGIN_EXCEPTION
+		arq = apol_filename_trans_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return arq;
+	};
+	~apol_filename_trans_query() {
+		apol_filename_trans_query_destroy(&self);
+	};
+	%newobject run(apol_policy_t*);
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		BEGIN_EXCEPTION
+		if (apol_filename_trans_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run filename transition query");
+		}
+		END_EXCEPTION
+	fail:
+		return v;
+	};
+	void set_source(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
+		if (apol_filename_trans_query_set_source(p, self, name, indirect)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+	void set_target(apol_policy_t *p, char *name, int indirect) {
+		BEGIN_EXCEPTION
+		if (apol_filename_trans_query_set_target(p, self, name, indirect)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+	void append_class(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
+		if (apol_filename_trans_query_append_class(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not append class to filename transition query");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+
+	void set_default(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
+		if (apol_filename_trans_query_set_default(p, self, name)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not set default for filename transition query");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+
+	void set_filename(apol_policy_t *p, char *filename) {
+		BEGIN_EXCEPTION
+		if (apol_filename_trans_query_set_name(p, self, filename)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+
+	void set_source_any(apol_policy_t *p, int is_any) {
+		apol_filename_trans_query_set_source_any(p, self, is_any);
+	};
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_filename_trans_query_set_regex(p, self, regex);
+	};
+};
+%newobject apol_filename_trans_render(apol_policy_t*, qpol_filename_trans_t*);
+char *apol_filename_trans_render(apol_policy_t * policy, qpol_filename_trans_t * rule);
+
 /* domain transition analysis */
 #define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01
 #define APOL_DOMAIN_TRANS_DIRECTION_REVERSE 0x02

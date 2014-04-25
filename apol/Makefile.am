@@ -31,6 +31,7 @@ EXTRA_DIST = \
 	common_widgets.tcl \
 	cond_bools_tab.tcl \
 	cond_rules_tab.tcl \
+	constraints_tab.tcl \
 	context_dialog.tcl \
 	context_selector.tcl \
 	directflow_module.tcl \

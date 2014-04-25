@@ -70,6 +70,7 @@ namespace eval ApolTop {
         {Apol_FSContexts components {}}
         {Apol_TE rules {tag_query_saveable}}
         {Apol_Cond_Rules rules {tag_conditionals}}
+        {Apol_Constraint rules {tag_query_saveable}}
         {Apol_RBAC rules {}}
         {Apol_Range rules {tag_mls}}
         {Apol_File_Contexts {} {}}
@@ -457,6 +458,9 @@ proc ApolTop::_toplevel_update_stats {} {
         "sens" get_level_iter
         "cats" get_cat_iter
         "range_trans" get_range_trans_iter
+        "constraints" get_constraint_iter
+        "validatetrans" get_validatetrans_iter
+        "filename_trans" get_filename_trans_iter
 
         "sids" get_isid_iter
         "portcons" get_portcon_iter
@@ -516,6 +520,21 @@ proc ApolTop::_toplevel_update_stats {} {
         set policy_stats($key) [$i get_size]
         $i -acquire
         $i -delete
+    }
+
+    # Determine number of mlsconstrain and mlsvalidatetrans rules and
+    # recalculate the numbers accordingly.
+    if {[ApolTop::is_capable "mls"]} {
+        set mlsconstrain_count [ApolTop::_get_mls_count new_apol_constraint_query_t]
+        set policy_stats(constraints) [expr $policy_stats(constraints) - $mlsconstrain_count]
+        set policy_stats(mlsconstraints) $mlsconstrain_count
+
+        set mlsvalidatetrans_count [ApolTop::_get_mls_count new_apol_validatetrans_query_t]
+        set policy_stats(validatetrans) [expr $policy_stats(validatetrans) - $mlsvalidatetrans_count]
+        set policy_stats(mlsvalidatetrans) $mlsvalidatetrans_count
+    } else {
+        set policy_stats(mlsconstraints) 0
+        set policy_stats(mlsvalidatetrans) 0
     }
 
     set policy_stats_summary ""
@@ -722,6 +741,7 @@ proc ApolTop::_show_policy_summary {} {
             "dontaudits" avrule_dontaudit
             "neverallows" avrule_neverallow
             "type_transitions" type_trans
+            "type_transitions - filename" filename_trans
             "type_members" type_member
             "type_changes" type_change
         }
@@ -758,12 +778,18 @@ proc ApolTop::_show_policy_summary {} {
         "Number of Booleans" {
             "Booleans" bools
         }
+        "Number of Constraints" {
+            "constrain" constraints
+            "validatetrans" validatetrans
+        }
         "Number of MLS Components" {
             "Sensitivities" sens
             "Categories" cats
         }
         "Number of MLS Rules" {
             "range_transitions" range_trans
+            "mlsconstrain" mlsconstraints
+            "mlsvalidatetrans" mlsvalidatetrans
         }
         "Number of Initial SIDs" {
             "SIDs" sids
@@ -1065,6 +1091,41 @@ proc ApolTop::_write_configuration_file {} {
     variable max_recent_files
     puts $f $max_recent_files
     close $f
+}
+
+# This will work out how many mlsconstrain and mlsvalidatetrans rules
+# there are as the get_iter numbers are overall count.
+proc ApolTop::_get_mls_count {command} {
+
+    set q [$command]
+    # This reads in the constraint info
+    set v [$q run $::ApolTop::policy]
+    $q -acquire
+    $q -delete
+
+    set mls_count 0
+
+    # This loop will process each constraint in the policy
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        set q [qpol_constraint_from_void [$v get_element $i]]
+
+        # Find if this is an mls rule or not
+        set x [$q get_expr_iter $::ApolTop::qpolicy]
+        while {![$x end]} {
+            foreach t [iter_to_list $x] {
+                set t [qpol_constraint_expr_node_from_void $t]
+                # Get Symbol type
+                set sym_type [$t get_sym_type $::ApolTop::qpolicy]
+                if { $sym_type >= $::QPOL_CEXPR_SYM_L1L2 } {
+                    set mls_count [expr $mls_count + 1]
+                    break
+                }
+            }
+        }
+        $x -acquire
+        $x -delete
+    }
+    return $mls_count
 }
 
 #######################################################

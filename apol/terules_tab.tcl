@@ -93,6 +93,7 @@ proc Apol_TE::create {tab_name nb} {
 
     _createTypesAttribsTab
     _createClassesPermsTab
+    _createFilenameTab
 
     # Action buttons
     set widgets(new) [button $abox.new -text "New Search" -width 12 \
@@ -252,6 +253,7 @@ proc Apol_TE::_initializeVars {} {
                         ta:source_sym,types $::APOL_QUERY_SYMBOL_IS_TYPE \
                         ta:target_sym,types $::APOL_QUERY_SYMBOL_IS_TYPE \
                         ta:default_sym,types $::APOL_QUERY_SYMBOL_IS_TYPE \
+                        ta:filename,files 1 \
                        ]
 
     array set vals {
@@ -273,6 +275,10 @@ proc Apol_TE::_initializeVars {} {
         ta:default_sym,attribs 0
         ta:default_sym {}
 
+        ta:use_filename 0
+        ta:filename {}
+        ta:filename,files 0
+
         cp:classes {}
         cp:classes_selected {}
         cp:perms {}
@@ -286,6 +292,7 @@ proc Apol_TE::_initializeVars {} {
         ta:use_source 1
         ta:use_target 1
         ta:use_default 1
+        ta:use_filename 1
 
         cp:classes 0
         cp:perms 0
@@ -533,6 +540,155 @@ proc Apol_TE::_toggle_ta_pushed {col cb} {
     if {!$vals(ta:${col}_sym,types) && !$vals(ta:${col}_sym,attribs)} {
         $cb select
     }
+}
+
+proc Apol_TE::_createFilenameTab {} {
+    variable vals
+    variable widgets
+    variable enabled
+
+    set fn_tab [$widgets(search_opts) insert end filename -text "Filename"]
+    set fm_filename [frame $fn_tab.filename]
+    grid $fm_filename -padx 4 -sticky ewns
+    foreach i {0 1 2} {
+        grid columnconfigure $fn_tab $i -weight 1 -uniform 1
+    }
+    grid rowconfigure $fn_tab 0 -weight 1
+
+    set widgets(ta:use_filename) [checkbutton $fm_filename.use -text "type_transition filename" \
+                                       -onvalue 1 -offvalue 0 -variable Apol_TE::vals(ta:use_filename)]
+    pack $widgets(ta:use_filename) -side top -anchor w
+
+    trace add variable Apol_TE::vals(ta:use_filename) write \
+        [list Apol_TE::_toggle_fn_box filename]
+
+    set w {}
+
+    set helptext "Select a filename - Note: no search using regular expr"
+
+    set widgets(ta:filename_sym) [ComboBox $fm_filename.sym \
+                                       -state normal -entrybg $ApolTop::default_bg_color \
+                                       -textvariable Apol_TE::vals(ta:filename_sym) \
+                                       -helptext $helptext -autopost 1]
+    pack $widgets(ta:filename_sym) -expand 0 -fill x -padx 8
+    lappend w $widgets(ta:filename_sym)
+
+    set widgets(ta:filename_widgets) $w
+    trace add variable Apol_TE::enabled(ta:use_filename) write \
+        [list Apol_TE::_maybe_enable_filename filename]
+
+    trace add variable Apol_TE::vals(ta:filename,files) write \
+            [list Apol_TE::_toggle_FileNames filename]
+}
+
+
+proc Apol_TE::_toggle_fn_box {col name1 name2 op} {
+    variable vals
+    variable enabled
+    variable widgets
+ 
+    if {$enabled(ta:use_${col})} {
+        $widgets(ta:use_${col}) configure -state normal
+    } else {
+        $widgets(ta:use_${col}) configure -state disabled
+    }
+    if {$enabled(ta:use_${col}) && $vals(ta:use_${col})} {
+        foreach w $widgets(ta:${col}_widgets) {
+            $w configure -state normal
+        }
+        $widgets(ta:${col}_sym) configure -entrybg white
+    } else {
+        foreach w $widgets(ta:${col}_widgets) {
+            $w configure -state disabled
+        }
+        $widgets(ta:${col}_sym) configure -entrybg $ApolTop::default_bg_color
+    }
+
+    # update this tab's name if one of the columns is enabled and used
+    if {($enabled(ta:use_${col}) && $vals(ta:use_${col}))} { \
+        $widgets(search_opts) itemconfigure filename -text "Filename *"
+    } else {
+        $widgets(search_opts) itemconfigure filename -text "Filename"
+    }
+}
+
+proc Apol_TE::_maybe_enable_filename {col name1 name2 op} {
+    variable vals
+    variable enabled
+    variable widgets
+
+    set typerule_set 0
+
+    foreach x {type_transition} {
+        if {$vals(rs:$x)} {
+            set typerule_set 1
+            break
+        }
+    }
+    if {$typerule_set} {
+        set enabled(ta:use_filename) 1
+    } else {
+        set enabled(ta:use_filename) 0
+    }
+
+    set enabled(ta:use_${col}) $enabled(ta:use_${col})
+}
+
+
+proc Apol_TE::_toggle_FileNames {col name1 name2 op} {
+    variable vals
+    variable widgets
+    variable enabled
+
+    if {![ApolTop::is_policy_open]} {
+        return
+    }
+
+    set items [lsort -unique -dictionary [Apol_TE::Get_FileNames]]
+    $widgets(ta:${col}_sym) configure -values $items
+}
+
+proc Apol_TE::Get_FileNames {} {
+    set filenames {}
+    set q [new_apol_filename_trans_query_t]
+    # This reads in the filename_trans info
+    set v [$q run $::ApolTop::policy]
+    $q -acquire
+    $q -delete
+    # This loop will process each filename_trans in the policy
+    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+            set q [qpol_filename_trans_from_void [$v get_element $i]]
+            lappend filenames [$q get_trans_filename $::ApolTop::qpolicy]
+        }
+    }
+    return $filenames
+}
+
+
+proc Apol_TE::appendFilenameSearchResultRules {path indent rule_list cast filename} {
+    set curstate [$path.tb cget -state]
+    $path.tb configure -state normal
+
+    variable enabled
+    variable vals
+    set num_rules 0
+
+    if { $vals(ta:use_filename) == 0} {
+        set filename ""
+    }
+
+    for {set i 0} {$i < [$rule_list get_size]} {incr i} {
+        set rule [$cast [$rule_list get_element $i]]
+        if {$filename == "" || [$rule get_trans_filename $::ApolTop::qpolicy] == $filename} {
+            $path.tb insert end [string repeat " " $indent]
+            $path.tb insert end [apol_filename_trans_render $::ApolTop::policy $rule]
+            incr num_rules
+            $path.tb insert end "\n"
+        }
+    }
+    $path.tb configure -state $curstate
+    list $num_rules $num_rules 0
 }
 
 # code to create and handle the classe/permissions subtab
@@ -875,8 +1031,11 @@ proc Apol_TE::_search_terules {whichButton} {
         return
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default) && $vals(ta:default_sym) == {}} {
-
         tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No default type selected."
+        return
+    }
+    if {$enabled(ta:use_filename) && $vals(ta:use_filename) && $vals(ta:filename_sym) == {}} {
+        tk_messageBox -icon error -type ok -title "TE Rule Search" -message "No filename selected."
         return
     }
 
@@ -896,6 +1055,7 @@ proc Apol_TE::_search_terules {whichButton} {
     # start building queries
     set avq [new_apol_avrule_query_t]
     set teq [new_apol_terule_query_t]
+    set fnteq [new_apol_filename_trans_query_t]
 
     if {$enabled(ta:use_source) && $vals(ta:use_source)} {
         if {$vals(ta:source_which) == "either"} {
@@ -905,21 +1065,28 @@ proc Apol_TE::_search_terules {whichButton} {
         $avq set_source_component $::ApolTop::policy [expr {$vals(ta:source_sym,types) | $vals(ta:source_sym,attribs)}]
         $teq set_source $::ApolTop::policy $vals(ta:source_sym) $vals(ta:source_indirect)
         $teq set_source_component $::ApolTop::policy [expr {$vals(ta:source_sym,types) | $vals(ta:source_sym,attribs)}]
+        $fnteq set_source $::ApolTop::policy $vals(ta:source_sym) $vals(ta:source_indirect)
     }
     if {$enabled(ta:use_target) && $vals(ta:use_target)} {
         $avq set_target $::ApolTop::policy $vals(ta:target_sym) $vals(ta:target_indirect)
         $avq set_target_component $::ApolTop::policy [expr {$vals(ta:target_sym,types) | $vals(ta:target_sym,attribs)}]
         $teq set_target $::ApolTop::policy $vals(ta:target_sym) $vals(ta:target_indirect)
         $teq set_target_component $::ApolTop::policy [expr {$vals(ta:target_sym,types) | $vals(ta:target_sym,attribs)}]
+        $fnteq set_target $::ApolTop::policy $vals(ta:target_sym) $vals(ta:target_indirect)
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default)} {
         $teq set_default $::ApolTop::policy $vals(ta:default_sym)
+        $fnteq set_default $::ApolTop::policy $vals(ta:default_sym)
+    }
+    if {$enabled(ta:use_filename) && $vals(ta:use_filename)} {
+         $fnteq set_filename $::ApolTop::policy $vals(ta:filename_sym)
     }
 
     if {$enabled(cp:classes)} {
         foreach c $vals(cp:classes_selected) {
             $avq append_class $::ApolTop::policy $c
             $teq append_class $::ApolTop::policy $c
+            $fnteq append_class $::ApolTop::policy $c
         }
     }
     if {$enabled(cp:perms)} {
@@ -935,6 +1102,7 @@ proc Apol_TE::_search_terules {whichButton} {
     $teq set_enabled $::ApolTop::policy $vals(oo:enabled)
     $avq set_regex $::ApolTop::policy $vals(oo:regexp)
     $teq set_regex $::ApolTop::policy $vals(oo:regexp)
+    $fnteq set_regex $::ApolTop::policy $vals(oo:regexp)
 
     foreach x {new update reset} {
         $widgets($x) configure -state disabled
@@ -952,16 +1120,20 @@ proc Apol_TE::_search_terules {whichButton} {
         {
             set numTEs {0 0 0}
             set numAVs {0 0 0}
+            set numFNTEs {0 0 0}
             set avresults NULL
             set teresults NULL
+            set fnteresults NULL
             set num_avresults 0
             set num_teresults 0
+            set num_fnteresults 0
             if {![ApolTop::is_capable "syntactic rules"]} {
                 if {$avrule_selection != 0} {
                     set avresults [$avq run $::ApolTop::policy]
                 }
                 if {$terule_selection != 0} {
                     set teresults [$teq run $::ApolTop::policy]
+                    set fnteresults [$fnteq run $::ApolTop::policy]
                 }
             } else {
                 $::ApolTop::qpolicy build_syn_rule_table
@@ -972,16 +1144,25 @@ proc Apol_TE::_search_terules {whichButton} {
                     set teresults [$teq run_syn $::ApolTop::policy]
                 }
             }
+            if {$terule_selection != 0} {
+                 set fnteresults [$fnteq run $::ApolTop::policy]
+            }
 
             $avq -acquire
             $avq -delete
             $teq -acquire
             $teq -delete
+            $fnteq -acquire
+            $fnteq -delete
             if {$avresults != "NULL"} {
                 set num_avresults [$avresults get_size]
             }
             if {$teresults != "NULL"} {
                 set num_teresults [$teresults get_size]
+            }
+
+            if {$fnteresults != "NULL"} {
+                set num_fnteresults [$fnteresults get_size]
             }
 
             if {$whichButton == "new"} {
@@ -1014,7 +1195,21 @@ proc Apol_TE::_search_terules {whichButton} {
                     set numTEs [Apol_Widget::appendSearchResultSynRules $sr 0 $teresults qpol_syn_terule_from_void]
                 }
             }
-            set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0]}]
+
+            if { $vals(ta:use_filename) == 1 && $vals(ta:use_source) == 0 &&  $vals(ta:use_target) == 0 &&  $vals(ta:use_default) == 0} {
+                Apol_Widget::clearSearchResults $sr
+                set numTEs {0 0 0}
+                set numAVs {0 0 0}
+            }
+ 
+            if {$vals(rs:type_transition) != 0} {
+                apol_tcl_set_info_string $::ApolTop::policy "Rendering $num_fnteresults Filename TE rule results"
+                if {$num_fnteresults > 0} {
+                    set numFNTEs [Apol_TE::appendFilenameSearchResultRules $sr 0 $fnteresults qpol_filename_trans_from_void $vals(ta:filename_sym)]
+                }
+            }
+
+            set num_rules [expr {[lindex $numAVs 0] + [lindex $numTEs 0] + [lindex $numFNTEs 0]}]
             set num_enabled [expr {[lindex $numAVs 1] + [lindex $numTEs 1]}]
             set num_disabled [expr {[lindex $numAVs 2] + [lindex $numTEs 2]}]
             set header "$num_rules rule"

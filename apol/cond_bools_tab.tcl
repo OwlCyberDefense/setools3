@@ -107,7 +107,9 @@ proc Apol_Cond_Bools::open {ppath} {
     foreach bool $cond_bools_list {
         set b [new_qpol_bool_t $::ApolTop::qpolicy $bool]
         set cond_bools_defaults($bool) [$b get_state $::ApolTop::qpolicy]
-        _insert_listbox_item $bool $cond_bools_defaults($bool)
+        # This is a workaround as frames do not like the "." in CIL booleans
+        set frame_bool [string map {. *} $bool]
+        _insert_listbox_item $bool $cond_bools_defaults($bool) $frame_bool
     }
 
     variable widgets
@@ -161,21 +163,21 @@ proc Apol_Cond_Bools::_initializeVars {} {
     }
 }
 
-proc Apol_Cond_Bools::_insert_listbox_item {bool initial_state} {
+proc Apol_Cond_Bools::_insert_listbox_item {bool initial_state frame_bool} {
     variable widgets
     variable cond_bools_values
 
     set cond_bools_values($bool) $initial_state
     set subf [$widgets(listbox) getframe]
-    set rb_true [radiobutton $subf.t:$bool -bg white \
+    set rb_true [radiobutton $subf.t:$frame_bool -bg white \
                      -variable Apol_Cond_Bools::cond_bools_values($bool) \
                      -value 1 -highlightthickness 0 -text "True"]
-    set rb_false [radiobutton $subf.f:$bool -bg white \
+    set rb_false [radiobutton $subf.f:$frame_bool -bg white \
                       -variable Apol_Cond_Bools::cond_bools_values($bool) \
                       -value 0 -highlightthickness 0 -text "False"]
     trace add variable Apol_Cond_Bools::cond_bools_values($bool) write \
         [list Apol_Cond_Bools::_set_bool_value]
-    set rb_label [label $subf.l:$bool -bg white -text "- $bool"]
+    set rb_label [label $subf.l:$frame_bool -bg white -text "- $bool"]
     grid $rb_true $rb_false $rb_label -padx 2 -pady 5 -sticky w
 }
 

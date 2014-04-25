@@ -110,7 +110,7 @@ proc Apol_Initial_SIDS::_search {} {
         $q set_context $::ApolTop::policy $context $range_match
     }
     
-    set v [$q run $::ApolTop::policy] #line causing segfaulting
+    set v [$q run $::ApolTop::policy]
     
     $q -acquire
     $q -delete

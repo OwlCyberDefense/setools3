@@ -226,6 +226,10 @@ rules in a policy based on selected search criteria.
        the checkbox is enabled, returned rules instead will contain
        all of them.
 
+    4. FILENAME SUBTAB: provides options to refine a search
+       using the file name type_transition rule filename.  Only rules
+       that contain the selected file name will be returned.
+
   In the Results Tab for a given search, all rules that meet the
   search criteria are displayed.  In addition, if the policy that is
   opened is capable of showing line numbers, a hyperlink for each rule
@@ -259,6 +263,57 @@ rules in a policy based on selected search criteria.
 	
       [Enabled] - indicates the rule is enabled
       [Disabled] - indicates the rule is disabled	
+
+ Constraints tab
+ ---------------
+  Select the Constraints tab to search through the constrain and
+  validatetrans constraint rules. If the current policy supports MLS
+  then these variants are also enabled.
+
+  Four different types of search criteria exist for constraints:
+
+    1. CONSTRAINT SELECTION: provides options to limit the scope of the
+       search as only those constraints selected will be included in the
+       search.  At least one must be selected.  NOTE: If no additional
+       search criteria is specified, apol will search for all of the
+       selected constraints.
+
+    2. CLASSES/PERMISSIONS SUBTAB: provides options to refine a search
+       using object classes and/or permissions in the same way as the
+       TE Rules tab described above.  Note that the validatetrans rules
+       do not use permissions.
+
+    3. LEFT SIDE OF EXPRESSION SUBTAB: provides an option to refine a
+       search based on the left keyword of a constraint.  When checked
+       the left hand side of each expression is read from the policy and
+       displayed in the drop down box.  A single keyword may then be
+       selected.
+
+    4. RIGHT SIDE OF EXPRESSION SUBTAB: provides options to refine a
+       search based on either the right keyword, user, role, type or type
+       attribute of a constraint.  When one of the boxes is checked
+       the right keywords, users, roles, types or type attributes are
+       read from the policy and displayed in the drop down box.  A single
+       item may then be selected.
+
+  Note: When displaying the constraint details from a binary policy, the
+        result will depend on the policy version:
+          a) For versions <= 28 it will always display types as the
+             compiler expanded any attributes before writing the binary
+             policy. Therefore searches should always be for types.
+          b) For versions >= 29 it will display whatever was defined in
+             the source policy, therefore searches may be on types or
+             attributes.
+
+  The Constraints Tab also supports multiple results windows.  Each
+  active window remembers the search options used for it, and will set
+  all the options accordingly when selected.  Use the "Update Search"
+  button to change the results displayed for the current window based
+  on the current search option.  "New Search" creates a new results
+  window based on the current search options.  Use the "Close Tab" bar
+  at the bottom to destroy a results window.  Also, the Constraints tab
+  provides the means to save/load search criteria to a file (see Menus
+  section above).
 
   RBAC Rules tab
   --------------

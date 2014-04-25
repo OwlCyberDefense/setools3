@@ -681,6 +681,30 @@ typedef enum qpol_capability
 	fail:
 		return NULL;
 	};
+	%newobject get_filename_trans_iter();
+	qpol_iterator_t *get_filename_trans_iter() {
+		BEGIN_EXCEPTION
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_filename_trans_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+	}
+		return iter;
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
+	%newobject get_permissive_iter();
+	qpol_iterator_t *get_permissive_iter() {
+		BEGIN_EXCEPTION
+		qpol_iterator_t *iter;
+		if (qpol_policy_get_permissive_iter(self, &iter)) {
+			SWIG_exception(SWIG_MemoryError, "Out of Memory");
+	}
+		return iter;
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
 };
 
 /* qpol iterator */
@@ -2874,6 +2898,76 @@ typedef struct qpol_syn_terule {} qpol_syn_terule_t;
 %inline %{
 	qpol_syn_terule_t *qpol_syn_terule_from_void(void *x) {
 		return (qpol_syn_terule_t*)x;
+	};
+%}
+
+/* qpol filename trans */
+typedef struct qpol_filename_trans {} qpol_filename_trans_t;
+%extend qpol_filename_trans_t {
+	qpol_filename_trans() {
+		BEGIN_EXCEPTION
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_filename_trans_t objects");
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
+	~qpol_filename_trans() {
+		/* no op */
+		return;
+	};
+	const qpol_type_t *get_source_type (qpol_policy_t *p) {
+		const qpol_type_t *t;
+		BEGIN_EXCEPTION
+		if (qpol_filename_trans_get_source_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get source for filename transition rule");
+		}
+		END_EXCEPTION
+	fail:
+		return t;
+	};
+	const qpol_type_t *get_target_type (qpol_policy_t *p) {
+		const qpol_type_t *t;
+		BEGIN_EXCEPTION
+		if (qpol_filename_trans_get_target_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get target for filename transition rule");		}
+		END_EXCEPTION
+	fail:
+		return t;
+	};
+	const qpol_class_t *get_target_class(qpol_policy_t *p) {
+		const qpol_class_t *cls;
+		BEGIN_EXCEPTION
+		if (qpol_filename_trans_get_object_class(p, self, &cls)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class for filename transition rule");		}
+		END_EXCEPTION
+	fail:
+		return cls;
+	};
+	const qpol_type_t *get_default_type(qpol_policy_t *p) {
+		const qpol_type_t *t;
+		BEGIN_EXCEPTION
+		if (qpol_filename_trans_get_default_type(p, self, &t)) {
+			SWIG_exception(SWIG_ValueError, "Could not get default for filename transition rule");
+		}
+		END_EXCEPTION
+	fail:
+		return t;
+	};
+	const char *get_trans_filename(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_filename_trans_get_filename(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get file for filename_transition rule");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+
+};
+%inline %{
+	qpol_filename_trans_t *qpol_filename_trans_from_void(void *x) {
+		return (qpol_filename_trans_t*)x;
 	};
 %}
 // vim:ft=c noexpandtab
