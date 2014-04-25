@@ -139,6 +139,7 @@ proc Apol_TE::open {ppath} {
     set vals(cp:classes) [Apol_Class_Perms::getClasses]
     set enabled(cp:classes) 1
     set enabled(cp:perms) 1
+    set vals(ta:use_filename) 0
 }
 
 proc Apol_TE::close {} {
@@ -625,7 +626,8 @@ proc Apol_TE::_maybe_enable_filename {col name1 name2 op} {
             break
         }
     }
-    if {$typerule_set} {
+
+    if {$typerule_set && [ApolTop::is_capable "filename_trans"]} {
         set enabled(ta:use_filename) 1
     } else {
         set enabled(ta:use_filename) 0

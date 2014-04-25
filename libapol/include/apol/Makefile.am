@@ -9,6 +9,7 @@ apol_HEADERS = \
 	condrule-query.h \
 	constraint-query.h \
 	context-query.h \
+	default-object-query.h \
 	domain-trans-analysis.h \
 	fscon-query.h \
 	infoflow-analysis.h \

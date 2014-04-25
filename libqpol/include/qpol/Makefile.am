@@ -7,6 +7,7 @@ qpol_HEADERS = \
 	cond_query.h \
 	constraint_query.h \
 	context_query.h \
+	default_object_query.h \
 	fs_use_query.h \
 	genfscon_query.h \
 	isid_query.h \

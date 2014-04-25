@@ -131,7 +131,11 @@ extern char *xgetcwd(void);
 /* Arrange to make lstat calls go through the wrapper function
    on systems with an lstat function that does not dereference symlinks
    that are specified with a trailing slash.  */
-#if ! _LIBC && ! LSTAT_FOLLOWS_SLASHED_SYMLINK
+/* If this is used on Linux (Fedora) when a sym link or file is broken,
+   the file context function will hang forever:
+       #if ! _LIBC && ! LSTAT_FOLLOWS_SLASHED_SYMLINK
+   Therefore changed to this so uses Linux lstat function. */
+#if _LIBC && ! LSTAT_FOLLOWS_SLASHED_SYMLINK
 int rpl_lstat(const char *, struct stat *);
 # undef lstat
 # define lstat(Name, Stat_buf) rpl_lstat(Name, Stat_buf)

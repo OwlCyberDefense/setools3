@@ -43,7 +43,7 @@ int apol_typebounds_get_by_query(const apol_policy_t * p, apol_typebounds_query_
 {
 	qpol_iterator_t *iter;
 	int retval = -1;
-	int compval = 6;
+
 	*v = NULL;
 	if (qpol_policy_get_typebounds_iter(p->p, &iter) < 0) {
 		return -1;
@@ -113,7 +113,7 @@ int apol_rolebounds_get_by_query(const apol_policy_t * p, apol_rolebounds_query_
 {
 	qpol_iterator_t *iter;
 	int retval = -1;
-	int compval = 6;
+
 	*v = NULL;
 	if (qpol_policy_get_rolebounds_iter(p->p, &iter) < 0) {
 		return -1;
@@ -169,7 +169,7 @@ int apol_userbounds_get_by_query(const apol_policy_t * p, apol_userbounds_query_
 {
 	qpol_iterator_t *iter;
 	int retval = -1;
-	int compval = 6;
+
 	*v = NULL;
 	if (qpol_policy_get_userbounds_iter(p->p, &iter) < 0) {
 		return -1;

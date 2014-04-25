@@ -21,6 +21,7 @@ libqpol_a_SOURCES = \
 	cond_query.c \
 	constraint_query.c \
 	context_query.c \
+	default_object_query.c \
 	expand.c \
 	expand.h \
 	fs_use_query.c \

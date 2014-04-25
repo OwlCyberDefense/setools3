@@ -326,7 +326,14 @@ typedef enum qpol_capability
 	QPOL_CAP_MODULES,
 	QPOL_CAP_RULES_LOADED,
 	QPOL_CAP_SOURCE,
-	QPOL_CAP_NEVERALLOW
+	QPOL_CAP_NEVERALLOW,
+	QPOL_CAP_POLCAPS,
+	QPOL_CAP_BOUNDS,
+	QPOL_CAP_DEFAULT_OBJECTS,
+	QPOL_CAP_DEFAULT_TYPE,
+	QPOL_CAP_PERMISSIVE,
+	QPOL_CAP_FILENAME_TRANS,
+	QPOL_CAP_ROLETRANS
 } qpol_capability_e;
 
 %extend qpol_policy_t {
@@ -3165,6 +3172,78 @@ typedef struct qpol_userbounds {} qpol_userbounds_t;
 %inline %{
 	qpol_userbounds_t *qpol_userbounds_from_void(void *x) {
 		return (qpol_userbounds_t*)x;
+	};
+%}
+
+/* qpol default_object */
+typedef struct qpol_default_object {} qpol_default_object_t;
+%extend qpol_default_object_t {
+	qpol_default_object() {
+		BEGIN_EXCEPTION
+		SWIG_exception(SWIG_RuntimeError, "Cannot directly create qpol_default_object_t objects");
+		END_EXCEPTION
+	fail:
+		return NULL;
+	};
+	~qpol_default_object() {
+		/* no op */
+		return;
+	};
+	const char *get_class(qpol_policy_t *p) {
+		const char *name;
+		BEGIN_EXCEPTION
+		if (qpol_default_object_get_class(p, self, &name)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class name");
+		}
+		END_EXCEPTION
+	fail:
+		return name;
+	};
+	const char *get_user_default(qpol_policy_t *p) {
+		const char *value;
+		BEGIN_EXCEPTION
+		if (qpol_default_object_get_user_default(p, self, &value)) {
+			SWIG_exception(SWIG_ValueError, "Could not get user default");
+		}
+		END_EXCEPTION
+	fail:
+		return value;
+	};
+	const char *get_role_default(qpol_policy_t *p) {
+		const char *value;
+		BEGIN_EXCEPTION
+		if (qpol_default_object_get_role_default(p, self, &value)) {
+			SWIG_exception(SWIG_ValueError, "Could not get role default");
+		}
+		END_EXCEPTION
+	fail:
+		return value;
+	};
+	const char *get_type_default(qpol_policy_t *p) {
+		const char *value;
+		BEGIN_EXCEPTION
+		if (qpol_default_object_get_type_default(p, self, &value)) {
+			SWIG_exception(SWIG_ValueError, "Could not get type default");
+		}
+		END_EXCEPTION
+	fail:
+		return value;
+	};
+	const char *get_range_default(qpol_policy_t *p) {
+		const char *value_1;
+		const char *value_2;
+		BEGIN_EXCEPTION
+		if (qpol_default_object_get_range_default(p, self, &value_1, &value_2)) {
+			SWIG_exception(SWIG_ValueError, "Could not get range defaults");
+		}
+		END_EXCEPTION
+	fail:
+		return value_1;
+	};
+};
+%inline %{
+	qpol_default_object_t *qpol_default_object_from_void(void *x) {
+		return (qpol_default_object_t*)x;
 	};
 %}
 // vim:ft=c noexpandtab

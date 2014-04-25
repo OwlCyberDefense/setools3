@@ -479,8 +479,13 @@ int db_create_from_filesystem(sefs_fclist * fclist __attribute__ ((unused)), con
 		struct stat64 sb;
 		if (stat64(path, &sb) == -1)
 		{
-			SEFS_ERR(dbc->_db, "%s", strerror(errno));
-			throw std::bad_alloc();
+			/* If sym link broken/file not found, then ignore as this will allow
+			   the index to be built. Useful when investigating broken systems.
+			   Also see new_ftw.c comment regarding "lstat calls go through the
+			   wrapper function" to stop index hanging on broken files. */
+			link_target[127] = '\0';
+			sb.st_mode = 0;
+			SEFS_WARN(dbc->_db, "Could not stat file: %s - ignoring", path);
 		}
 		if (S_ISLNK(sb.st_mode))
 		{

@@ -2804,6 +2804,36 @@ typedef struct apol_userbounds_query {} apol_userbounds_query_t;
 	};
 };
 
+/* apol default_object query */
+typedef struct apol_default_object_query {} apol_default_object_query_t;
+%extend apol_default_object_query_t {
+	apol_default_object_query() {
+		apol_default_object_query_t *arq;
+		BEGIN_EXCEPTION
+		arq = apol_default_object_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return arq;
+	};
+	~apol_default_object_query() {
+		apol_default_object_query_destroy(&self);
+	};
+	%newobject run(apol_policy_t*);
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		BEGIN_EXCEPTION
+		if (apol_default_object_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run default object query");
+		}
+		END_EXCEPTION
+	fail:
+		return v;
+	};
+};
+
 /* domain transition analysis */
 #define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01
 #define APOL_DOMAIN_TRANS_DIRECTION_REVERSE 0x02

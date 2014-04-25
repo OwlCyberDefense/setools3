@@ -35,6 +35,7 @@ EXTRA_DIST = \
 	constraints_tab.tcl \
 	context_dialog.tcl \
 	context_selector.tcl \
+	default_objects_tab.tcl \
 	directflow_module.tcl \
 	domaintrans_module.tcl \
 	file_contexts_tab.tcl \
@@ -45,6 +46,7 @@ EXTRA_DIST = \
 	initial_sids_tab.tcl \
 	level_dialog.tcl \
 	mls_tab.tcl \
+	namespaces_tab.tcl \
 	netcontexts_tab.tcl \
 	open_policy_dialog.tcl \
 	perms_map.tcl \
