@@ -570,6 +570,11 @@ typedef struct apol_policy {} apol_policy_t;
 	int get_policy_type() {
 		return apol_policy_get_policy_type(self);
 	};
+
+	int get_policy_handle_unknown() {
+		return apol_policy_get_policy_handle_unknown(self);
+	};
+
 	qpol_policy_t *get_qpol() {
 		return apol_policy_get_qpol(self);
 	};
@@ -2608,6 +2613,95 @@ typedef struct apol_filename_trans_query {} apol_filename_trans_query_t;
 };
 %newobject apol_filename_trans_render(apol_policy_t*, qpol_filename_trans_t*);
 char *apol_filename_trans_render(apol_policy_t * policy, qpol_filename_trans_t * rule);
+
+/* apol permissive query */
+typedef struct apol_permissive_query {} apol_permissive_query_t;
+%extend apol_permissive_query_t {
+	apol_permissive_query() {
+		apol_permissive_query_t *arq;
+		BEGIN_EXCEPTION
+		arq = apol_permissive_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return arq;
+	};
+	~apol_permissive_query() {
+		apol_permissive_query_destroy(&self);
+	};
+	%newobject run(apol_policy_t*);
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		BEGIN_EXCEPTION
+		if (apol_permissive_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run permissive query");
+		}
+		END_EXCEPTION
+	fail:
+		return v;
+	};
+
+	void set_name(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
+		if (apol_permissive_query_set_name(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_permissive_query_set_regex(p, self, regex);
+	};
+};
+
+/* apol polcap query */
+typedef struct apol_polcap_query {} apol_polcap_query_t;
+%extend apol_polcap_query_t {
+	apol_polcap_query() {
+		apol_polcap_query_t *arq;
+		BEGIN_EXCEPTION
+		arq = apol_polcap_query_create();
+		if (!arq) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return arq;
+	};
+	~apol_polcap_query() {
+		apol_polcap_query_destroy(&self);
+	};
+	%newobject run(apol_policy_t*);
+	apol_vector_t *run(apol_policy_t *p) {
+		apol_vector_t *v;
+		BEGIN_EXCEPTION
+		if (apol_polcap_get_by_query(p, self, &v)) {
+			SWIG_exception(SWIG_RuntimeError, "Could not run polcap query");
+		}
+		END_EXCEPTION
+	fail:
+		return v;
+	};
+
+	void set_name(apol_policy_t *p, char *name) {
+		BEGIN_EXCEPTION
+		if (apol_polcap_query_set_name(p, self, name)) {
+			SWIG_exception(SWIG_MemoryError, "Out of memory");
+		}
+		END_EXCEPTION
+	fail:
+		return;
+	};
+
+	void set_regex(apol_policy_t *p, int regex) {
+		apol_polcap_query_set_regex(p, self, regex);
+	};
+};
+
 
 /* domain transition analysis */
 #define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01

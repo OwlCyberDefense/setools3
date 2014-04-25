@@ -91,6 +91,15 @@ extern "C"
 	extern int apol_policy_get_policy_type(const apol_policy_t * policy);
 
 /**
+ * Given a policy, return the handle_unknown flag. 
+ *
+ * @param policy Policy to check.
+ *
+ * @return The policy handle_unknown flag, or < 0 upon error.
+ */
+	extern int apol_policy_get_policy_handle_unknown(const apol_policy_t * policy);
+
+/**
  * Given a policy, return a pointer to the underlying qpol_policy.
  * This is needed, for example, to access details of particulary qpol
  * components.

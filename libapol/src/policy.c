@@ -155,6 +155,15 @@ int apol_policy_get_policy_type(const apol_policy_t * policy)
 	return policy->policy_type;
 }
 
+int apol_policy_get_policy_handle_unknown(const apol_policy_t * p)
+{
+	unsigned int handle_unknown;
+	if (qpol_policy_get_policy_handle_unknown(p->p, &handle_unknown) < 0) {
+		return -1;
+	}
+	return handle_unknown;
+}
+
 qpol_policy_t *apol_policy_get_qpol(const apol_policy_t * policy)
 {
 	if (policy == NULL) {

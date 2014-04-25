@@ -1466,6 +1466,25 @@ int qpol_policy_get_policy_version(const qpol_policy_t * policy, unsigned int *v
 	return STATUS_SUCCESS;
 }
 
+int qpol_policy_get_policy_handle_unknown(const qpol_policy_t * policy, unsigned int *handle_unknown)
+{
+	policydb_t *db;
+
+	if (handle_unknown != NULL)
+		*handle_unknown = 0;
+
+	if (policy == NULL || handle_unknown == NULL) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p->p;
+	*handle_unknown = db->handle_unknown;
+
+	return STATUS_SUCCESS;
+}
+
 int qpol_policy_get_type(const qpol_policy_t * policy, int *type)
 {
 	if (!policy || !type) {
