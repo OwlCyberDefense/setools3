@@ -3,6 +3,8 @@
  *
  * This file is based upon checkpolicy/policy_parse.y from NSA's SVN
  * repository.  It has been modified to support older policy formats.
+ * The older format just seems to be FSUSEPSID support (see fs_use_def
+ * entry.
  */
 
 /*
@@ -35,6 +37,7 @@
 /* FLASK */
 
 %{
+/* Add for SETools */
 #include <config.h>
 
 #include <sys/types.h>
@@ -55,12 +58,16 @@
 #include <sepol/policydb/conditional.h>
 #include <sepol/policydb/flask.h>
 #include <sepol/policydb/hierarchy.h>
+/* Add for SETools libqpol */
 #ifdef HAVE_SEPOL_POLICYCAPS
 #include <sepol/policydb/polcaps.h>
 #endif
 
 #include "queue.h"
+
+/* #include "checkpolicy.h" - Remove for setools and replace with: */
 #include <qpol/policy.h>
+
 #include "module_compiler.h"
 #include "policy_define.h"
 
@@ -74,6 +81,7 @@ extern int yyerror(char *msg);
 
 typedef int (* require_func_t)();
 
+/* Add for SETools libqpol */
 /* redefine input so we can read from a string */
 /* borrowed from O'Reilly lex and yacc pg 157 */
 extern char qpol_src_input[];
@@ -107,6 +115,8 @@ extern char *qpol_src_inputlim;/* end of data */
 %token INHERITS
 %token SID
 %token ROLE
+%token ROLEATTRIBUTE
+%token ATTRIBUTE_ROLE
 %token ROLES
 %token TYPEALIAS
 %token TYPEATTRIBUTE
@@ -116,6 +126,7 @@ extern char *qpol_src_inputlim;/* end of data */
 %token ALIAS
 %token ATTRIBUTE
 %token BOOL
+%token TUNABLE
 %token IF
 %token ELSE
 %token TYPE_TRANSITION
@@ -156,6 +167,9 @@ extern char *qpol_src_inputlim;/* end of data */
 %token MODULE VERSION_IDENTIFIER REQUIRE OPTIONAL
 %token POLICYCAP
 %token PERMISSIVE
+%token FILESYSTEM
+%token DEFAULT_USER DEFAULT_ROLE DEFAULT_TYPE DEFAULT_RANGE
+%token LOW_HIGH LOW HIGH
 
 %left OR
 %left XOR
@@ -170,7 +184,7 @@ base_policy             : { if (define_policy(pass, 0) == -1) return -1; }
                           classes initial_sids access_vectors
                           { if (pass == 1) { if (policydb_index_classes(policydbp)) return -1; }
                             else if (pass == 2) { if (policydb_index_others(NULL, policydbp, 0)) return -1; }}
-			  opt_mls te_rbac users opt_constraints 
+			  opt_default_rules opt_mls te_rbac users opt_constraints 
                          { if (pass == 1) { if (policydb_index_bools(policydbp)) return -1;}
 			   else if (pass == 2) { if (policydb_index_others(NULL, policydbp, 0)) return -1;}}
 			  initial_sid_contexts opt_fs_contexts opt_fs_uses opt_genfs_contexts net_contexts opt_dev_contexts
@@ -208,6 +222,46 @@ av_perms_def		: CLASS identifier '{' identifier_list '}'
                         | CLASS identifier INHERITS identifier '{' identifier_list '}'
 			{if (define_av_perms(TRUE)) return -1;}
 			;
+opt_default_rules	: default_rules
+			|
+			;
+default_rules		: default_user_def
+			| default_role_def
+			| default_type_def
+			| default_range_def
+			| default_rules default_user_def
+			| default_rules default_role_def
+			| default_rules default_type_def
+			| default_rules default_range_def
+			;
+default_user_def	: DEFAULT_USER names SOURCE ';'
+			{if (define_default_user(DEFAULT_SOURCE)) return -1; }
+			| DEFAULT_USER names TARGET ';'
+			{if (define_default_user(DEFAULT_TARGET)) return -1; }
+			;
+default_role_def	: DEFAULT_ROLE names SOURCE ';'
+			{if (define_default_role(DEFAULT_SOURCE)) return -1; }
+			| DEFAULT_ROLE names TARGET ';'
+			{if (define_default_role(DEFAULT_TARGET)) return -1; }
+			;
+default_type_def	: DEFAULT_TYPE names SOURCE ';'
+			{if (define_default_type(DEFAULT_SOURCE)) return -1; }
+			| DEFAULT_TYPE names TARGET ';'
+			{if (define_default_type(DEFAULT_TARGET)) return -1; }
+			;
+default_range_def	: DEFAULT_RANGE names SOURCE LOW ';'
+			{if (define_default_range(DEFAULT_SOURCE_LOW)) return -1; }
+			| DEFAULT_RANGE names SOURCE HIGH ';'
+			{if (define_default_range(DEFAULT_SOURCE_HIGH)) return -1; }
+			| DEFAULT_RANGE names SOURCE LOW_HIGH ';'
+			{if (define_default_range(DEFAULT_SOURCE_LOW_HIGH)) return -1; }
+			| DEFAULT_RANGE names TARGET LOW ';'
+			{if (define_default_range(DEFAULT_TARGET_LOW)) return -1; }
+			| DEFAULT_RANGE names TARGET HIGH ';'
+			{if (define_default_range(DEFAULT_TARGET_HIGH)) return -1; }
+			| DEFAULT_RANGE names TARGET LOW_HIGH ';'
+			{if (define_default_range(DEFAULT_TARGET_LOW_HIGH)) return -1; }
+			;
 opt_mls			: mls
                         | 
 			;
@@ -216,8 +270,14 @@ mls			: sensitivities dominance opt_categories levels mlspolicy
 sensitivities	 	: sensitivity_def 
 			| sensitivities sensitivity_def
 			;
-/* Need to call define_mls here, as we are working with files */
-/* only, not command line options */
+/*sensitivity_def		: SENSITIVITY identifier alias_def ';'
+			{if (define_sens()) return -1;}
+			| SENSITIVITY identifier ';'
+			{if (define_sens()) return -1;}
+	                ;
+The above has been replaced by: */
+/* Needed for SETools to call define_mls here, as we are working */
+/* with files only, not command line options */
 sensitivity_def		: SENSITIVITY identifier alias_def ';'
 			{if (define_mls() | define_sens()) return -1;}
 			| SENSITIVITY identifier ';'
@@ -271,10 +331,13 @@ te_rbac_decl		: te_decl
 			| policycap_def
 			| ';'
                         ;
-rbac_decl		: role_type_def
+rbac_decl		: attribute_role_def
+			| role_type_def
                         | role_dominance
                         | role_trans_def
  			| role_allow_def
+			| roleattribute_def
+			| role_attr_def
 			;
 te_decl			: attribute_def
                         | type_def
@@ -282,6 +345,7 @@ te_decl			: attribute_def
                         | typeattribute_def
                         | typebounds_def
                         | bool_def
+			| tunable_def
                         | transition_def
                         | range_trans_def
                         | te_avtab_def
@@ -308,8 +372,11 @@ opt_attr_list           : ',' id_comma_list
 			| 
 			;
 bool_def                : BOOL identifier bool_val ';'
-                        {if (define_bool()) return -1;}
+                        { if (define_bool_tunable(0)) return -1; }
                         ;
+tunable_def		: TUNABLE identifier bool_val ';'
+			{ if (define_bool_tunable(1)) return -1; }
+			;
 bool_val                : CTRUE
  			{ if (insert_id("T",0)) return -1; }
                         | CFALSE
@@ -364,7 +431,7 @@ cond_rule_def           : cond_transition_def
 cond_transition_def	: TYPE_TRANSITION names names ':' names identifier filename ';'
                         { $$ = define_cond_filename_trans() ;
                           if ($$ == COND_ERR) return -1;}
-                        | TYPE_TRANSITION names names ':' names identifier ';'
+			| TYPE_TRANSITION names names ':' names identifier ';'
                         { $$ = define_cond_compute_type(AVRULE_TRANSITION) ;
                           if ($$ == COND_ERR) return -1;}
                         | TYPE_MEMBER names names ':' names identifier ';'
@@ -399,6 +466,7 @@ cond_dontaudit_def	: DONTAUDIT names names ':' names names ';'
 			{ $$ = define_cond_te_avtab(AVRULE_DONTAUDIT);
                           if ($$ == COND_ERR) return -1; }
 		        ;
+			;
 transition_def		: TYPE_TRANSITION  names names ':' names identifier filename ';'
 			{if (define_filename_trans()) return -1; }
 			| TYPE_TRANSITION names names ':' names identifier ';'
@@ -434,15 +502,21 @@ dontaudit_def		: DONTAUDIT names names ':' names names ';'
 neverallow_def		: NEVERALLOW names names ':' names names  ';'
 			{if (define_te_avtab(AVRULE_NEVERALLOW)) return -1; }
 		        ;
+attribute_role_def	: ATTRIBUTE_ROLE identifier ';'
+			{if (define_attrib_role()) return -1; }
+		        ;
 role_type_def		: ROLE identifier TYPES names ';'
 			{if (define_role_types()) return -1;}
- 			| ROLE identifier';'
- 			{if (define_role_types()) return -1;}
+			;
+role_attr_def		: ROLE identifier opt_attr_list ';'
+ 			{if (define_role_attr()) return -1;}
                         ;
 role_dominance		: DOMINANCE '{' roles '}'
 			;
 role_trans_def		: ROLE_TRANSITION names names identifier ';'
-			{if (define_role_trans()) return -1; }
+			{if (define_role_trans(0)) return -1; }
+			| ROLE_TRANSITION names names ':' names identifier ';'
+			{if (define_role_trans(1)) return -1;}
 			;
 role_allow_def		: ALLOW names names ';'
 			{if (define_role_allow()) return -1; }
@@ -456,6 +530,9 @@ role_def		: ROLE identifier_push ';'
                         {$$ = define_role_dom(NULL); if ($$ == 0) return -1;}
 			| ROLE identifier_push '{' roles '}'
                         {$$ = define_role_dom((role_datum_t*)$4); if ($$ == 0) return -1;}
+			;
+roleattribute_def	: ROLEATTRIBUTE identifier id_comma_list ';'
+			{if (define_roleattribute()) return -1;}
 			;
 opt_constraints         : constraints
                         |
@@ -662,7 +739,7 @@ opt_fs_uses             : fs_uses
 fs_uses                 : fs_use_def
                         | fs_uses fs_use_def
                         ;
-fs_use_def              : FSUSEXATTR identifier security_context_def ';'
+fs_use_def              : FSUSEXATTR filesystem security_context_def ';'
                         {if (define_fs_use(SECURITY_FS_USE_XATTR)) return -1;}
                         | FSUSETASK identifier security_context_def ';'
                         {if (define_fs_use(SECURITY_FS_USE_TASK)) return -1;}
@@ -677,11 +754,11 @@ opt_genfs_contexts      : genfs_contexts
 genfs_contexts          : genfs_context_def
                         | genfs_contexts genfs_context_def
                         ;
-genfs_context_def	: GENFSCON identifier path '-' identifier security_context_def
+genfs_context_def	: GENFSCON filesystem path '-' identifier security_context_def
 			{if (define_genfs_context(1)) return -1;}
-			| GENFSCON identifier path '-' '-' {insert_id("-", 0);} security_context_def
+			| GENFSCON filesystem path '-' '-' {insert_id("-", 0);} security_context_def
 			{if (define_genfs_context(1)) return -1;}
-                        | GENFSCON identifier path security_context_def
+                        | GENFSCON filesystem path security_context_def
 			{if (define_genfs_context(0)) return -1;}
 			;
 ipv4_addr_def		: IPV4_ADDR
@@ -755,6 +832,11 @@ nested_id_element       : identifier | '-' { if (insert_id("-", 0)) return -1; }
 identifier		: IDENTIFIER
 			{ if (insert_id(yytext,0)) return -1; }
 			;
+filesystem		: FILESYSTEM
+                        { if (insert_id(yytext,0)) return -1; }
+                        | IDENTIFIER
+			{ if (insert_id(yytext,0)) return -1; }
+                        ;
 path     		: PATH
 			{ if (insert_id(yytext,0)) return -1; }
 			;
@@ -785,6 +867,8 @@ module_def              : MODULE identifier version_identifier ';'
                         ;
 version_identifier      : VERSION_IDENTIFIER
                         { if (insert_id(yytext,0)) return -1; }
+			| number
+                        { if (insert_id(yytext,0)) return -1; }
                         | ipv4_addr_def /* version can look like ipv4 address */
                         ;
 avrules_block           : avrule_decls avrule_user_defs
@@ -813,8 +897,10 @@ require_class           : CLASS identifier names
 require_decl_def        : ROLE        { $$ = require_role; }
                         | TYPE        { $$ = require_type; }
                         | ATTRIBUTE   { $$ = require_attribute; }
+                        | ATTRIBUTE_ROLE   { $$ = require_attribute_role; }
                         | USER        { $$ = require_user; }
                         | BOOL        { $$ = require_bool; }
+			| TUNABLE     { $$ = require_tunable; }
                         | SENSITIVITY { $$ = require_sens; }
                         | CATEGORY    { $$ = require_cat; }
                         ;

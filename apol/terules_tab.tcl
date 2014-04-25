@@ -661,7 +661,7 @@ proc Apol_TE::Get_FileNames {} {
     for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
         for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
             set q [qpol_filename_trans_from_void [$v get_element $i]]
-            lappend filenames [$q get_trans_filename $::ApolTop::qpolicy]
+            lappend filenames [$q get_filename $::ApolTop::qpolicy]
         }
     }
     return $filenames
@@ -682,7 +682,7 @@ proc Apol_TE::appendFilenameSearchResultRules {path indent rule_list cast filena
 
     for {set i 0} {$i < [$rule_list get_size]} {incr i} {
         set rule [$cast [$rule_list get_element $i]]
-        if {$filename == "" || [$rule get_trans_filename $::ApolTop::qpolicy] == $filename} {
+        if {$filename == "" || [$rule get_filename $::ApolTop::qpolicy] == $filename} {
             $path.tb insert end [string repeat " " $indent]
             $path.tb insert end [apol_filename_trans_render $::ApolTop::policy $rule]
             incr num_rules

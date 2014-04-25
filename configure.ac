@@ -548,6 +548,36 @@ int main () {
     fi
 fi
 
+dnl check for constraint names, added in libsepol version ??
+AC_CHECK_DECL([POLICYDB_VERSION_CONSTRAINT_NAMES],
+                sepol_new_constraint_names="yes",
+                sepol_new_constraint_names="no",
+                [#include <sepol/policydb/policydb.h>])
+
+dnl check for default object type, added in libsepol version ??
+AC_CHECK_DECL([POLICYDB_VERSION_DEFAULT_TYPE],
+                sepol_new_default_type="yes",
+                sepol_new_default_type="no",
+                [#include <sepol/policydb/policydb.h>])
+
+dnl check for default object user/role/range added in libsepol version ??
+AC_CHECK_DECL([POLICYDB_VERSION_NEW_OBJECT_DEFAULTS],
+                sepol_new_object_defaults="yes",
+                sepol_new_object_defaults="no",
+                [#include <sepol/policydb/policydb.h>])
+
+dnl check for filename trans rule, added in libsepol version ??
+AC_CHECK_DECL([POLICYDB_VERSION_FILENAME_TRANS],
+                sepol_new_filename_trans="yes",
+                sepol_new_filename_trans="no",
+                [#include <sepol/policydb/policydb.h>])
+
+dnl check for user/role/type bounds, added in libsepol version ??
+AC_CHECK_DECL([POLICYDB_VERSION_BOUNDARY],
+                sepol_new_bounds="yes",
+                sepol_new_bounds="no",
+                [#include <sepol/policydb/policydb.h>])
+
 dnl check for permissive types, added in libsepol version 2.0.26
 AC_CHECK_DECL([TYPE_FLAGS_PERMISSIVE],
                 sepol_new_permissive_types="yes",
@@ -854,6 +884,21 @@ if test ${sepol_new_avtab} == "yes"; then
 fi
 if test ${sepol_new_permissive_types} == "yes"; then
    AC_DEFINE(HAVE_SEPOL_PERMISSIVE_TYPES, 1, [if types can be marked as permissive])
+fi
+if test ${sepol_new_constraint_names} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_CONSTRAINT_NAMES, 1, [if source policy types/attributes are present])
+fi
+if test ${sepol_new_default_type} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_DEFAULT_TYPE, 1, [if default_user rule present])
+fi
+if test ${sepol_new_object_defaults} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_NEW_OBJECT_DEFAULTS, 1, [if default_user/role/range rules are present])
+fi
+if test ${sepol_new_filename_trans} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_FILENAME_TRANS, 1, [if the filename transition rule present])
+fi
+if test ${sepol_new_bounds} == "yes"; then
+   AC_DEFINE(HAVE_SEPOL_BOUNDARY, 1, [if bounds rules are present])
 fi
 if test ${sepol_new_user_role_mapping} == "yes"; then
    AC_DEFINE(HAVE_SEPOL_USER_ROLE_MAPPING, 1, [if users and roles are mapped during policy expansion])

@@ -412,6 +412,45 @@ static int infer_policy_version(qpol_policy_t * policy)
 	}
 	qpol_iterator_destroy(&iter);
 
+/* Check each version change from 29 to 24 */
+/* If this is available then just set version 29 */
+#ifdef HAVE_SEPOL_CONSTRAINT_NAMES
+	db->policyvers = 29;
+	return STATUS_SUCCESS;
+#endif
+
+/*
+ * These will remove the rules from policy_define.c if libsepol
+ * does not have the support listed in policydb.h. The earlier code
+ * checked for at least one rule before enabling - this patch does not
+ * as if in policydb.h then must be capable of being built.
+ */
+#ifdef HAVE_SEPOL_DEFAULT_TYPE
+	db->policyvers = 28;
+	return STATUS_SUCCESS;
+#endif
+
+#ifdef HAVE_SEPOL_NEW_OBJECT_DEFAULTS
+	db->policyvers = 27;
+	return STATUS_SUCCESS;
+#endif
+
+/* This seems to be in place already ??
+#ifdef HAVE_SEPOL_ROLETRANS
+	db->policyvers = 26;
+	return STATUS_SUCCESS;
+#endif */
+
+#ifdef HAVE_SEPOL_FILENAME_TRANS
+	db->policyvers = 25;
+	return STATUS_SUCCESS;
+#endif
+
+#ifdef HAVE_SEPOL_BOUNDARY
+	db->policyvers = 24;
+	return STATUS_SUCCESS;
+#endif
+
 #if defined(HAVE_SEPOL_PERMISSIVE_TYPES) || defined(HAVE_SEPOL_POLICYCAPS)
 	ebitmap_node_t *node = NULL;
 	unsigned int i = 0;

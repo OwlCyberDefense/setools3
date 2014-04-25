@@ -3002,11 +3002,11 @@ typedef struct qpol_filename_trans {} qpol_filename_trans_t;
 	fail:
 		return t;
 	};
-	const char *get_trans_filename(qpol_policy_t *p) {
+	const char *get_filename(qpol_policy_t *p) {
 		const char *name;
 		BEGIN_EXCEPTION
 		if (qpol_filename_trans_get_filename(p, self, &name)) {
-			SWIG_exception(SWIG_ValueError, "Could not get file for filename_transition rule");
+			SWIG_exception(SWIG_ValueError, "Could not get file for filename transition rule");
 		}
 		END_EXCEPTION
 	fail:
@@ -3230,15 +3230,14 @@ typedef struct qpol_default_object {} qpol_default_object_t;
 		return value;
 	};
 	const char *get_range_default(qpol_policy_t *p) {
-		const char *value_1;
-		const char *value_2;
+		const char *value;
 		BEGIN_EXCEPTION
-		if (qpol_default_object_get_range_default(p, self, &value_1, &value_2)) {
+		if (qpol_default_object_get_range_default(p, self, &value)) {
 			SWIG_exception(SWIG_ValueError, "Could not get range defaults");
 		}
 		END_EXCEPTION
 	fail:
-		return value_1;
+		return value;
 	};
 };
 %inline %{

@@ -3,6 +3,8 @@
  *
  * This file is based upon checkpolicy/policy_scan.l fram NSA's SVN
  * repository.  It has been modified to support older policy formats.
+ * The older format just seems to be FSUSEPSID support (see fs_use_psid
+ * entry.
  *
  * Author : Stephen Smalley, <sds@epoch.ncsc.mil> 
  *
@@ -22,6 +24,7 @@
 
 /* FLASK */
 
+/* Required for SETools libqpol services */
 %{
 #undef YY_INPUT
 #define YY_INPUT(b, r, ms) (r = qpol_src_yyinput(b, ms))
@@ -35,7 +38,12 @@
 
 typedef int (* require_func_t)();
 
+/* For SETools libqpol services leave this as policy_parse.h */
+/* #ifdef ANDROID */
 #include "policy_parse.h"
+/*#else
+#include "y.tab.h"
+#endif */
 
 static char linebuf[2][255];
 static unsigned int lno = 0;
@@ -50,17 +58,16 @@ unsigned long policydb_lineno = 1;
 
 unsigned int policydb_errors = 0;
 
+/* These are required for SETools libqpol services */
 /* redefine input so we can read from a string */
 /* borrowed from O'Reilly lex and yacc pg 157 */
 extern char qpol_src_input[];
 extern char *qpol_src_inputptr;/* current position in myinput */
 extern char *qpol_src_inputlim;/* end of data */
 int qpol_src_yyinput(char *buf, int max_size);
-
 %}
 
-%option nounput
-%option noyywrap
+%option noinput nounput noyywrap
 
 %array
 letter  [A-Za-z]
@@ -93,6 +100,10 @@ ROLE |
 role				{ return(ROLE); }
 ROLES |
 roles				{ return(ROLES); }
+ROLEATTRIBUTE |
+roleattribute			{ return(ROLEATTRIBUTE);}
+ATTRIBUTE_ROLE |
+attribute_role			{ return(ATTRIBUTE_ROLE);}
 TYPES |
 types				{ return(TYPES); }
 TYPEALIAS |
@@ -105,6 +116,8 @@ TYPE |
 type				{ return(TYPE); }
 BOOL |
 bool                            { return(BOOL); }
+TUNABLE |
+tunable				{ return(TUNABLE); }
 IF |
 if				{ return(IF); }
 ELSE |
@@ -234,9 +247,24 @@ policycap |
 POLICYCAP			{ return(POLICYCAP); }
 permissive |
 PERMISSIVE			{ return(PERMISSIVE); }
+default_user |
+DEFAULT_USER			{ return(DEFAULT_USER); }
+default_role |
+DEFAULT_ROLE			{ return(DEFAULT_ROLE); }
+default_type |
+DEFAULT_TYPE			{ return(DEFAULT_TYPE); }
+default_range |
+DEFAULT_RANGE			{ return(DEFAULT_RANGE); }
+low-high |
+LOW-HIGH			{ return(LOW_HIGH); }
+high |
+HIGH				{ return(HIGH); }
+low |
+LOW				{ return(LOW); }
 "/"({alnum}|[_\.\-/])*	        { return(PATH); }
-\"({alnum}|[_\.\-])+\"			{ return(FILENAME); }
+\"({alnum}|[_\.\-\+\~\: ])+\"	{ return(FILENAME); }
 {letter}({alnum}|[_\-])*([\.]?({alnum}|[_\-]))*	{ return(IDENTIFIER); }
+{alnum}*{letter}{alnum}*        { return(FILESYSTEM); }
 {digit}+|0x{hexval}+            { return(NUMBER); }
 {digit}{1,3}(\.{digit}{1,3}){3}    { return(IPV4_ADDR); }
 {hexval}{0,4}":"{hexval}{0,4}":"({hexval}|[:.])*  { return(IPV6_ADDR); }
@@ -304,6 +332,7 @@ void set_source_file(const char *name)
 	source_file[sizeof(source_file)-1] = '\0';
 }
 
+/* Required for SETools libqpol services */
 int qpol_src_yyinput(char *buf, int max_size)
 {
 	int n = max_size < (qpol_src_inputlim - qpol_src_inputptr) ? max_size : (qpol_src_inputlim - qpol_src_inputptr);
@@ -315,6 +344,7 @@ int qpol_src_yyinput(char *buf, int max_size)
 	return n;
 }
 
+/* Required for SETools libqpol services */
 void init_scanner(void)
 {
 	yy_flush_buffer(YY_CURRENT_BUFFER);
