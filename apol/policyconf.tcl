@@ -63,7 +63,9 @@ proc Apol_PolicyConf::open {ppath} {
     $textbox fakedelete 0.0 end
     if {![ApolTop::is_capable "source"]} {
         $textbox fakeinsert end "The currently loaded policy is not a source policy."
+        ApolTop::_toplevel_enable_tabs tag_source disabled
     } else {
+        ApolTop::_toplevel_enable_tabs tag_source normal
         set primary_file [$ppath get_primary]
         if {[catch {::open $primary_file r} f]} {
             $textbox fakeinsert end "$primary_file does not exist or could not be read by the user."

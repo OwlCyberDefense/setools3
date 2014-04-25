@@ -144,22 +144,19 @@ int qpol_default_object_get_type_default(const qpol_policy_t *policy, const qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_default_object_get_range_default(const qpol_policy_t *policy, const qpol_default_object_t * datum, const char **value_1, const char **value_2)
+int qpol_default_object_get_range_default(const qpol_policy_t *policy, const qpol_default_object_t * datum, const char **value)
 {
 	class_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 	
-	if (policy == NULL || datum == NULL || value_1 == NULL || value_2 == NULL) {
-		if (value_1 != NULL)
-			*value_1 = NULL;
-		if (value_2 != NULL)
-			*value_2 = NULL;
+	if (policy == NULL || datum == NULL || value == NULL) {
+		if (value != NULL)
+			*value = NULL;
 		ERR(policy, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	*value_1 = NULL;
-	*value_2 = NULL;
+	*value = NULL;
 
 	/* The range default started in ver 27 */
 	int policy_version;
@@ -171,28 +168,22 @@ int qpol_default_object_get_range_default(const qpol_policy_t *policy, const qpo
 
 	switch (internal_datum->default_range) {
 		case DEFAULT_SOURCE_LOW:
-			*value_1 = "source";
-			*value_2 = "low";
+			*value = "source low";
 			break;
 		case DEFAULT_SOURCE_HIGH:
-			*value_1 = "source";
-			*value_2 = "high";
+			*value = "source high";
 			break;
 		case DEFAULT_SOURCE_LOW_HIGH:
-			*value_1 = "source";
-			*value_2 = "low_high";
+			*value = "source low_high";
 			break;
 		case DEFAULT_TARGET_LOW:
-			*value_1 = "target";
-			*value_2 = "low";
+			*value = "target low";
 			break;
 		case DEFAULT_TARGET_HIGH:
-			*value_1 = "target";
-			*value_2 = "high";
+			*value = "target high";
 			break;
 		case DEFAULT_TARGET_LOW_HIGH:
-			*value_1 = "target";
-			*value_2 = "low_high";
+			*value = "target low_high";
 			break;
 		default:
 			break;

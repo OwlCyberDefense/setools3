@@ -1,3 +1,11 @@
+2014-04-15 Richard Haines <richard_c_haines@btinternet.com>
+
+	* Updates to libqpol to support policy source file expansion
+	  to version 29. Source policies with the filename transition
+	  rule will have their entries expanded twice, this is a bug
+	  in libsepol.
+	  Fixed bug in default_range to now diplay range component.
+
 2014-04-14 Richard Haines <richard_c_haines@btinternet.com>
 
 	* Updates to apol and the libapol/libqpol libraries to support
