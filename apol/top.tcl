@@ -69,13 +69,15 @@ namespace eval ApolTop {
         {Apol_Initial_SIDS components {}}
         {Apol_NetContexts components {}}
         {Apol_FSContexts components {}}
-        {Apol_Polcaps components {}}
+        {Apol_Polcaps components {tag_polcap}}
+        {Apol_Namespaces components {}}
         {Apol_TE rules {tag_query_saveable}}
         {Apol_Cond_Rules rules {tag_conditionals}}
         {Apol_Constraint rules {tag_query_saveable}}
         {Apol_RBAC rules {}}
         {Apol_Range rules {tag_mls}}
-        {Apol_Bounds rules {}}
+        {Apol_Bounds rules {tag_bounds}}
+        {Apol_DefaultObjects rules {tag_default_objects}}
         {Apol_File_Contexts {} {}}
         {Apol_Analysis {} {tag_query_saveable}}
         {Apol_PolicyConf {} {tag_source}}
@@ -112,6 +114,12 @@ proc ApolTop::is_capable {capability} {
         "neverallow" { set cap $::QPOL_CAP_NEVERALLOW }
         "source" { set cap $::QPOL_CAP_SOURCE }
         "syntactic rules" { set cap $::QPOL_CAP_SYN_RULES }
+        "polcap" { set cap $::QPOL_CAP_POLCAPS }
+        "bounds" { set cap $::QPOL_CAP_BOUNDS }
+        "default_objects" { set cap $::QPOL_CAP_DEFAULT_OBJECTS }
+        "default_type" { set cap $::QPOL_CAP_DEFAULT_TYPE }
+        "permissive" { set cap $::QPOL_CAP_PERMISSIVE }
+        "filename_trans" { set cap $::QPOL_CAP_FILENAME_TRANS }
         default { return 0 }
     }
     variable qpolicy
@@ -372,6 +380,15 @@ proc ApolTop::_toplevel_policy_open {ppath} {
     if {![is_capable "source"]} {
         _toplevel_enable_tabs tag_source disabled
     }
+    if {![is_capable "polcap"]} {
+        _toplevel_enable_tabs tag_polcap disabled
+    }
+    if {![is_capable "bounds"]} {
+        _toplevel_enable_tabs tag_bounds disabled
+    }
+    if {![is_capable "default_objects"]} {
+        _toplevel_enable_tabs tag_default_objects disabled
+    }
     _toplevel_tab_switched
 
     variable mainframe
@@ -559,56 +576,93 @@ proc ApolTop::_toplevel_update_stats {} {
         set policy_stats(mlsvalidatetrans) 0
     }
 
-    # Determine number of typebounds statements
-    set q [new_apol_typebounds_query_t]
-    set v [$q run $::ApolTop::policy]
-    $q -acquire
-    $q -delete
-    set counter 0
-    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-        for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-            set q [qpol_typebounds_from_void [$v get_element $i]]
-            set parent [$q get_parent_name $::ApolTop::qpolicy]
-            if {$parent != ""} {
-                set counter [expr $counter + 1]
-            }
-        }
-    }
-    set policy_stats(typebounds) $counter
+    # Determine number of bounds statements
+    set policy_stats(userbounds) 0
+    set policy_stats(rolebounds) 0
+    set policy_stats(typebounds) 0
 
-    # Determine number of rolebounds statements
-    set q [new_apol_rolebounds_query_t]
-    set v [$q run $::ApolTop::policy]
-    $q -acquire
-    $q -delete
-    set counter 0
-    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+    if {[is_capable "bounds"]} {
+        # Determine number of userbounds statements
+        set q [new_apol_userbounds_query_t]
+        set v [$q run $::ApolTop::policy]
+        $q -acquire
+        $q -delete
         for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-            set q [qpol_rolebounds_from_void [$v get_element $i]]
-            set parent [$q get_parent_name $::ApolTop::qpolicy]
-            if {$parent != ""} {
-                set counter [expr $counter + 1]
+            for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+                set q [qpol_userbounds_from_void [$v get_element $i]]
+                set parent [$q get_parent_name $::ApolTop::qpolicy]
+                if {$parent != ""} {
+                    set policy_stats(userbounds) [expr $policy_stats(userbounds) + 1]
+                }
             }
         }
-    }
-    set policy_stats(rolebounds) $counter
 
-    # Determine number of userbounds statements
-    set q [new_apol_userbounds_query_t]
-    set v [$q run $::ApolTop::policy]
-    $q -acquire
-    $q -delete
-    set counter 0
-    for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+        # Determine number of rolebounds statements
+        set q [new_apol_rolebounds_query_t]
+        set v [$q run $::ApolTop::policy]
+        $q -acquire
+        $q -delete
         for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
-            set q [qpol_userbounds_from_void [$v get_element $i]]
-            set parent [$q get_parent_name $::ApolTop::qpolicy]
-            if {$parent != ""} {
-                set counter [expr $counter + 1]
+            for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+                set q [qpol_rolebounds_from_void [$v get_element $i]]
+                set parent [$q get_parent_name $::ApolTop::qpolicy]
+                if {$parent != ""} {
+                    set policy_stats(rolebounds) [expr $policy_stats(rolebounds) + 1]
+                }
+            }
+        }
+
+        # Determine number of typebounds statements
+        set q [new_apol_typebounds_query_t]
+        set v [$q run $::ApolTop::policy]
+        $q -acquire
+        $q -delete
+        for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+            for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+                set q [qpol_typebounds_from_void [$v get_element $i]]
+                set parent [$q get_parent_name $::ApolTop::qpolicy]
+                if {$parent != ""} {
+                    set policy_stats(typebounds) [expr $policy_stats(typebounds) + 1]
+                }
             }
         }
     }
-    set policy_stats(userbounds) $counter
+
+    # Determine number of default_object statements
+    set policy_stats(default_user) 0
+    set policy_stats(default_role) 0
+    set policy_stats(default_type) 0
+    set policy_stats(default_range) 0
+
+    if {[is_capable "default_objects"]} {
+        set q [new_apol_default_object_query_t]
+        set v [$q run $::ApolTop::policy]
+        $q -acquire
+        $q -delete
+        for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+            for {set i 0} {$v != "NULL" && $i < [$v get_size]} {incr i} {
+                set q [qpol_default_object_from_void [$v get_element $i]]
+                set default [$q get_user_default $::ApolTop::qpolicy]
+                if {$default != ""} {
+                    set policy_stats(default_user) [expr $policy_stats(default_user) + 1]
+                }
+                set default [$q get_role_default $::ApolTop::qpolicy]
+                if {$default != ""} {
+                    set policy_stats(default_role) [expr $policy_stats(default_role) + 1]
+                }
+                if {[is_capable "default_type"]} {
+                    set default [$q get_type_default $::ApolTop::qpolicy]
+                    if {$default != ""} {
+                        set policy_stats(default_type) [expr $policy_stats(default_type) + 1]
+                    }
+                }
+                set default [$q get_range_default $::ApolTop::qpolicy]
+                if {$default != ""} {
+                    set policy_stats(default_range) [expr $policy_stats(default_range) + 1]
+                }
+            }
+        }
+    }
 
     set policy_stats_summary ""
     append policy_stats_summary "Classes: $policy_stats(classes)   "
@@ -672,7 +726,9 @@ proc ApolTop::_close_policy {} {
 
     _toplevel_enable_tabs tag_conditionals normal
     _toplevel_enable_tabs tag_mls normal
-    _toplevel_enable_tabs tag_source normal
+    _toplevel_enable_tabs tag_polcap normal
+    _toplevel_enable_tabs tag_bounds normal
+    _toplevel_enable_tabs tag_default_objects normal
 }
 
 proc ApolTop::_exit {} {
@@ -829,6 +885,12 @@ proc ApolTop::_show_policy_summary {} {
         "Number of RBAC Rules" {
             "allows" role_allow
             "role_transitions" role_trans
+        }
+        "Number of Default Object Rules" {
+            "default_user" default_user
+            "default_role" default_role
+            "default_type" default_type
+            "default_range" default_range
         }
     } {
         set ltext "$title:"

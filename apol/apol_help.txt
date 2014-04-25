@@ -29,7 +29,7 @@ not report line numbers when searching monolithic binary polices.
 
 Apol provides compatibility with the current and previous policy
 syntax.  It supports analysis of monolithic policy versions 12 to the
-current version 21 and modular policy versions 5 and 6.
+current version 29 and modular policy versions to 17.
 
 See setools/ChangeLog for a list of new features in this release.  See
 setools/KNOWN_BUGS for a list of current bugs.
@@ -40,7 +40,12 @@ Menus
 Use 'Open' from the File menu to open a valid policy.  The policy may
 be monolithic or be composed of a base linked with multiple modules.
 Only one policy can be open at a time; opening a second policy will
-result in the first being closed.
+result in the first being closed. Note: If the kernel supports reading
+the currently loaded policy, then select "monolithic" and set the
+"Policy filename" path to either:
+    /selinux/policy
+  or
+    /sys/fs/selinux/policy
 
 The Query menu allows the user to save or load a query for a TE Rules
 search or for an analysis module listed on the Analysis tab.  Saving a
@@ -84,6 +89,8 @@ relate the core components of an SELinux policy.
   types.  Alternately, use the "Search using regular expression" box
   to search for types and/or attributes using a POSIX-style regular
   expression.
+
+  Permissive and bound types may also be searched.
 
   Classes/Perms tab
   -----------------
@@ -148,6 +155,23 @@ relate the core components of an SELinux policy.
   ---------------
   Select the FS Contexts tab to search filesystem-based contexts
   (fs_use_ and genfscon statements) defined in the policy.
+
+  Policy Capabilities tab
+  ---------------
+  Select the Policy Capabilities tab to display policy capabilities
+  defined in the policy.
+
+  Policy Namespaces tab
+  ---------------
+  Select the Policy Namespaces tab to display the namespaces defined
+  in the policy. For policies with a single namespace there will be
+  one namespace displayed: "GLOBAL-NS". For policies that can define
+  multiple namespaces (e.g CIL), all namespaces will be displayed
+  including "GLOBAL-NS".
+  If the namespace entry is double clicked then a list of Users, Roles,
+  Types, Attributes, Classes and Booleans applicable to that namespace
+  will be displayed (also if MLS enabled the Sensitivities and
+  Categories will also be shown).
 
 
 Policy Rules tabs
@@ -326,12 +350,17 @@ rules in a policy based on selected search criteria.
 
   Range Transition Rules tab
   --------------------------
-  Select the Range Transition Rules tab to search to search
+  Select the Range Transition Rules tab to search for
   range_transition rules by source and target types and by the MLS
   range.  There are three options when searching for ranges; find
   exact matches to the entered range, find rules that have ranges
   that contain the entered range, or find rules that have ranges 
   within the entered range.
+
+  Bounds Rules tab
+  --------------------------
+  Select the Bounds Rules tab to search for userbound, rolebound or
+  typebound rules by parent or child types.
 
   
 File Contexts tab

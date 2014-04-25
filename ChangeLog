@@ -1,3 +1,29 @@
+2014-04-14 Richard Haines <richard_c_haines@btinternet.com>
+
+	* Updates to apol and the libapol/libqpol libraries to support
+	  new policy statements and rules to version 29 (Note the features
+	  for loading source code (policy.conf etc.) have not been updated
+	  to support the new statements and rules.
+	  These are the enhancements and bug fixes: 
+	* Add permissive type and typebound support to Types tab.
+	* Add new Constraints tab to search all constraint statements.
+	* Add new Bounds tab to search for userbound, rolebound and
+	  typebound statements.
+	* Add new policy capabilities tab.
+	* Add filename type_transition support on TE Rules tab.
+	* Add new Default Object tab to support defaultuser, defaultrole,
+	  defaulttype and defaultrange rules.
+	* Add new Namespaces tab to list CIL namespaces. This will also
+	  show any users, roles, types, classes, booleans, sensitivities
+	  and categories declared in each namespace.
+	* Update Query/Policy Summary page to show the number of new
+	  rules added plus the policy handle_unknown flag.
+	* Fixed File Contexts tab to stop hang when building the fc
+	  index when broken links/files found (libsefs).
+	* Fixed Booleans tab to display CIL namespace booleans.
+	* Updated apol_help.txt to reflect the changes made plus how to
+	  load the running policy.
+
 2014-01-16  Chris PeBenito <cpebenito@tresys.com>
 	* Fix bug preventing sediffx from starting.
 

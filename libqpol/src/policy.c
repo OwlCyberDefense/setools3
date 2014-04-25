@@ -1553,6 +1553,55 @@ int qpol_policy_has_capability(const qpol_policy_t * policy, qpol_capability_e c
 			return 1;
 		break;
 	}
+	case QPOL_CAP_BOUNDS:
+	{
+		if (version >= 24 && policy->type != QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		if (version >= 9 && policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
+	case QPOL_CAP_PERMISSIVE:
+	{
+		if (version >= 23 && policy->type != QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		if (version >= 8 && policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
+	case QPOL_CAP_FILENAME_TRANS:
+	{
+		if (version >= 25 && policy->type != QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		if (version >= 11 && policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
+	case QPOL_CAP_ROLETRANS:
+	{
+		if (version >= 26 && policy->type != QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		if (version >= 12 && policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
+	/* This indicates the user, role and range - types were ate 28/16 */
+	case QPOL_CAP_DEFAULT_OBJECTS:
+	{
+		if (version >= 27 && policy->type != QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		if (version >= 15 && policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
+	case QPOL_CAP_DEFAULT_TYPE:
+	{
+		if (version >= 28 && policy->type != QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		if (version >= 16 && policy->type == QPOL_POLICY_MODULE_BINARY)
+			return 1;
+		break;
+	}
 	case QPOL_CAP_RULES_LOADED:
 	{
 		if (!(policy->options & QPOL_POLICY_OPTION_NO_RULES))

@@ -75,4 +75,5 @@ VERS_1.5 {
 		qpol_userbounds_*;
 		qpol_policy_polcap_*;
 		qpol_polcap_*;
+		qpol_default_object_*;
 } VERS_1.4;

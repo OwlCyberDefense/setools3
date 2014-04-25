@@ -87,4 +87,5 @@ VERS_4.2{
 		apol_rolebounds_*;
 		apol_userbounds_*;
 		apol_polcap_*;
+		apol_default_object_*;
 } VERS_4.1;

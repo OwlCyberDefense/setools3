@@ -44,6 +44,11 @@ int qpol_typebounds_get_parent_name(const qpol_policy_t *policy, const qpol_type
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+	*name = NULL;
+
+	/* The bounds rules started in ver 24 */
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_BOUNDS))
+		return STATUS_SUCCESS;
 
 	db = &policy->p->p;
 	internal_datum = (type_datum_t *)datum;
@@ -51,8 +56,6 @@ int qpol_typebounds_get_parent_name(const qpol_policy_t *policy, const qpol_type
 	/* This will be zero if not a typebounds statement */
 	if (internal_datum->flavor == TYPE_TYPE && internal_datum->bounds != 0) {
 		*name = db->p_type_val_to_name[internal_datum->bounds - 1];
-	} else {
-		*name = NULL;
 	}
 	return STATUS_SUCCESS;
 }
@@ -69,14 +72,17 @@ int qpol_typebounds_get_child_name(const qpol_policy_t *policy, const qpol_typeb
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+	*name = NULL;
+
+	/* The bounds rules started in ver 24 */
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_BOUNDS))
+		return STATUS_SUCCESS;
 
 	db = &policy->p->p;
 	internal_datum = (type_datum_t *)datum;
 
 	if (internal_datum->flavor == TYPE_TYPE && internal_datum->bounds != 0) {
 		*name = db->p_type_val_to_name[internal_datum->s.value - 1];
-	} else {
-		*name = NULL;
 	}
 	return STATUS_SUCCESS;
 }
@@ -147,6 +153,11 @@ int qpol_rolebounds_get_parent_name(const qpol_policy_t *policy, const qpol_role
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+	*name = NULL;
+
+	/* The bounds rules started in ver 24 */
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_BOUNDS))
+		return STATUS_SUCCESS;
 
 	db = &policy->p->p;
 	internal_datum = (role_datum_t *)datum;
@@ -154,8 +165,6 @@ int qpol_rolebounds_get_parent_name(const qpol_policy_t *policy, const qpol_role
 	/* This will be zero if not a rolebounds statement */
 	if (internal_datum->flavor == ROLE_ROLE && internal_datum->bounds != 0) {
 		*name = db->p_role_val_to_name[internal_datum->bounds - 1];
-	} else {
-		*name = NULL;
 	}
 	return STATUS_SUCCESS;
 }
@@ -172,14 +181,17 @@ int qpol_rolebounds_get_child_name(const qpol_policy_t *policy, const qpol_roleb
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+	*name = NULL;
+
+	/* The bounds rules started in ver 24 */
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_BOUNDS))
+		return STATUS_SUCCESS;
 
 	db = &policy->p->p;
 	internal_datum = (role_datum_t *)datum;
 
 	if (internal_datum->flavor == ROLE_ROLE && internal_datum->bounds != 0) {
 		*name = db->p_role_val_to_name[internal_datum->s.value - 1];
-	} else {
-		*name = NULL;
 	}
 	return STATUS_SUCCESS;
 }
@@ -236,6 +248,11 @@ int qpol_userbounds_get_parent_name(const qpol_policy_t *policy, const qpol_user
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+	*name = NULL;
+
+	/* The bounds rules started in ver 24 */
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_BOUNDS))
+		return STATUS_SUCCESS;
 
 	db = &policy->p->p;
 	internal_datum = (user_datum_t *)datum;
@@ -243,8 +260,6 @@ int qpol_userbounds_get_parent_name(const qpol_policy_t *policy, const qpol_user
 	/* This will be zero if not a userbounds statement */
 	if (internal_datum->bounds != 0) {
 		*name = db->p_user_val_to_name[internal_datum->bounds - 1];
-	} else {
-		*name = NULL;
 	}
 	return STATUS_SUCCESS;
 }
@@ -261,14 +276,17 @@ int qpol_userbounds_get_child_name(const qpol_policy_t *policy, const qpol_userb
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
+	*name = NULL;
+
+	/* The bounds rules started in ver 24 */
+	if (!qpol_policy_has_capability(policy, QPOL_CAP_BOUNDS))
+		return STATUS_SUCCESS;
 
 	db = &policy->p->p;
 	internal_datum = (user_datum_t *)datum;
 
 	if (internal_datum->bounds != 0) {
 		*name = db->p_user_val_to_name[internal_datum->s.value - 1];
-	} else {
-		*name = NULL;
 	}
 	return STATUS_SUCCESS;
 }

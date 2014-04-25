@@ -20,6 +20,7 @@ libapol_a_SOURCES = \
 	condrule-query.c \
 	constraint-query.c \
 	context-query.c \
+	default-object-query.c \
 	domain-trans-analysis.c domain-trans-analysis-internal.h \
 	fscon-query.c \
 	infoflow-analysis.c infoflow-analysis-internal.h \

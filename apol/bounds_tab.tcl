@@ -95,7 +95,6 @@ proc Apol_Bounds::close {} {
 
 proc Apol_Bounds::getTextWidget {} {
     variable widgets
-#    return $widgets(results).tb
 }
 
 #### private functions below ####
@@ -237,7 +236,6 @@ proc Apol_Bounds::_toggleCheckbutton {cb w name1 name2 ops} {
     }
 }
 
-
 # callback invoked when the user changes which Bounds rule to search
 proc Apol_Bounds::_ruleChanged {name1 name2 ops} {
     variable vals
@@ -255,7 +253,6 @@ proc Apol_Bounds::_searchBounds {} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened."
         return
     }
-
 
     if {$vals(rule_selection) == "user"} {
         Apol_Bounds::_searchUserBounds
