@@ -2983,7 +2983,7 @@ typedef struct qpol_filename_trans {} qpol_filename_trans_t;
 	fail:
 		return t;
 	};
-	const qpol_class_t *get_target_class(qpol_policy_t *p) {
+	const qpol_class_t *get_object_class(qpol_policy_t *p) {
 		const qpol_class_t *cls;
 		BEGIN_EXCEPTION
 		if (qpol_filename_trans_get_object_class(p, self, &cls)) {
