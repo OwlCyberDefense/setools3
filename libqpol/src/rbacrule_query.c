@@ -334,6 +334,29 @@ int qpol_role_trans_get_target_type(const qpol_policy_t * policy, const qpol_rol
 	return STATUS_SUCCESS;
 }
 
+int qpol_role_trans_get_object_class(const qpol_policy_t * policy, const qpol_role_trans_t * rule, const qpol_class_t ** obj_class)
+{
+	policydb_t *db = NULL;
+	role_trans_t *rt = NULL;
+
+	if (obj_class) {
+		*obj_class = NULL;
+	}
+
+	if (!policy || !rule || !obj_class) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p->p;
+	rt = (role_trans_t *) rule;
+
+	*obj_class = (qpol_class_t *) db->class_val_to_struct[rt->tclass - 1];
+
+	return STATUS_SUCCESS;
+}
+
 int qpol_role_trans_get_default_role(const qpol_policy_t * policy, const qpol_role_trans_t * rule, const qpol_role_t ** dflt)
 {
 	policydb_t *db = NULL;

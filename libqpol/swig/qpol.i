@@ -2218,6 +2218,16 @@ typedef struct qpol_role_trans {} qpol_role_trans_t;
 	fail:
 		return t;
 	};
+	const qpol_class_t *get_object_class(qpol_policy_t *p) {
+		const qpol_class_t *c;
+		BEGIN_EXCEPTION
+		if (qpol_role_trans_get_object_class(p, self, &c)) {
+			SWIG_exception(SWIG_ValueError, "Could not get class for role_transition rule");
+		}
+		END_EXCEPTION
+	fail:
+		return c;
+	};
 	const qpol_role_t *get_default_role(qpol_policy_t *p) {
 		const qpol_role_t *r;
 		BEGIN_EXCEPTION
