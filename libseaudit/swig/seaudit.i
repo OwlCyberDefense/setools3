@@ -252,7 +252,7 @@ typedef struct tm {
 	int tm_isdst; /* daylight saving time */
 } tm_t;
 %extend tm_t {
-	tm_t() {
+	tm() {
 		struct tm *t;
 		BEGIN_EXCEPTION
 		t = calloc(1, sizeof(struct tm));
@@ -263,7 +263,7 @@ typedef struct tm {
 	fail:
 		return t;
 	};
-	~tm_t() {
+	~tm() {
 		free(self);
 	}
 	/* use default accessor style for the rest */
@@ -280,7 +280,7 @@ typedef enum seaudit_log_type
 } seaudit_log_type_e;
 typedef struct seaudit_log {} seaudit_log_t;
 %extend seaudit_log_t {
-	seaudit_log_t() {
+	seaudit_log() {
 		seaudit_log_t *slog;
 		BEGIN_EXCEPTION
 		slog = seaudit_log_create(seaudit_swig_message_callback, seaudit_swig_message_callback_arg);
@@ -291,14 +291,16 @@ typedef struct seaudit_log {} seaudit_log_t;
 	fail:
 		return slog;
 	};
-	~seaudit_log_t() {
+	~seaudit_log() {
 		seaudit_log_destroy(&self);
 	};
-	void clear () {
+	%rename(clear) wrap_clear;
+	void wrap_clear () {
 		seaudit_log_clear(self);
 	};
 	%newobject get_users();
-	apol_string_vector_t *get_users() {
+	%rename(get_users) wrap_get_users;
+	apol_string_vector_t *wrap_get_users() {
 		apol_vector_t *v;
 		BEGIN_EXCEPTION
 		v = seaudit_log_get_users(self);
@@ -310,7 +312,8 @@ typedef struct seaudit_log {} seaudit_log_t;
 		return (apol_string_vector_t*)v;
 	};
 	%newobject get_roles();
-	apol_string_vector_t *get_roles() {
+	%rename(get_roles) wrap_get_roles;
+	apol_string_vector_t *wrap_get_roles() {
 		apol_vector_t *v;
 		BEGIN_EXCEPTION
 		v = seaudit_log_get_roles(self);
@@ -322,7 +325,8 @@ typedef struct seaudit_log {} seaudit_log_t;
 		return (apol_string_vector_t*)v;
 	};
 	%newobject get_types();
-	apol_string_vector_t *get_types() {
+	%rename(get_types) wrap_get_types;
+	apol_string_vector_t *wrap_get_types() {
 		apol_vector_t *v;
 		BEGIN_EXCEPTION
 		v = seaudit_log_get_types(self);
@@ -334,7 +338,8 @@ typedef struct seaudit_log {} seaudit_log_t;
 		return (apol_string_vector_t*)v;
 	};
 	%newobject get_classes();
-	apol_string_vector_t *get_classes() {
+	%rename(get_classes) wrap_get_classes;
+	apol_string_vector_t *wrap_get_classes() {
 		apol_vector_t *v;
 		BEGIN_EXCEPTION
 		v = seaudit_log_get_classes(self);
@@ -357,14 +362,14 @@ typedef enum seaudit_message_type
 } seaudit_message_type_e;
 typedef struct seaudit_message {} seaudit_message_t;
 %extend seaudit_message_t {
-	seaudit_message_t() {
+	seaudit_message() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Canot directly create seaudit_message_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~seaudit_message_t() {
+	~seaudit_message() {
 		/* no op */
 		return;
 	};
@@ -373,18 +378,22 @@ typedef struct seaudit_message {} seaudit_message_t;
 		(void)seaudit_message_get_data(self, &te);
 		return te;
 	};
-	void *get_data() {
+	%rename(get_data) wrap_get_data;
+	void *wrap_get_data() {
 		seaudit_message_type_e te;
 		return seaudit_message_get_data(self, &te);
 	};
-	const char *get_host() {
+	%rename(get_host) wrap_get_host;
+	const char *wrap_get_host() {
 		return seaudit_message_get_host(self);
 	};
-	const tm_t *get_time() {
+	%rename(get_time) wrap_get_time;
+	const tm_t *wrap_get_time() {
 		return seaudit_message_get_time(self);
 	}
 	%newobject to_string();
-	char *to_string() {
+	%rename(to_string) wrap_to_string;
+	char *wrap_to_string() {
 		char *str;
 		BEGIN_EXCEPTION
 		str = seaudit_message_to_string(self);
@@ -396,7 +405,8 @@ typedef struct seaudit_message {} seaudit_message_t;
 		return str;
 	};
 	%newobject to_string_html();
-	char *to_string_html() {
+	%rename(to_string_html) wrap_to_string_html;
+	char *wrap_to_string_html() {
 		char *str;
 		BEGIN_EXCEPTION
 		str = seaudit_message_to_string_html(self);
@@ -408,7 +418,8 @@ typedef struct seaudit_message {} seaudit_message_t;
 		return str;
 	};
 	%newobject to_misc_string();
-	char *to_misc_string() {
+	%rename(to_misc_string) wrap_to_misc_string;
+	char *wrap_to_misc_string() {
 		char *str;
 		BEGIN_EXCEPTION
 		str = seaudit_message_to_misc_string(self);
@@ -429,14 +440,14 @@ typedef struct seaudit_message {} seaudit_message_t;
 /* seaudit load message */
 typedef struct seaudit_load_message {} seaudit_load_message_t;
 %extend seaudit_load_message_t {
-	seaudit_load_message_t() {
+	seaudit_load_message() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_load_message_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~seaudit_load_message_t() {
+	~seaudit_load_message() {
 		/* no op */
 		return;
 	};
@@ -450,14 +461,14 @@ typedef struct seaudit_load_message {} seaudit_load_message_t;
 /* seaudit bool message */
 typedef struct seaudit_bool_message {} seaudit_bool_message_t;
 %extend seaudit_bool_message_t {
-	seaudit_bool_message_t(void *msg) {
+	seaudit_bool_message(void *msg) {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_bool_message_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~seaudit_bool_message_t() {
+	~seaudit_bool_message() {
 		/* no op */
 		return;
 	};
@@ -477,102 +488,131 @@ typedef enum seaudit_avc_message_type
 } seaudit_avc_message_type_e;
 typedef struct seaudit_avc_message {} seaudit_avc_message_t;
 %extend seaudit_avc_message_t {
-	seaudit_avc_message_t() {
+	seaudit_avc_message() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_avc_message_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~seaudit_avc_message_t() {
+	~seaudit_avc_message() {
 		/* no op */
 		return;
 	};
-	seaudit_avc_message_type_e get_message_type() {
+	%rename(get_message_type) wrap_get_message_type;
+	seaudit_avc_message_type_e wrap_get_message_type() {
 		return seaudit_avc_message_get_message_type(self);
 	};
-	long get_timestamp_nano() {
+	%rename(get_timestamp_nano) wrap_get_timestamp_nano;
+	long wrap_get_timestamp_nano() {
 		return seaudit_avc_message_get_timestamp_nano(self);
 	};
-	const char *get_source_user() {
+	%rename(get_source_user) wrap_get_source_user;
+	const char *wrap_get_source_user() {
 		return seaudit_avc_message_get_source_user(self);
 	};
-	const char *get_source_role() {
+	%rename(get_source_role) wrap_get_source_role;
+	const char *wrap_get_source_role() {
 		return seaudit_avc_message_get_source_role(self);
 	};
-	const char *get_source_type() {
+	%rename(get_source_type) wrap_get_source_type;
+	const char *wrap_get_source_type() {
 		return seaudit_avc_message_get_source_type(self);
 	};
-	const char *get_target_user() {
+	%rename(get_target_user) wrap_get_target_user;
+	const char *wrap_get_target_user() {
 		return seaudit_avc_message_get_target_user(self);
 	};
-	const char *get_target_role() {
+	%rename(get_target_role) wrap_get_target_role;
+	const char *wrap_get_target_role() {
 		return seaudit_avc_message_get_target_role(self);
 	};
-	const char *get_target_type() {
+	%rename(get_target_type) wrap_get_target_type;
+	const char *wrap_get_target_type() {
 		return seaudit_avc_message_get_target_type(self);
 	};
-	const char *get_object_class() {
+	%rename(get_object_class) wrap_get_object_class;
+	const char *wrap_get_object_class() {
 		return seaudit_avc_message_get_object_class(self);
 	};
-	const apol_string_vector_t *get_perm() {
+	%rename(get_perm) wrap_get_perm;
+	const apol_string_vector_t *wrap_get_perm() {
 		return (apol_string_vector_t*)seaudit_avc_message_get_perm(self);
 	};
-	const char *get_exe() {
+	%rename(get_exe) wrap_get_exe;
+	const char *wrap_get_exe() {
 		return seaudit_avc_message_get_exe(self);
 	};
-	const char *get_comm() {
+	%rename(get_comm) wrap_get_comm;
+	const char *wrap_get_comm() {
 		return seaudit_avc_message_get_comm(self);
 	};
-	const char *get_name() {
+	%rename(get_name) wrap_get_name;
+	const char *wrap_get_name() {
 		return seaudit_avc_message_get_name(self);
 	};
-	int get_pid() {
+	%rename(get_pid) wrap_get_pid;
+	int wrap_get_pid() {
 		return (int)seaudit_avc_message_get_pid(self);
 	};
-	long get_inode() {
+	%rename(get_inode) wrap_get_inode;
+	long wrap_get_inode() {
 		return (long)seaudit_avc_message_get_inode(self);
 	};
-	const char *get_path() {
+	%rename(get_path) wrap_get_path;
+	const char *wrap_get_path() {
 		return seaudit_avc_message_get_path(self);
 	};
-	const char *get_dev() {
+	%rename(get_dev) wrap_get_dev;
+	const char *wrap_get_dev() {
 		return seaudit_avc_message_get_dev(self);
 	};
-	const char *get_netif() {
+	%rename(get_netif) wrap_get_netif;
+	const char *wrap_get_netif() {
 		return seaudit_avc_message_get_netif(self);
 	};
-	int get_port() {
+	%rename(get_port) wrap_get_port;
+	int wrap_get_port() {
 		return seaudit_avc_message_get_port(self);
 	};
-	const char *get_laddr() {
+	%rename(get_laddr) wrap_get_laddr;
+	const char *wrap_get_laddr() {
 		return seaudit_avc_message_get_laddr(self);
 	};
-	int get_lport() {
+	%rename(get_lport) wrap_get_lport;
+	int wrap_get_lport() {
 		return seaudit_avc_message_get_lport(self);
 	};
-	const char *get_faddr() {
+	%rename(get_faddr) wrap_get_faddr;
+	const char *wrap_get_faddr() {
 		return seaudit_avc_message_get_faddr(self);
 	};
-	int get_fport() {
+	%rename(get_fport) wrap_get_fport;
+	int wrap_get_fport() {
 		return seaudit_avc_message_get_fport(self);
 	};
-	const char *get_saddr() {
+	%rename(get_saddr) wrap_get_saddr;
+	const char *wrap_get_saddr() {
 		return seaudit_avc_message_get_saddr(self);
 	};
-	int get_sport() {
+	%rename(get_sport) wrap_get_sport;
+	int wrap_get_sport() {
 		return seaudit_avc_message_get_sport(self);
 	};
-	const char *get_daddr() {
+	%rename(get_daddr) wrap_get_daddr;
+	const char *wrap_get_daddr() {
 		return seaudit_avc_message_get_daddr(self);
 	};
-	int get_dport() {
+	%rename(get_dport) wrap_get_dport;
+	int wrap_get_dport() {
 		return seaudit_avc_message_get_dport(self);
 	};
-	int get_key() {
+	%rename(get_key) wrap_get_key;
+	int wrap_get_key() {
 		return seaudit_avc_message_get_key(self);
 	};
-	int get_cap() {
+	%rename(get_cap) wrap_get_cap;
+	int wrap_get_cap() {
 		return seaudit_avc_message_get_cap(self);
 	};
 };
@@ -608,7 +648,7 @@ typedef enum seaudit_filter_date_match
 } seaudit_filter_date_match_e;
 typedef struct seaudit_filter {} seaudit_filter_t;
 %extend seaudit_filter_t {
-	seaudit_filter_t(char *name = NULL) {
+	seaudit_filter(char *name = NULL) {
 		seaudit_filter_t *sf = NULL;
 		BEGIN_EXCEPTION
 		sf = seaudit_filter_create(name);
@@ -619,7 +659,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return sf;
 	};
-	seaudit_filter_t(seaudit_filter_t *in) {
+	seaudit_filter(seaudit_filter_t *in) {
 		seaudit_filter_t *sf = NULL;
 		BEGIN_EXCEPTION
 		sf = seaudit_filter_create_from_filter(in);
@@ -630,7 +670,7 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return sf;
 	};
-	~seaudit_filter_t() {
+	~seaudit_filter() {
 		seaudit_filter_destroy(&self);
 	};
 	void save(char *path) {
@@ -642,7 +682,8 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	void set_match(seaudit_filter_match_e match) {
+	%rename(set_match) wrap_set_match;
+	void wrap_set_match(seaudit_filter_match_e match) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_match(self, match)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter matching method");
@@ -651,10 +692,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	}
-	seaudit_filter_match_e get_match() {
+	%rename(get_match) wrap_get_match;
+	seaudit_filter_match_e wrap_get_match() {
 		return seaudit_filter_get_match(self);
 	};
-	void set_name(char *name) {
+	%rename(set_name) wrap_set_name;
+	void wrap_set_name(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_name(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter name");
@@ -663,10 +706,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_name() {
+	%rename(get_name) wrap_get_name;
+	const char *wrap_get_name() {
 		return seaudit_filter_get_name(self);
 	};
-	void set_description(char *description) {
+	%rename(set_description) wrap_set_description;
+	void wrap_set_description(char *description) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_description(self, description)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter description");
@@ -675,16 +720,20 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_description() {
+	%rename(get_description) wrap_get_description;
+	const char *wrap_get_description() {
 		return seaudit_filter_get_description(self);
 	};
-	void set_strict(bool is_strict) {
+	%rename(set_strict) wrap_set_strict;
+	void wrap_set_strict(bool is_strict) {
 		seaudit_filter_set_strict(self, is_strict);
 	};
-	bool get_strict() {
+	%rename(get_strict) wrap_get_strict;
+	bool wrap_get_strict() {
 		return seaudit_filter_get_strict(self);
 	};
-	void set_source_user(apol_string_vector_t *v) {
+	%rename(set_source_user) wrap_set_source_user;
+	void wrap_set_source_user(apol_string_vector_t *v) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_source_user(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source user list for filter");
@@ -693,10 +742,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_source_user() {
+	%rename(get_source_user) wrap_get_source_user;
+	const apol_string_vector_t *wrap_get_source_user() {
 		return (apol_string_vector_t*)seaudit_filter_get_source_user(self);
 	};
-	void set_source_role(apol_string_vector_t *v) {
+	%rename(set_source_role) wrap_set_source_role;
+	void wrap_set_source_role(apol_string_vector_t *v) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_source_role(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source role list for filter");
@@ -705,10 +756,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_source_role() {
+	%rename(get_source_role) wrap_get_source_role;
+	const apol_string_vector_t *wrap_get_source_role() {
 		return (apol_string_vector_t*)seaudit_filter_get_source_role(self);
 	};
-	void set_source_type(apol_string_vector_t *v) {
+	%rename(set_source_type) wrap_set_source_type;
+	void wrap_set_source_type(apol_string_vector_t *v) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_source_type(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source type list for filter");
@@ -717,10 +770,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_source_type() {
+	%rename(get_source_type) wrap_get_source_type;
+	const apol_string_vector_t *wrap_get_source_type() {
 		return (apol_string_vector_t*)seaudit_filter_get_source_type(self);
 	};
-	void set_target_user(apol_string_vector_t *v) {
+	%rename(set_target_user) wrap_set_target_user;
+	void wrap_set_target_user(apol_string_vector_t *v) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_user(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target user list for filter");
@@ -729,10 +784,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_target_user() {
+	%rename(get_target_user) wrap_get_target_user;
+	const apol_string_vector_t *wrap_get_target_user() {
 		return (apol_string_vector_t*)seaudit_filter_get_target_user(self);
 	};
-	void set_target_role(apol_string_vector_t *v) {
+	%rename(set_target_role) wrap_set_target_role;
+	void wrap_set_target_role(apol_string_vector_t *v) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_role(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target role list for filter");
@@ -741,10 +798,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_target_role() {
+	%rename(get_target_role) wrap_get_target_role;
+	const apol_string_vector_t *wrap_get_target_role() {
 		return (apol_string_vector_t*)seaudit_filter_get_target_role(self);
 	};
-	void set_target_type(apol_string_vector_t *v) {
+	%rename(set_target_type) wrap_set_target_type;
+	void wrap_set_target_type(apol_string_vector_t *v) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_type(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target type list for filter");
@@ -753,10 +812,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_target_type() {
+	%rename(get_target_type) wrap_get_target_type;
+	const apol_string_vector_t *wrap_get_target_type() {
 		return (apol_string_vector_t*)seaudit_filter_get_target_type(self);
 	};
-	void set_target_class(apol_string_vector_t *v) {
+	%rename(set_target_class) wrap_set_target_class;
+	void wrap_set_target_class(apol_string_vector_t *v) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_target_class(self, (apol_vector_t*)v)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target class list for filter");
@@ -765,10 +826,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_target_class() {
+	%rename(get_target_class) wrap_get_target_class;
+	const apol_string_vector_t *wrap_get_target_class() {
 		return (apol_string_vector_t*)seaudit_filter_get_target_class(self);
 	};
-	void set_permission(char *name) {
+	%rename(set_permission) wrap_set_permission;
+	void wrap_set_permission(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_permission(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set permission for filter");
@@ -777,10 +840,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_permission() {
+	%rename(get_permission) wrap_get_permission;
+	const char *wrap_get_permission() {
 		return seaudit_filter_get_permission(self);
 	};
-	void set_executable(char *name) {
+	%rename(set_executable) wrap_set_executable;
+	void wrap_set_executable(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_executable(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set executable for filter");
@@ -789,10 +854,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_executable() {
+	%rename(get_executable) wrap_get_executable;
+	const char *wrap_get_executable() {
 		return seaudit_filter_get_executable(self);
 	};
-	void set_host(char *name) {
+	%rename(set_host) wrap_set_host;
+	void wrap_set_host(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_host(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set host for filter");
@@ -801,10 +868,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_host() {
+	%rename(get_host) wrap_get_host;
+	const char *wrap_get_host() {
 		return seaudit_filter_get_host(self);
 	};
-	void set_path(char *path) {
+	%rename(set_path) wrap_set_path;
+	void wrap_set_path(char *path) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_path(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set path for filter");
@@ -813,10 +882,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_path() {
+	%rename(get_path) wrap_get_path;
+	const char *wrap_get_path() {
 		return seaudit_filter_get_path(self);
 	};
-	void set_command(char *name) {
+	%rename(set_command) wrap_set_command;
+	void wrap_set_command(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_command(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set command for filter");
@@ -825,22 +896,28 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	void set_inode(long inode) {
+	%rename(set_inode) wrap_set_inode;
+	void wrap_set_inode(long inode) {
 		seaudit_filter_set_inode(self, (long) inode);
 	};
-	long get_inode() {
+	%rename(get_inode) wrap_get_inode;
+	long wrap_get_inode() {
 		return (long) seaudit_filter_get_inode(self);
 	};
-	void set_pid(long pid) {
+	%rename(set_pid) wrap_set_pid;
+	void wrap_set_pid(long pid) {
 		seaudit_filter_set_pid(self, (unsigned int) pid);
 	};
-	long get_pid() {
+	%rename(get_pid) wrap_get_pid;
+	long wrap_get_pid() {
 		return (long) seaudit_filter_get_pid(self);
 	};
-	const char *get_command() {
+	%rename(get_command) wrap_get_command;
+	const char *wrap_get_command() {
 		return seaudit_filter_get_command(self);
 	};
-	void set_anyaddr(char *name) {
+	%rename(set_anyaddr) wrap_set_anyaddr;
+	void wrap_set_anyaddr(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_anyaddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set ip address for filter");
@@ -849,16 +926,20 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_anyaddr() {
+	%rename(get_anyaddr) wrap_get_anyaddr;
+	const char *wrap_get_anyaddr() {
 		return seaudit_filter_get_anyaddr(self);
 	};
-	void set_anyport(int port) {
+	%rename(set_anyport) wrap_set_anyport;
+	void wrap_set_anyport(int port) {
 		seaudit_filter_set_anyport(self, port);
 	};
-	int get_anyport() {
+	%rename(get_anyport) wrap_get_anyport;
+	int wrap_get_anyport() {
 		return seaudit_filter_get_anyport(self);
 	};
-	void set_laddr(char *name) {
+	%rename(set_laddr) wrap_set_laddr;
+	void wrap_set_laddr(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_laddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set local address for filter");
@@ -867,16 +948,20 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_laddr() {
+	%rename(get_laddr) wrap_get_laddr;
+	const char *wrap_get_laddr() {
 		return seaudit_filter_get_laddr(self);
 	};
-	void set_lport(int port) {
+	%rename(set_lport) wrap_set_lport;
+	void wrap_set_lport(int port) {
 		seaudit_filter_set_lport(self, port);
 	};
-	int get_lport() {
+	%rename(get_lport) wrap_get_lport;
+	int wrap_get_lport() {
 		return seaudit_filter_get_lport(self);
 	};
-	void set_faddr(char *name) {
+	%rename(set_faddr) wrap_set_faddr;
+	void wrap_set_faddr(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_faddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set foreign address for filter");
@@ -885,16 +970,20 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_faddr() {
+	%rename(get_faddr) wrap_get_faddr;
+	const char *wrap_get_faddr() {
 		return seaudit_filter_get_faddr(self);
 	};
-	void set_fport(int port) {
+	%rename(set_fport) wrap_set_fport;
+	void wrap_set_fport(int port) {
 		seaudit_filter_set_fport(self, port);
 	};
-	int get_fport() {
+	%rename(get_fport) wrap_get_fport;
+	int wrap_get_fport() {
 		return seaudit_filter_get_fport(self);
 	};
-	void set_saddr(char *name) {
+	%rename(set_saddr) wrap_set_saddr;
+	void wrap_set_saddr(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_saddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source address for filter");
@@ -903,16 +992,20 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_saddr() {
+	%rename(get_saddr) wrap_get_saddr;
+	const char *wrap_get_saddr() {
 		return seaudit_filter_get_saddr(self);
 	};
-	void set_sport(int port) {
+	%rename(set_sport) wrap_set_sport;
+	void wrap_set_sport(int port) {
 		seaudit_filter_set_sport(self, port);
 	};
-	int get_sport() {
+	%rename(get_sport) wrap_get_sport;
+	int wrap_get_sport() {
 		return seaudit_filter_get_sport(self);
 	};
-	void set_daddr(char *name) {
+	%rename(set_daddr) wrap_set_daddr;
+	void wrap_set_daddr(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_daddr(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set destination address for filter");
@@ -921,22 +1014,28 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_daddr() {
+	%rename(get_daddr) wrap_get_daddr;
+	const char *wrap_get_daddr() {
 		return seaudit_filter_get_daddr(self);
 	};
-	void set_dport(int port) {
+	%rename(set_dport) wrap_set_dport;
+	void wrap_set_dport(int port) {
 		seaudit_filter_set_dport(self, port);
 	};
-	int get_dport() {
+	%rename(get_dport) wrap_get_dport;
+	int wrap_get_dport() {
 		return seaudit_filter_get_dport(self);
 	};
-	void set_port(int port) {
+	%rename(set_port) wrap_set_port;
+	void wrap_set_port(int port) {
 		seaudit_filter_set_port(self, port);
 	};
-	int get_port() {
+	%rename(get_port) wrap_get_port;
+	int wrap_get_port() {
 		return seaudit_filter_get_port(self);
 	};
-	void set_netif(char *name) {
+	%rename(set_netif) wrap_set_netif;
+	void wrap_set_netif(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_netif(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set network interface for filter");
@@ -945,22 +1044,28 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	const char *get_netif() {
+	%rename(get_netif) wrap_get_netif;
+	const char *wrap_get_netif() {
 		return seaudit_filter_get_netif(self);
 	};
-	void set_key(int key) {
+	%rename(set_key) wrap_set_key;
+	void wrap_set_key(int key) {
 		seaudit_filter_set_key(self, key);
 	};
-	int get_key() {
+	%rename(get_key) wrap_get_key;
+	int wrap_get_key() {
 		return seaudit_filter_get_key(self);
 	};
-	void set_cap(int cap) {
+	%rename(set_cap) wrap_set_cap;
+	void wrap_set_cap(int cap) {
 		seaudit_filter_set_cap(self, cap);
 	};
-	int get_cap() {
+	%rename(get_cap) wrap_get_cap;
+	int wrap_get_cap() {
 		return seaudit_filter_get_cap(self);
 	};
-	void set_message_type(seaudit_avc_message_type_e mtype) {
+	%rename(set_message_type) wrap_set_message_type;
+	void wrap_set_message_type(seaudit_avc_message_type_e mtype) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_message_type(self, mtype)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set message type for filter");
@@ -969,10 +1074,12 @@ typedef struct seaudit_filter {} seaudit_filter_t;
 	fail:
 		return;
 	};
-	seaudit_message_type_e get_message_type() {
+	%rename(get_message_type) wrap_get_message_type;
+	seaudit_message_type_e wrap_get_message_type() {
 		return seaudit_filter_get_message_type(self);
 	};
-	void set_date(struct tm *start, struct tm *end, seaudit_filter_date_match_e match) {
+	%rename(set_date) wrap_set_date;
+	void wrap_set_date(struct tm *start, struct tm *end, seaudit_filter_date_match_e match) {
 		BEGIN_EXCEPTION
 		if (seaudit_filter_set_date(self, start, end, match)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set date for filter");
@@ -1014,14 +1121,14 @@ apol_vector_t *seaudit_filter_create_from_file(const char *filename);
 /* seaudit sort */
 typedef struct seaudit_sort {} seaudit_sort_t;
 %extend seaudit_sort_t {
-	seaudit_sort_t() {
+	seaudit_sort() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create seaudit_sort_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	seaudit_sort_t(seaudit_sort_t *in) {
+	seaudit_sort(seaudit_sort_t *in) {
 		seaudit_sort_t *ss = NULL;
 		BEGIN_EXCEPTION
 		ss = seaudit_sort_create_from_sort(in);
@@ -1032,7 +1139,7 @@ typedef struct seaudit_sort {} seaudit_sort_t;
 	fail:
 		return ss;
 	};
-        ~seaudit_sort_t() {
+        ~seaudit_sort() {
 		seaudit_sort_destroy(&self);
 	};
 };
@@ -1113,7 +1220,7 @@ extern seaudit_sort_t *seaudit_sort_by_cap(const int direction);
 #endif
 typedef struct seaudit_model {} seaudit_model_t;
 %extend seaudit_model_t {
-	seaudit_model_t(char *name = NULL, seaudit_log_t *slog = NULL) {
+	seaudit_model(char *name = NULL, seaudit_log_t *slog = NULL) {
 		seaudit_model_t *smod;
 		BEGIN_EXCEPTION
 		smod = seaudit_model_create(name, slog);
@@ -1124,7 +1231,7 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return smod;
 	};
-	seaudit_model_t(seaudit_model_t *in) {
+	seaudit_model(seaudit_model_t *in) {
 		seaudit_model_t *smod;
 		BEGIN_EXCEPTION
 		smod = seaudit_model_create_from_model(in);
@@ -1135,7 +1242,7 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return smod;
 	};
-	seaudit_model_t(char *path) {
+	seaudit_model(char *path) {
 		seaudit_model_t *smod;
 		BEGIN_EXCEPTION
 		smod = seaudit_model_create_from_file(path);
@@ -1146,7 +1253,7 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return smod;
 	}
-	~seaudit_model_t() {
+	~seaudit_model() {
 		seaudit_model_destroy(&self);
 	};
 	void save(char *path) {
@@ -1158,10 +1265,12 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	}
-	const char *get_name() {
+	%rename(get_name) wrap_get_name;
+	const char *wrap_get_name() {
 		return seaudit_model_get_name(self);
 	};
-	void set_name(char *name) {
+	%rename(set_name) wrap_set_name;
+	void wrap_set_name(char *name) {
 		BEGIN_EXCEPTION
 		if (seaudit_model_set_name(self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set model name");
@@ -1170,7 +1279,8 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	void append_log(seaudit_log_t *slog) {
+	%rename(append_log) wrap_append_log;
+	void wrap_append_log(seaudit_log_t *slog) {
 		BEGIN_EXCEPTION
 		if (seaudit_model_append_log(self, slog)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append log to model");
@@ -1179,7 +1289,8 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	void append_filter(seaudit_filter_t *filter) {
+	%rename(append_filter) wrap_append_filter;
+	void wrap_append_filter(seaudit_filter_t *filter) {
 		BEGIN_EXCEPTION
 #ifdef SWIGJAVA /* duplicate so the garbage collector does not double free */
 		seaudit_filter_t *tmp = seaudit_filter_create_from_filter(filter);
@@ -1196,11 +1307,13 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	const apol_vector_t *get_filters() {
+	%rename(get_filters) wrap_get_filters;
+	const apol_vector_t *wrap_get_filters() {
 		return seaudit_model_get_filters(self);
 	};
 	%delobject remove_filter();
-	void remove_filter(seaudit_filter_t *filter) {
+	%rename(remove_filter) wrap_remove_filter;
+	void wrap_remove_filter(seaudit_filter_t *filter) {
 		BEGIN_EXCEPTION
 		if (seaudit_model_remove_filter(self, filter)) {
 			SWIG_exception(SWIG_ValueError, "Could not remove filter");
@@ -1209,7 +1322,8 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	void set_filter_match(seaudit_filter_match_e match) {
+	%rename(set_filter_match) wrap_set_filter_match;
+	void wrap_set_filter_match(seaudit_filter_match_e match) {
 		BEGIN_EXCEPTION
 		if (seaudit_model_set_filter_match(self, match)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter matching method for model");
@@ -1218,10 +1332,12 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	seaudit_filter_match_e get_filter_match() {
+	%rename(get_filter_match) wrap_get_filter_match;
+	seaudit_filter_match_e wrap_get_filter_match() {
 		return seaudit_model_get_filter_match(self);
 	};
-	void set_filter_visible(seaudit_filter_visible_e vis) {
+	%rename(set_filter_visible) wrap_set_filter_visible;
+	void wrap_set_filter_visible(seaudit_filter_visible_e vis) {
 		BEGIN_EXCEPTION
 		if (seaudit_model_set_filter_visible(self, vis)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set filter visibility for model");
@@ -1230,10 +1346,12 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	seaudit_filter_visible_e get_filter_visible() {
+	%rename(get_filter_visible) wrap_get_filter_visible;
+	seaudit_filter_visible_e wrap_get_filter_visible() {
 		return seaudit_model_get_filter_visible(self);
 	};
-	void append_sort(seaudit_sort_t *ssort) {
+	%rename(append_sort) wrap_append_sort;
+	void wrap_append_sort(seaudit_sort_t *ssort) {
 		BEGIN_EXCEPTION
 #ifdef SWIGJAVA
 		seaudit_sort_t *tmp = seaudit_sort_create_from_sort(ssort);
@@ -1250,7 +1368,8 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	void clear_sorts() {
+	%rename(clear_sorts) wrap_clear_sorts;
+	void wrap_clear_sorts() {
 		BEGIN_EXCEPTION
 		if (seaudit_model_clear_sorts(self)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not clear model sorting criteria");
@@ -1259,11 +1378,13 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return;
 	};
-	int is_changed() {
+	%rename(is_changed) wrap_is_changed;
+	int wrap_is_changed() {
 		return seaudit_model_is_changed(self);
 	};
 	%newobject get_messages(seaudit_log_t*);
-	apol_vector_t *get_messages(seaudit_log_t *slog) {
+	%rename(get_messages) wrap_get_messages;
+	apol_vector_t *wrap_get_messages(seaudit_log_t *slog) {
 		apol_vector_t *v = NULL;
 		BEGIN_EXCEPTION
 		v = seaudit_model_get_messages(slog, self);
@@ -1275,7 +1396,8 @@ typedef struct seaudit_model {} seaudit_model_t;
 		return v;
 	};
 	%newobject get_malformed_messages(seaudit_log_t*);
-	apol_vector_t *get_malformed_messages(seaudit_log_t *slog) {
+	%rename(get_malformed_messages) wrap_get_malformed_messages;
+	apol_vector_t *wrap_get_malformed_messages(seaudit_log_t *slog) {
 		apol_vector_t *v = NULL;
 		BEGIN_EXCEPTION
 		v = seaudit_model_get_malformed_messages(slog, self);
@@ -1286,19 +1408,24 @@ typedef struct seaudit_model {} seaudit_model_t;
 	fail:
 		return v;
 	};
-	void hide_message(seaudit_message_t *message) {
+	%rename(hide_message) wrap_hide_message;
+	void wrap_hide_message(seaudit_message_t *message) {
 		seaudit_model_hide_message(self, message);
 	};
-	size_t get_num_allows(seaudit_log_t *slog) {
+	%rename(get_num_allows) wrap_get_num_allows;
+	size_t wrap_get_num_allows(seaudit_log_t *slog) {
 		return seaudit_model_get_num_allows(slog, self);
 	};
-	size_t get_num_denies(seaudit_log_t *slog) {
+	%rename(get_num_denies) wrap_get_num_denies;
+	size_t wrap_get_num_denies(seaudit_log_t *slog) {
 		return seaudit_model_get_num_denies(slog, self);
 	};
-	size_t get_num_bools(seaudit_log_t *slog) {
+	%rename(get_num_bools) wrap_get_num_bools;
+	size_t wrap_get_num_bools(seaudit_log_t *slog) {
 		return seaudit_model_get_num_bools(slog, self);
 	};
-	size_t get_num_loads(seaudit_log_t *slog) {
+	%rename(get_num_loads) wrap_get_num_loads;
+	size_t wrap_get_num_loads(seaudit_log_t *slog) {
 		return seaudit_model_get_num_loads(slog, self);
 	};
 };
@@ -1311,7 +1438,7 @@ typedef enum seaudit_report_format
 } seaudit_report_format_e;
 typedef struct seaudit_report {} seaudit_report_t;
 %extend seaudit_report_t {
-	seaudit_report_t(seaudit_model_t *m) {
+	seaudit_report(seaudit_model_t *m) {
 		seaudit_report_t *sr;
 		BEGIN_EXCEPTION
 		sr = seaudit_report_create(m);
@@ -1322,10 +1449,11 @@ typedef struct seaudit_report {} seaudit_report_t;
 	fail:
 		return sr;
 	};
-	~seaudit_report_t() {
+	~seaudit_report() {
 		seaudit_report_destroy(&self);
 	};
-	void write(seaudit_log_t *slog, char *path) {
+	%rename(write) wrap_write;
+	void wrap_write(seaudit_log_t *slog, char *path) {
 		BEGIN_EXCEPTION
 		if (seaudit_report_write(slog, self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not write report to file");
@@ -1334,7 +1462,8 @@ typedef struct seaudit_report {} seaudit_report_t;
 	fail:
 		return;
 	};
-	void set_format(seaudit_log_t *slog, seaudit_report_format_e format) {
+	%rename(set_format) wrap_set_format;
+	void wrap_set_format(seaudit_log_t *slog, seaudit_report_format_e format) {
 		BEGIN_EXCEPTION
 		if (seaudit_report_set_format(slog, self, format)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report format");
@@ -1343,7 +1472,8 @@ typedef struct seaudit_report {} seaudit_report_t;
 	fail:
 		return;
 	};
-	void set_configuration(seaudit_log_t *slog, char *path) {
+	%rename(set_configuration) wrap_set_configuration;
+	void wrap_set_configuration(seaudit_log_t *slog, char *path) {
 		BEGIN_EXCEPTION
 		if (seaudit_report_set_configuration(slog, self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report configuration file");
@@ -1352,7 +1482,8 @@ typedef struct seaudit_report {} seaudit_report_t;
 	fail:
 		return;
 	};
-	void set_stylesheet(seaudit_log_t *slog, char *path, int use_stylesheet) {
+	%rename(set_stylesheet) wrap_set_stylesheet;
+	void wrap_set_stylesheet(seaudit_log_t *slog, char *path, int use_stylesheet) {
 		BEGIN_EXCEPTION
 		if (seaudit_report_set_stylesheet(slog, self, path, use_stylesheet)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report stylesheet");
@@ -1361,7 +1492,8 @@ typedef struct seaudit_report {} seaudit_report_t;
 	fail:
 		return;
 	};
-	void set_malformed(seaudit_log_t *slog, int do_malformed) {
+	%rename(set_malformed) wrap_set_malformed;
+	void wrap_set_malformed(seaudit_log_t *slog, int do_malformed) {
 		BEGIN_EXCEPTION
 		if (seaudit_report_set_malformed(slog, self, do_malformed)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set report malformed flag");
