@@ -25,9 +25,9 @@ libseaudit_version=4.5
 setoolsdir='${prefix}/share/setools-3.3'
 javadir='${prefix}/share/java'
 
-version_min_sepol_major=1
-version_min_sepol_minor=12
-version_min_sepol_patch=27
+version_min_sepol_major=2
+version_min_sepol_minor=4
+version_min_sepol_patch=0
 
 dnl *** end of tunable values ***
 

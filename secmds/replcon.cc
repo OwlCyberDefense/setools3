@@ -60,7 +60,7 @@ static struct option const longopts[] = {
 	{NULL, 0, NULL, 0}
 };
 
-extern int lsetfilecon_raw(const char *, security_context_t) __attribute__ ((weak));
+extern int lsetfilecon_raw(const char *, const char *) __attribute__ ((weak));
 
 /**
  * As that setools must work with older libselinux versions that may
