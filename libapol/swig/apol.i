@@ -256,7 +256,7 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 	}
 %}
 %extend apol_ip_t {
-	apol_ip_t(const char *str) {
+	apol_ip(const char *str) {
 		apol_ip_t *ip = NULL;
 		BEGIN_EXCEPTION
 		ip = calloc(1, sizeof(*ip));
@@ -274,7 +274,7 @@ uint8_t apol_str_to_protocol(const char *protocol_str);
 	fail:
 		return ip;
 	};
-	~apol_ip_t() {
+	~apol_ip() {
 	    free(self);
 	};
 	int get_protocol() {
@@ -303,31 +303,35 @@ char *apol_file_find_path(const char *file_name);
 %}
 typedef struct apol_vector {} apol_vector_t;
 %extend apol_vector_t {
-	apol_vector_t() {
+	apol_vector() {
 		return apol_vector_create(NULL);
 	};
-	apol_vector_t(qpol_iterator_t *iter) {
+	apol_vector(qpol_iterator_t *iter) {
 		return apol_vector_create_from_iter(iter, NULL);
 	};
-	apol_vector_t(apol_vector_t *v) {
+	apol_vector(apol_vector_t *v) {
 		return apol_vector_create_from_vector(v, NULL, NULL, NULL);
 	};
-	apol_vector_t(apol_vector_t *a, apol_vector_t *b) {
+	apol_vector(apol_vector_t *a, apol_vector_t *b) {
 		return apol_vector_create_from_intersection(a, b, NULL, NULL);
 	};
-	size_t get_size() {
+	%rename(get_size) wrap_get_size;
+	size_t wrap_get_size() {
 		return apol_vector_get_size(self);
 	};
-	size_t get_capacity() {
+	%rename(get_capacity) wrap_get_capacity;
+	size_t wrap_get_capacity() {
 		return apol_vector_get_capacity(self);
 	};
-	void *get_element(size_t i) {
+	%rename(get_element) wrap_get_element;
+	void *wrap_get_element(size_t i) {
 		return apol_vector_get_element(self, i);
 	};
-	~apol_vector_t() {
+	~apol_vector() {
 		apol_vector_destroy(&self);
 	};
-	void append(void *x) {
+	%rename(append) wrap_append;
+	void wrap_append(void *x) {
 		BEGIN_EXCEPTION
 		if (apol_vector_append(self, x)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -336,7 +340,8 @@ typedef struct apol_vector {} apol_vector_t;
 	fail:
 		return;
 	};
-	void append_unique(void *x) {
+	%rename(append_unique) wrap_append_unique;
+	void wrap_append_unique(void *x) {
 		BEGIN_EXCEPTION
 		if (apol_vector_append_unique(self, x, NULL, NULL)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -345,7 +350,8 @@ typedef struct apol_vector {} apol_vector_t;
 	fail:
 		return;
 	};
-	void cat(apol_vector_t *src) {
+	%rename(cat) wrap_cat;
+	void wrap_cat(apol_vector_t *src) {
 		BEGIN_EXCEPTION
 		if (apol_vector_cat(self, src)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -354,7 +360,8 @@ typedef struct apol_vector {} apol_vector_t;
 	fail:
 		return;
 	};
-	void remove(size_t idx) {
+	%rename(remove) wrap_remove;
+	void wrap_remove(size_t idx) {
 		BEGIN_EXCEPTION
 		if (apol_vector_remove(self, idx)) {
 			SWIG_exception(SWIG_RuntimeError, "Error removing vector element");
@@ -363,10 +370,12 @@ typedef struct apol_vector {} apol_vector_t;
 	fail:
 		return;
 	};
-	void sort() {
+	%rename(sort) wrap_sort;
+	void wrap_sort() {
 		apol_vector_sort(self, NULL, NULL);
 	};
-	void sort_uniquify() {
+	%rename(sort_uniquify) wrap_sort_uniquify;
+	void wrap_sort_uniquify() {
 		apol_vector_sort_uniquify(self, NULL, NULL);
 	};
 };
@@ -379,13 +388,13 @@ typedef struct apol_vector {} apol_vector_t;
 %}
 typedef struct apol_string_vector {} apol_string_vector_t;
 %extend apol_string_vector_t {
-	apol_string_vector_t() {
+	apol_string_vector() {
 		return (apol_string_vector_t*)apol_vector_create(free);
 	};
-	apol_string_vector_t(apol_string_vector_t *v) {
+	apol_string_vector(apol_string_vector_t *v) {
 		return (apol_string_vector_t*)apol_vector_create_from_vector((apol_vector_t*)v, apol_str_strdup, NULL, free);
 	};
-	apol_string_vector_t(apol_string_vector_t *a, apol_string_vector_t *b) {
+	apol_string_vector(apol_string_vector_t *a, apol_string_vector_t *b) {
 		return (apol_string_vector_t*)apol_vector_create_from_intersection((apol_vector_t*)a, (apol_vector_t*)b, apol_str_strcmp, NULL);
 	};
 	size_t get_size() {
@@ -397,7 +406,7 @@ typedef struct apol_string_vector {} apol_string_vector_t;
 	char *get_element(size_t i) {
 		return (char*)apol_vector_get_element((apol_vector_t*)self, i);
 	};
-	~apol_string_vector_t() {
+	~apol_string_vector() {
 		apol_vector_destroy((apol_vector_t**)&self);
 	};
 	size_t get_index(char *str) {
@@ -462,7 +471,7 @@ typedef struct apol_string_vector {} apol_string_vector_t;
 } apol_policy_path_type_e;
 typedef struct apol_policy_path {} apol_policy_path_t;
 %extend apol_policy_path_t {
-	apol_policy_path_t(apol_policy_path_type_e type, char * primary, apol_string_vector_t *modules = NULL) {
+	apol_policy_path(apol_policy_path_type_e type, char * primary, apol_string_vector_t *modules = NULL) {
 		apol_policy_path_t *p;
 		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create(type, primary,	(apol_vector_t*)modules)) == NULL) {
@@ -472,7 +481,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	fail:
 		return p;
 	};
-	apol_policy_path_t(char *path) {
+	apol_policy_path(char *path) {
 		apol_policy_path_t *p;
 		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create_from_file(path)) == NULL) {
@@ -482,7 +491,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	fail:
 		return p;
 	};
-	apol_policy_path_t(char *str, int unused) {
+	apol_policy_path(char *str, int unused) {
 		apol_policy_path_t *p;
 		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create_from_string(str)) == NULL) {
@@ -492,7 +501,7 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	fail:
 			return p;
 	};
-	apol_policy_path_t(apol_policy_path_t *in) {
+	apol_policy_path(apol_policy_path_t *in) {
 		apol_policy_path_t *p;
 		BEGIN_EXCEPTION
 		if ((p = apol_policy_path_create_from_policy_path(in)) == NULL) {
@@ -502,20 +511,24 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	fail:
 		return p;
 	};
-	~apol_policy_path_t() {
+	~apol_policy_path() {
 		apol_policy_path_destroy(&self);
 	};
-	apol_policy_path_type_e get_type() {
+	%rename(get_type) wrap_get_type;
+	apol_policy_path_type_e wrap_get_type() {
 		return apol_policy_path_get_type(self);
 	};
-	const char *get_primary() {
+	%rename(get_primary) wrap_get_primary;
+	const char *wrap_get_primary() {
 		return apol_policy_path_get_primary(self);
 	};
-	const apol_string_vector_t *get_modules() {
+	%rename(get_modules) wrap_get_modules;
+	const apol_string_vector_t *wrap_get_modules() {
 		return (apol_string_vector_t*)apol_policy_path_get_modules(self);
 	};
 	%newobject to_string();
-	char *to_string() {
+	%rename(to_string) wrap_to_string;
+	char *wrap_to_string() {
 		char *str;
 		BEGIN_EXCEPTION
 		str = apol_policy_path_to_string(self);
@@ -526,7 +539,8 @@ typedef struct apol_policy_path {} apol_policy_path_t;
 	fail:
 		return str;
 	};
-	void to_file(char *path) {
+	%rename(to_file) wrap_to_file;
+	void wrap_to_file(char *path) {
 		BEGIN_EXCEPTION
 		if (apol_policy_path_to_file(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Input/outpet error");
@@ -549,7 +563,7 @@ typedef struct apol_policy {} apol_policy_t;
 #define APOL_PERMMAP_BOTH	(APOL_PERMMAP_READ | APOL_PERMMAP_WRITE)
 #define APOL_PERMMAP_NONE	0x10
 %extend apol_policy_t {
-	apol_policy_t(apol_policy_path_t *path, int options = 0) {
+	apol_policy(apol_policy_path_t *path, int options = 0) {
 		apol_policy_t *p;
 		BEGIN_EXCEPTION
 		p = apol_policy_create_from_policy_path(path, options, apol_swig_message_callback, apol_swig_message_callback_arg);
@@ -564,25 +578,30 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return p;
 	};
-	~apol_policy_t() {
+	~apol_policy() {
 		apol_policy_destroy(&self);
 	};
-	int get_policy_type() {
+	%rename(get_policy_type) wrap_get_policy_type;
+	int wrap_get_policy_type() {
 		return apol_policy_get_policy_type(self);
 	};
 
-	int get_policy_handle_unknown() {
+	%rename(get_policy_handle_unknown) wrap_get_policy_handle_unknown;
+	int wrap_get_policy_handle_unknown() {
 		return apol_policy_get_policy_handle_unknown(self);
 	};
 
-	qpol_policy_t *get_qpol() {
+	%rename(get_qpol) wrap_get_qpol;
+	qpol_policy_t *wrap_get_qpol() {
 		return apol_policy_get_qpol(self);
 	};
-	int is_mls() {
+	%rename(is_mls) wrap_is_mls;
+	int wrap_is_mls() {
 		return apol_policy_is_mls(self);
 	};
 	%newobject get_version_type_mls_str();
-	char *get_version_type_mls_str() {
+	%rename(get_version_type_mls_str) wrap_get_version_type_mls_str;
+	char *wrap_get_version_type_mls_str() {
 		char *str;
 		BEGIN_EXCEPTION
 		str = apol_policy_get_version_type_mls_str(self);
@@ -593,7 +612,8 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return str;
 	};
-	void open_permmap(const char *path) {
+	%rename(open_permmap) wrap_open_permmap;
+	void wrap_open_permmap(const char *path) {
 		BEGIN_EXCEPTION
 		if (apol_policy_open_permmap(self, path) < 0) {
 			SWIG_exception(SWIG_RuntimeError, "Error loading permission map");
@@ -602,7 +622,8 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return;
 	};
-	void save_permmap(const char *path) {
+	%rename(save_permmap) wrap_save_permmap;
+	void wrap_save_permmap(const char *path) {
 		BEGIN_EXCEPTION
 		if (apol_policy_save_permmap(self, path)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not save permission map");
@@ -631,7 +652,8 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return dir;
 	};
-	void set_permmap(const char *class_name, const char *perm_name, int direction, int weight) {
+	%rename(set_permmap) wrap_set_permmap;
+	void wrap_set_permmap(const char *class_name, const char *perm_name, int direction, int weight) {
 		BEGIN_EXCEPTION
 		if (apol_policy_set_permmap(self, class_name, perm_name, direction, weight)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set permission mapping");
@@ -640,7 +662,8 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return;
 	};
-	void build_domain_trans_table() {
+	%rename(build_domain_trans_table) wrap_build_domain_trans_table;
+	void wrap_build_domain_trans_table() {
 		BEGIN_EXCEPTION
 		if (apol_policy_build_domain_trans_table(self)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not build domain transition table");
@@ -649,7 +672,8 @@ typedef struct apol_policy {} apol_policy_t;
 	fail:
 		return;
 	};
-	void reset_domain_trans_table() {
+	%rename(reset_domain_trans_table) wrap_reset_domain_trans_table;
+	void wrap_reset_domain_trans_table() {
 		apol_policy_reset_domain_trans_table(self);
 	}
 };
@@ -657,7 +681,7 @@ typedef struct apol_policy {} apol_policy_t;
 /* apol type query */
 typedef struct apol_type_query {} apol_type_query_t;
 %extend apol_type_query_t {
-	apol_type_query_t() {
+	apol_type_query() {
 		apol_type_query_t *tq;
 		BEGIN_EXCEPTION
 		tq = apol_type_query_create();
@@ -668,7 +692,7 @@ typedef struct apol_type_query {} apol_type_query_t;
 	fail:
 		return tq;
 	};
-	~apol_type_query_t() {
+	~apol_type_query() {
 		apol_type_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t *);
@@ -682,7 +706,8 @@ typedef struct apol_type_query {} apol_type_query_t;
 	fail:
 		return v;
 	};
-	void set_type(apol_policy_t *p, char *name) {
+	%rename(set_type) wrap_set_type;
+	void wrap_set_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_type_query_set_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -691,7 +716,8 @@ typedef struct apol_type_query {} apol_type_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_type_query_set_regex(p, self, regex);
 	};
 };
@@ -699,7 +725,7 @@ typedef struct apol_type_query {} apol_type_query_t;
 /* apol attribute query */
 typedef struct apol_attr_query {} apol_attr_query_t;
 %extend apol_attr_query_t {
-	apol_attr_query_t() {
+	apol_attr_query() {
 		apol_attr_query_t *aq;
 		BEGIN_EXCEPTION
 		aq = apol_attr_query_create();
@@ -710,7 +736,7 @@ typedef struct apol_attr_query {} apol_attr_query_t;
 	fail:
 		return aq;
 	};
-	~apol_attr_query_t() {
+	~apol_attr_query() {
 		apol_attr_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t *);
@@ -724,7 +750,8 @@ typedef struct apol_attr_query {} apol_attr_query_t;
 	fail:
 		return v;
 	};
-	void set_attr(apol_policy_t *p, char *name) {
+	%rename(set_attr) wrap_set_attr;
+	void wrap_set_attr(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_attr_query_set_attr(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -733,7 +760,8 @@ typedef struct apol_attr_query {} apol_attr_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_attr_query_set_regex(p, self, regex);
 	};
 };
@@ -741,7 +769,7 @@ typedef struct apol_attr_query {} apol_attr_query_t;
 /* apol role query */
 typedef struct apol_role_query {} apol_role_query_t;
 %extend apol_role_query_t {
-	apol_role_query_t() {
+	apol_role_query() {
 		apol_role_query_t *rq;
 		BEGIN_EXCEPTION
 		rq = apol_role_query_create();
@@ -752,7 +780,7 @@ typedef struct apol_role_query {} apol_role_query_t;
 	fail:
 		return rq;
 	};
-	~apol_role_query_t() {
+	~apol_role_query() {
 		apol_role_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t *);
@@ -766,7 +794,8 @@ typedef struct apol_role_query {} apol_role_query_t;
 	fail:
 		return v;
 	};
-	void set_role(apol_policy_t *p, char *name) {
+	%rename(set_role) wrap_set_role;
+	void wrap_set_role(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_role_query_set_role(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -775,7 +804,8 @@ typedef struct apol_role_query {} apol_role_query_t;
 	fail:
 		return;
 	};
-	void set_type(apol_policy_t *p, char *name) {
+	%rename(set_type) wrap_set_type;
+	void wrap_set_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_role_query_set_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -784,7 +814,8 @@ typedef struct apol_role_query {} apol_role_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_role_query_set_regex(p, self, regex);
 	};
 };
@@ -793,7 +824,7 @@ int apol_role_has_type(apol_policy_t * p, qpol_role_t * r, qpol_type_t * t);
 /* apol class query */
 typedef struct apol_class_query {} apol_class_query_t;
 %extend apol_class_query_t {
-	apol_class_query_t() {
+	apol_class_query() {
 		apol_class_query_t *cq;
 		BEGIN_EXCEPTION
 		cq = apol_class_query_create();
@@ -804,7 +835,7 @@ typedef struct apol_class_query {} apol_class_query_t;
 	fail:
 		return cq;
 	};
-	~apol_class_query_t() {
+	~apol_class_query() {
 		apol_class_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -818,7 +849,8 @@ typedef struct apol_class_query {} apol_class_query_t;
 	fail:
 		return v;
 	};
-	void set_class(apol_policy_t *p, char *name) {
+	%rename(set_class) wrap_set_class;
+	void wrap_set_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_class_query_set_class(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -827,7 +859,8 @@ typedef struct apol_class_query {} apol_class_query_t;
 	fail:
 		return;
 	};
-	void set_common(apol_policy_t *p, char *name) {
+	%rename(set_common) wrap_set_common;
+	void wrap_set_common(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_class_query_set_common(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -836,7 +869,8 @@ typedef struct apol_class_query {} apol_class_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_class_query_set_regex(p, self, regex);
 	};
 };
@@ -844,7 +878,7 @@ typedef struct apol_class_query {} apol_class_query_t;
 /* apol common query */
 typedef struct apol_common_query {} apol_common_query_t;
 %extend apol_common_query_t {
-	apol_common_query_t() {
+	apol_common_query() {
 		apol_common_query_t *cq;
 		BEGIN_EXCEPTION
 		cq = apol_common_query_create();
@@ -855,7 +889,7 @@ typedef struct apol_common_query {} apol_common_query_t;
 	fail:
 		return cq;
 	};
-	~apol_common_query_t() {
+	~apol_common_query() {
 		apol_common_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -869,7 +903,8 @@ typedef struct apol_common_query {} apol_common_query_t;
 	fail:
 		return v;
 	};
-	void set_common(apol_policy_t *p, char *name) {
+	%rename(set_common) wrap_set_common;
+	void wrap_set_common(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_common_query_set_common(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -878,7 +913,8 @@ typedef struct apol_common_query {} apol_common_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_common_query_set_regex(p, self, regex);
 	};
 };
@@ -886,7 +922,7 @@ typedef struct apol_common_query {} apol_common_query_t;
 /* apol perm query */
 typedef struct apol_perm_query {} apol_perm_query_t;
 %extend apol_perm_query_t {
-	apol_perm_query_t() {
+	apol_perm_query() {
 		apol_perm_query_t *pq;
 		BEGIN_EXCEPTION
 		pq = apol_perm_query_create();
@@ -897,7 +933,7 @@ typedef struct apol_perm_query {} apol_perm_query_t;
 	fail:
 		return pq;
 	};
-	~apol_perm_query_t() {
+	~apol_perm_query() {
 		apol_perm_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -911,7 +947,8 @@ typedef struct apol_perm_query {} apol_perm_query_t;
 	fail:
 		return (apol_string_vector_t*)v;
 	};
-	void set_perm(apol_policy_t *p, char *name) {
+	%rename(set_perm) wrap_set_perm;
+	void wrap_set_perm(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_perm_query_set_perm(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -920,7 +957,8 @@ typedef struct apol_perm_query {} apol_perm_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_perm_query_set_regex(p, self, regex);
 	};
 };
@@ -928,7 +966,7 @@ typedef struct apol_perm_query {} apol_perm_query_t;
 /* apol bool query */
 typedef struct apol_bool_query {} apol_bool_query_t;
 %extend apol_bool_query_t {
-	apol_bool_query_t() {
+	apol_bool_query() {
 		apol_bool_query_t *bq;
 		BEGIN_EXCEPTION
 		bq = apol_bool_query_create();
@@ -939,7 +977,7 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 	fail:
 		return bq;
 	};
-	~apol_bool_query_t() {
+	~apol_bool_query() {
 		apol_bool_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -953,7 +991,8 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 	fail:
 		return v;
 	};
-	void set_bool(apol_policy_t *p, char *name) {
+	%rename(set_bool) wrap_set_bool;
+	void wrap_set_bool(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_bool_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -962,7 +1001,8 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_bool_query_set_regex(p, self, regex);
 	};
 };
@@ -970,7 +1010,7 @@ typedef struct apol_bool_query {} apol_bool_query_t;
 /* apol mls level */
 typedef struct apol_mls_level {} apol_mls_level_t;
 %extend apol_mls_level_t {
-	apol_mls_level_t() {
+	apol_mls_level() {
 		apol_mls_level_t *aml;
 		BEGIN_EXCEPTION
 		aml = apol_mls_level_create();
@@ -981,7 +1021,7 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	apol_mls_level_t(apol_mls_level_t *in) {
+	apol_mls_level(apol_mls_level_t *in) {
 		apol_mls_level_t *aml;
 		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_mls_level(in);
@@ -992,7 +1032,7 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	apol_mls_level_t(apol_policy_t *p, const char *str) {
+	apol_mls_level(apol_policy_t *p, const char *str) {
 		apol_mls_level_t *aml;
 		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_string(p, str);
@@ -1003,7 +1043,7 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	apol_mls_level_t(const char *str) {
+	apol_mls_level(const char *str) {
 		apol_mls_level_t *aml;
 		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_literal(str);
@@ -1014,7 +1054,7 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	apol_mls_level_t(apol_policy_t *p, qpol_mls_level_t *qml) {
+	apol_mls_level(apol_policy_t *p, qpol_mls_level_t *qml) {
 		apol_mls_level_t *aml;
 		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_qpol_mls_level(p, qml);
@@ -1025,7 +1065,7 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	apol_mls_level_t(apol_policy_t *p, qpol_level_t *ql) {
+	apol_mls_level(apol_policy_t *p, qpol_level_t *ql) {
 		apol_mls_level_t *aml;
 		BEGIN_EXCEPTION
 		aml = apol_mls_level_create_from_qpol_level_datum(p, ql);
@@ -1036,10 +1076,11 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return aml;
 	};
-	~apol_mls_level_t() {
+	~apol_mls_level() {
 		apol_mls_level_destroy(&self);
 	};
-	void set_sens(apol_policy_t *p, char *sens) {
+	%rename(set_sens) wrap_set_sens;
+	void wrap_set_sens(apol_policy_t *p, char *sens) {
 		BEGIN_EXCEPTION
 		if (apol_mls_level_set_sens(p, self, sens)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set level sensitivity");
@@ -1048,10 +1089,12 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return;
 	};
-	const char *get_sens() {
+	%rename(get_sens) wrap_get_sens;
+	const char *wrap_get_sens() {
 		return apol_mls_level_get_sens(self);
 	};
-	void append_cats(apol_policy_t *p, char *cats) {
+	%rename(append_cats) wrap_append_cats;
+	void wrap_append_cats(apol_policy_t *p, char *cats) {
 		BEGIN_EXCEPTION
 		if (apol_mls_level_append_cats(p, self, cats)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append level category");
@@ -1060,10 +1103,12 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return;
 	};
-	const apol_string_vector_t *get_cats() {
+	%rename(get_cats) wrap_get_cats;
+	const apol_string_vector_t *wrap_get_cats() {
 		return (apol_string_vector_t *) apol_mls_level_get_cats(self);
 	};
-	int validate(apol_policy_t *p) {
+	%rename(validate) wrap_validate;
+	int wrap_validate(apol_policy_t *p) {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_mls_level_validate(p, self);
@@ -1075,7 +1120,8 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 		return ret;
 	}
 	%newobject render(apol_policy_t*);
-	char *render(apol_policy_t *p) {
+	%rename(render) wrap_render;
+	char *wrap_render(apol_policy_t *p) {
 		char *str;
 		BEGIN_EXCEPTION
 		str = apol_mls_level_render(p, self);
@@ -1086,7 +1132,8 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return str;
 	};
-	int convert(apol_policy_t *p) {
+	%rename(convert) wrap_convert;
+	int wrap_convert(apol_policy_t *p) {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_mls_level_convert(p, self);
@@ -1097,7 +1144,8 @@ typedef struct apol_mls_level {} apol_mls_level_t;
 	fail:
 		return ret;
 	}
-	int is_literal() {
+	%rename(is_literal) wrap_is_literal;
+	int wrap_is_literal() {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_mls_level_is_literal(self);
@@ -1133,7 +1181,7 @@ int apol_mls_cats_compare(apol_policy_t * p, const char *cat1, const char *cat2)
 #endif
 typedef struct apol_mls_range {} apol_mls_range_t;
 %extend apol_mls_range_t {
-	apol_mls_range_t() {
+	apol_mls_range() {
 		apol_mls_range_t *amr;
 		BEGIN_EXCEPTION
 		amr = apol_mls_range_create();
@@ -1144,7 +1192,7 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return amr;
 	};
-	apol_mls_range_t(apol_mls_range_t *in) {
+	apol_mls_range(apol_mls_range_t *in) {
 		apol_mls_range_t *amr;
 		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_mls_range(in);
@@ -1155,7 +1203,7 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return amr;
 	};
-	apol_mls_range_t(apol_policy_t *p, const char *s) {
+	apol_mls_range(apol_policy_t *p, const char *s) {
 		apol_mls_range_t *amr;
 		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_string(p, s);
@@ -1166,7 +1214,7 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return amr;
 	};
-	apol_mls_range_t(const char *s) {
+	apol_mls_range(const char *s) {
 		apol_mls_range_t *amr;
 		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_literal(s);
@@ -1177,7 +1225,7 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return amr;
 	};
-	apol_mls_range_t(apol_policy_t *p, qpol_mls_range_t *in) {
+	apol_mls_range(apol_policy_t *p, qpol_mls_range_t *in) {
 		apol_mls_range_t *amr;
 		BEGIN_EXCEPTION
 		amr = apol_mls_range_create_from_qpol_mls_range(p, in);
@@ -1188,10 +1236,11 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return amr;
 	};
-	~apol_mls_range_t() {
+	~apol_mls_range() {
 		apol_mls_range_destroy(&self);
 	};
-	void set_low(apol_policy_t *p, apol_mls_level_t *lvl) {
+	%rename(set_low) wrap_set_low;
+	void wrap_set_low(apol_policy_t *p, apol_mls_level_t *lvl) {
 		BEGIN_EXCEPTION
 		if (apol_mls_range_set_low(p, self, lvl)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set low level");
@@ -1200,7 +1249,8 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return;
 	};
-	void set_high(apol_policy_t *p, apol_mls_level_t *lvl) {
+	%rename(set_high) wrap_set_high;
+	void wrap_set_high(apol_policy_t *p, apol_mls_level_t *lvl) {
 		BEGIN_EXCEPTION
 		if (apol_mls_range_set_high(p, self, lvl)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set high level");
@@ -1209,14 +1259,17 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 			return;
 	};
-	const apol_mls_level_t *get_low() {
+	%rename(get_low) wrap_get_low;
+	const apol_mls_level_t *wrap_get_low() {
 		return apol_mls_range_get_low(self);
 	}
-	const apol_mls_level_t *get_high() {
+	%rename(get_high) wrap_get_high;
+	const apol_mls_level_t *wrap_get_high() {
 		return apol_mls_range_get_high(self);
 	}
 	%newobject render(apol_policy_t*);
-	char *render(apol_policy_t *p) {
+	%rename(render) wrap_render;
+	char *wrap_render(apol_policy_t *p) {
 		char *str;
 		BEGIN_EXCEPTION
 		str = apol_mls_range_render(p, self);
@@ -1228,7 +1281,8 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 		return str;
 	};
 	%newobject get_levels(apol_policy_t*);
-	apol_vector_t *get_levels(apol_policy_t *p) {
+	%rename(get_levels) wrap_get_levels;
+	apol_vector_t *wrap_get_levels(apol_policy_t *p) {
 		apol_vector_t *v;
 		BEGIN_EXCEPTION
 		v = apol_mls_range_get_levels(p, self);
@@ -1239,7 +1293,8 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 			return v;
 	};
-	int validate(apol_policy_t *p) {
+	%rename(validate) wrap_validate;
+	int wrap_validate(apol_policy_t *p) {
 		int ret = apol_mls_range_validate(p, self);
 		BEGIN_EXCEPTION
 		if (ret < 0) {
@@ -1249,7 +1304,8 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return ret;
 	}
-	int is_literal() {
+	%rename(is_literal) wrap_is_literal;
+	int wrap_is_literal() {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_mls_range_is_literal(self);
@@ -1260,7 +1316,8 @@ typedef struct apol_mls_range {} apol_mls_range_t;
 	fail:
 		return ret;
 	}
-	int convert(apol_policy_t *p) {
+	%rename(convert) wrap_convert;
+	int wrap_convert(apol_policy_t *p) {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_mls_range_convert(p, self);
@@ -1283,7 +1340,7 @@ int apol_mls_range_contain_subrange(apol_policy_t * p, const apol_mls_range_t * 
 /* apol level query */
 typedef struct apol_level_query {} apol_level_query_t;
 %extend apol_level_query_t {
-	apol_level_query_t() {
+	apol_level_query() {
 		apol_level_query_t * alq;
 		BEGIN_EXCEPTION
 		alq = apol_level_query_create();
@@ -1294,7 +1351,7 @@ typedef struct apol_level_query {} apol_level_query_t;
 	fail:
 		return alq;
 	};
-	~apol_level_query_t() {
+	~apol_level_query() {
 		apol_level_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1308,7 +1365,8 @@ typedef struct apol_level_query {} apol_level_query_t;
 	fail:
 		return v;
 	};
-	void set_sens(apol_policy_t *p, char *name) {
+	%rename(set_sens) wrap_set_sens;
+	void wrap_set_sens(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_level_query_set_sens(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1317,7 +1375,8 @@ typedef struct apol_level_query {} apol_level_query_t;
 	fail:
 		return;
 	};
-	void set_cat(apol_policy_t *p, char *name) {
+	%rename(set_cat) wrap_set_cat;
+	void wrap_set_cat(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_level_query_set_cat(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1326,7 +1385,8 @@ typedef struct apol_level_query {} apol_level_query_t;
 	fail:
 			return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_level_query_set_regex(p, self, regex);
 	};
 };
@@ -1334,7 +1394,7 @@ typedef struct apol_level_query {} apol_level_query_t;
 /* apol cat query */
 typedef struct apol_cat_query {} apol_cat_query_t;
 %extend apol_cat_query_t {
-	apol_cat_query_t() {
+	apol_cat_query() {
 		apol_cat_query_t * acq;
 		BEGIN_EXCEPTION
 		acq = apol_cat_query_create();
@@ -1345,7 +1405,7 @@ typedef struct apol_cat_query {} apol_cat_query_t;
 	fail:
 		return acq;
 	};
-	~apol_cat_query_t() {
+	~apol_cat_query() {
 		apol_cat_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t *);
@@ -1359,7 +1419,8 @@ typedef struct apol_cat_query {} apol_cat_query_t;
 	fail:
 		return v;
 	};
-	void set_cat(apol_policy_t *p, char *name) {
+	%rename(set_cat) wrap_set_cat;
+	void wrap_set_cat(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_cat_query_set_cat(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1368,7 +1429,8 @@ typedef struct apol_cat_query {} apol_cat_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_cat_query_set_regex(p, self, regex);
 	};
 };
@@ -1384,7 +1446,7 @@ typedef struct apol_cat_query {} apol_cat_query_t;
 #endif
 typedef struct apol_user_query {} apol_user_query_t;
 %extend apol_user_query_t {
-	apol_user_query_t() {
+	apol_user_query() {
 		apol_user_query_t *auq;
 		BEGIN_EXCEPTION
 		auq = apol_user_query_create();
@@ -1395,7 +1457,7 @@ typedef struct apol_user_query {} apol_user_query_t;
 	fail:
 		return auq;
 	};
-	~apol_user_query_t() {
+	~apol_user_query() {
 		apol_user_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1409,7 +1471,8 @@ typedef struct apol_user_query {} apol_user_query_t;
 	fail:
 		return v;
 	};
-	void set_user(apol_policy_t *p, char *name) {
+	%rename(set_user) wrap_set_user;
+	void wrap_set_user(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_user_query_set_user(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1418,7 +1481,8 @@ typedef struct apol_user_query {} apol_user_query_t;
 	fail:
 		return;
 	};
-	void set_role(apol_policy_t *p, char *name) {
+	%rename(set_role) wrap_set_role;
+	void wrap_set_role(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_user_query_set_role(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1427,7 +1491,8 @@ typedef struct apol_user_query {} apol_user_query_t;
 	fail:
 		return;
 	};
-	void set_default_level(apol_policy_t *p, apol_mls_level_t *lvl) {
+	%rename(set_default_level) wrap_set_default_level;
+	void wrap_set_default_level(apol_policy_t *p, apol_mls_level_t *lvl) {
 		BEGIN_EXCEPTION
 		if (apol_user_query_set_default_level(p, self, lvl)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1436,7 +1501,8 @@ typedef struct apol_user_query {} apol_user_query_t;
 	fail:
 		return;
 	};
-	void set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
+	%rename(set_range) wrap_set_range;
+	void wrap_set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
 		BEGIN_EXCEPTION
 		if (apol_user_query_set_range(p, self, rng, range_match)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1445,7 +1511,8 @@ typedef struct apol_user_query {} apol_user_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_user_query_set_regex(p, self, regex);
 	};
 };
@@ -1453,7 +1520,7 @@ typedef struct apol_user_query {} apol_user_query_t;
 /* apol context */
 typedef struct apol_context {} apol_context_t;
 %extend apol_context_t {
-	apol_context_t() {
+	apol_context() {
 		apol_context_t *ctx;
 		BEGIN_EXCEPTION
 		ctx = apol_context_create();
@@ -1464,7 +1531,7 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return ctx;
 	};
-	apol_context_t(apol_policy_t *p, qpol_context_t *in) {
+	apol_context(apol_policy_t *p, qpol_context_t *in) {
 		apol_context_t *ctx;
 		BEGIN_EXCEPTION
 		ctx = apol_context_create_from_qpol_context(p, in);
@@ -1475,7 +1542,7 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return ctx;
 	};
-	apol_context_t(const char *str) {
+	apol_context(const char *str) {
 		apol_context_t *ctx;
 		BEGIN_EXCEPTION
 		ctx = apol_context_create_from_literal(str);
@@ -1486,10 +1553,11 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return ctx;
 	};
-	~apol_context_t() {
+	~apol_context() {
 		apol_context_destroy(&self);
 	};
-	void set_user(apol_policy_t *p, char *name) {
+	%rename(set_user) wrap_set_user;
+	void wrap_set_user(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_context_set_user(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1498,10 +1566,12 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return;
 	};
-	const char *get_user() {
+	%rename(get_user) wrap_get_user;
+	const char *wrap_get_user() {
 		return apol_context_get_user(self);
 	};
-	void set_role(apol_policy_t *p, char *name) {
+	%rename(set_role) wrap_set_role;
+	void wrap_set_role(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_context_set_role(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1510,10 +1580,12 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return;
 	};
-	const char *get_role() {
+	%rename(get_role) wrap_get_role;
+	const char *wrap_get_role() {
 		return apol_context_get_role(self);
 	};
-	void set_type(apol_policy_t *p, char *name) {
+	%rename(set_type) wrap_set_type;
+	void wrap_set_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_context_set_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1522,10 +1594,12 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return;
 	};
-	const char *get_type() {
+	%rename(get_type) wrap_get_type;
+	const char *wrap_get_type() {
 		return apol_context_get_type(self);
 	};
-	void set_range(apol_policy_t *p, apol_mls_range_t *rng) {
+	%rename(set_range) wrap_set_range;
+	void wrap_set_range(apol_policy_t *p, apol_mls_range_t *rng) {
 		BEGIN_EXCEPTION
 		if (apol_context_set_range(p, self, rng)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1534,10 +1608,12 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return;
 	};
-	const apol_mls_range_t *get_range() {
+	%rename(get_range) wrap_get_range;
+	const apol_mls_range_t *wrap_get_range() {
 		return apol_context_get_range(self);
 	};
-	int validate(apol_policy_t *p) {
+	%rename(validate) wrap_validate;
+	int wrap_validate(apol_policy_t *p) {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_context_validate(p, self);
@@ -1548,7 +1624,8 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return ret;
 	}
-	int validate_partial(apol_policy_t *p) {
+	%rename(validate_partial) wrap_validate_partial;
+	int wrap_validate_partial(apol_policy_t *p) {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_context_validate_partial(p, self);
@@ -1560,7 +1637,8 @@ typedef struct apol_context {} apol_context_t;
 		return ret;
 	}
 	%newobject render(apol_policy_t*);
-	char *render(apol_policy_t *p) {
+	%rename(render) wrap_render;
+	char *wrap_render(apol_policy_t *p) {
 		char *str;
 		BEGIN_EXCEPTION
 		str = apol_context_render(p, self);
@@ -1571,7 +1649,8 @@ typedef struct apol_context {} apol_context_t;
 	fail:
 		return str;
 	};
-	int convert(apol_policy_t *p) {
+	%rename(convert) wrap_convert;
+	int wrap_convert(apol_policy_t *p) {
 		int ret = -1;
 		BEGIN_EXCEPTION
 		ret = apol_context_convert(p, self);
@@ -1588,7 +1667,7 @@ int apol_context_compare(apol_policy_t * p, apol_context_t * target, apol_contex
 /* apol constraint query */
 typedef struct apol_constraint_query {} apol_constraint_query_t;
 %extend apol_constraint_query_t {
-	apol_constraint_query_t() {
+	apol_constraint_query() {
 		apol_constraint_query_t *acq;
 		BEGIN_EXCEPTION
 		acq = apol_constraint_query_create();
@@ -1599,7 +1678,7 @@ typedef struct apol_constraint_query {} apol_constraint_query_t;
 	fail:
 		return acq;
 	};
-	~apol_constraint_query_t() {
+	~apol_constraint_query() {
 		apol_constraint_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1613,7 +1692,8 @@ typedef struct apol_constraint_query {} apol_constraint_query_t;
 	fail:
 		return v;
 	};
-	void set_class(apol_policy_t *p, char *name) {
+	%rename(set_class) wrap_set_class;
+	void wrap_set_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_constraint_query_set_class(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1622,7 +1702,8 @@ typedef struct apol_constraint_query {} apol_constraint_query_t;
 	fail:
 		return;
 	}
-	void set_perm(apol_policy_t *p, char *name) {
+	%rename(set_perm) wrap_set_perm;
+	void wrap_set_perm(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_constraint_query_set_perm(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1631,7 +1712,8 @@ typedef struct apol_constraint_query {} apol_constraint_query_t;
 	fail:
 		return;
 	}
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_constraint_query_set_regex(p, self, regex);
 	};
 };
@@ -1639,7 +1721,7 @@ typedef struct apol_constraint_query {} apol_constraint_query_t;
 /* apol validatetrans query */
 typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 %extend apol_validatetrans_query_t {
-	apol_validatetrans_query_t() {
+	apol_validatetrans_query() {
 		apol_validatetrans_query_t *avq;
 		BEGIN_EXCEPTION
 		avq = apol_validatetrans_query_create();
@@ -1650,7 +1732,7 @@ typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 	fail:
 		return avq;
 	};
-	~apol_validatetrans_query_t() {
+	~apol_validatetrans_query() {
 		apol_validatetrans_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1664,7 +1746,8 @@ typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 	fail:
 		return v;
 	};
-	void set_class(apol_policy_t *p, char *name) {
+	%rename(set_class) wrap_set_class;
+	void wrap_set_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_validatetrans_query_set_class(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1673,7 +1756,8 @@ typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 	fail:
 		return;
 	}
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_validatetrans_query_set_regex(p, self, regex);
 	};
 };
@@ -1689,7 +1773,7 @@ typedef struct apol_validatetrans_query {} apol_validatetrans_query_t;
 #endif
 typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 %extend apol_genfscon_query_t {
-	apol_genfscon_query_t() {
+	apol_genfscon_query() {
 		apol_genfscon_query_t *agq;
 		BEGIN_EXCEPTION
 		agq = apol_genfscon_query_create();
@@ -1700,7 +1784,7 @@ typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 	fail:
 		return agq;
 	};
-	~apol_genfscon_query_t() {
+	~apol_genfscon_query() {
 		apol_genfscon_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1714,7 +1798,8 @@ typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 	fail:
 		return v;
 	};
-	void set_filesystem(apol_policy_t *p, char *fs) {
+	%rename(set_filesystem) wrap_set_filesystem;
+	void wrap_set_filesystem(apol_policy_t *p, char *fs) {
 		BEGIN_EXCEPTION
 		if (apol_genfscon_query_set_filesystem(p, self, fs)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1723,7 +1808,8 @@ typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 	fail:
 		return;
 	};
-	void set_path(apol_policy_t *p, char *path) {
+	%rename(set_path) wrap_set_path;
+	void wrap_set_path(apol_policy_t *p, char *path) {
 		BEGIN_EXCEPTION
 		if (apol_genfscon_query_set_path(p, self, path)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1732,7 +1818,8 @@ typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 	fail:
 		return;
 	};
-	void set_objclass(apol_policy_t *p, int objclass) {
+	%rename(set_objclass) wrap_set_objclass;
+	void wrap_set_objclass(apol_policy_t *p, int objclass) {
 		BEGIN_EXCEPTION
 		if (apol_genfscon_query_set_objclass(p, self, objclass)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set object class for genfscon query");
@@ -1741,7 +1828,8 @@ typedef struct apol_genfscon_query {} apol_genfscon_query_t;
 	fail:
 		return;
 	};
-	void set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+	%rename(set_context) wrap_set_context;
+	void wrap_set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
 		apol_genfscon_query_set_context(p, self, ctx, range_match);
 	};
 };
@@ -1751,7 +1839,7 @@ char *apol_genfscon_render(apol_policy_t * p, qpol_genfscon_t * genfscon);
 /* apol fs_use query */
 typedef struct apol_fs_use_query {} apol_fs_use_query_t;
 %extend apol_fs_use_query_t {
-	apol_fs_use_query_t() {
+	apol_fs_use_query() {
 		apol_fs_use_query_t *afq;
 		BEGIN_EXCEPTION
 		afq = apol_fs_use_query_create();
@@ -1762,7 +1850,7 @@ typedef struct apol_fs_use_query {} apol_fs_use_query_t;
 	fail:
 		return afq;
 	};
-	~apol_fs_use_query_t() {
+	~apol_fs_use_query() {
 		apol_fs_use_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1776,7 +1864,8 @@ typedef struct apol_fs_use_query {} apol_fs_use_query_t;
 	fail:
 		return v;
 	};
-	void set_filesystem(apol_policy_t *p, char *fs) {
+	%rename(set_filesystem) wrap_set_filesystem;
+	void wrap_set_filesystem(apol_policy_t *p, char *fs) {
 		BEGIN_EXCEPTION
 		if (apol_fs_use_query_set_filesystem(p, self, fs)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1785,7 +1874,8 @@ typedef struct apol_fs_use_query {} apol_fs_use_query_t;
 	fail:
 		return;
 	};
-	void set_behavior(apol_policy_t *p, int behavior) {
+	%rename(set_behavior) wrap_set_behavior;
+	void wrap_set_behavior(apol_policy_t *p, int behavior) {
 		BEGIN_EXCEPTION
 		if (apol_fs_use_query_set_behavior(p, self, behavior)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set behavior for fs_use query");
@@ -1794,7 +1884,8 @@ typedef struct apol_fs_use_query {} apol_fs_use_query_t;
 	fail:
 		return;
 	};
-	void set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+	%rename(set_context) wrap_set_context;
+	void wrap_set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
 		apol_fs_use_query_set_context(p, self, ctx, range_match);
 	};
 };
@@ -1804,7 +1895,7 @@ char *apol_fs_use_render(apol_policy_t * p, qpol_fs_use_t * fsuse);
 /* apol initial sid query */
 typedef struct apol_isid_query {} apol_isid_query_t;
 %extend apol_isid_query_t {
-	apol_isid_query_t() {
+	apol_isid_query() {
 		apol_isid_query_t *aiq;
 		BEGIN_EXCEPTION
 		aiq = apol_isid_query_create();
@@ -1815,7 +1906,7 @@ typedef struct apol_isid_query {} apol_isid_query_t;
 	fail:
 		return aiq;
 	};
-	~apol_isid_query_t() {
+	~apol_isid_query() {
 		apol_isid_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1829,7 +1920,8 @@ typedef struct apol_isid_query {} apol_isid_query_t;
 	fail:
 		return v;
 	};
-	void set_name(apol_policy_t *p, char *name) {
+	%rename(set_name) wrap_set_name;
+	void wrap_set_name(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_isid_query_set_name(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1838,7 +1930,8 @@ typedef struct apol_isid_query {} apol_isid_query_t;
 	fail:
 		return;
 	};
-	void set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+	%rename(set_context) wrap_set_context;
+	void wrap_set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
 		apol_isid_query_set_context(p, self, ctx, range_match);
 	};
 };
@@ -1846,7 +1939,7 @@ typedef struct apol_isid_query {} apol_isid_query_t;
 /* apol portcon query */
 typedef struct apol_portcon_query {} apol_portcon_query_t;
 %extend apol_portcon_query_t {
-	apol_portcon_query_t() {
+	apol_portcon_query() {
 		apol_portcon_query_t *apq;
 		BEGIN_EXCEPTION
 		apq = apol_portcon_query_create();
@@ -1857,7 +1950,7 @@ typedef struct apol_portcon_query {} apol_portcon_query_t;
 	fail:
 		return apq;
 	};
-	~apol_portcon_query_t() {
+	~apol_portcon_query() {
 		apol_portcon_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1871,16 +1964,20 @@ typedef struct apol_portcon_query {} apol_portcon_query_t;
 	fail:
 		return v;
 	};
-	void set_protocol(apol_policy_t *p, int protocol) {
+	%rename(set_protocol) wrap_set_protocol;
+	void wrap_set_protocol(apol_policy_t *p, int protocol) {
 		apol_portcon_query_set_protocol(p, self, protocol);
 	};
-	void set_low(apol_policy_t *p, int port) {
+	%rename(set_low) wrap_set_low;
+	void wrap_set_low(apol_policy_t *p, int port) {
 		apol_portcon_query_set_low(p, self, port);
 	};
-	void set_high(apol_policy_t *p, int port) {
+	%rename(set_high) wrap_set_high;
+	void wrap_set_high(apol_policy_t *p, int port) {
 		apol_portcon_query_set_high(p, self, port);
 	};
-	void set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+	%rename(set_context) wrap_set_context;
+	void wrap_set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
 		apol_portcon_query_set_context(p, self, ctx, range_match);
 	};
 };
@@ -1889,8 +1986,9 @@ char *apol_portcon_render(apol_policy_t * p, qpol_portcon_t * portcon);
 
 /* apol netifcon query */
 typedef struct apol_netifcon_query {} apol_netifcon_query_t;
+%rename(apol_netifcon_query_set_msg_context) apol_netifcon_query_set_msg_context;
 %extend apol_netifcon_query_t {
-	apol_netifcon_query_t() {
+	apol_netifcon_query() {
 		apol_netifcon_query_t *anq;
 		BEGIN_EXCEPTION
 		anq = apol_netifcon_query_create();
@@ -1901,7 +1999,7 @@ typedef struct apol_netifcon_query {} apol_netifcon_query_t;
 	fail:
 		return anq;
 	};
-	~apol_netifcon_query_t() {
+	~apol_netifcon_query() {
 		apol_netifcon_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1915,7 +2013,8 @@ typedef struct apol_netifcon_query {} apol_netifcon_query_t;
 	fail:
 		return v;
 	};
-	void set_device(apol_policy_t *p, char *name) {
+	%rename(set_device) wrap_set_device;
+	void wrap_set_device(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_netifcon_query_set_device(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -1924,10 +2023,12 @@ typedef struct apol_netifcon_query {} apol_netifcon_query_t;
 	fail:
 		return;
 	};
-	void set_if_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+	%rename(set_if_context) wrap_set_if_context;
+	void wrap_set_if_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
 		apol_netifcon_query_set_if_context(p, self, ctx, range_match);
 	};
-	void set_msg_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+	%rename(set_msg_context) wrap_set_msg_context;
+	void wrap_set_msg_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
 		apol_netifcon_query_set_msg_context(p, self, ctx, range_match);
 	};
 };
@@ -1937,7 +2038,7 @@ char *apol_netifcon_render(apol_policy_t * p, qpol_netifcon_t * netifcon);
 /* apol nodecon query */
 typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 %extend apol_nodecon_query_t {
-	apol_nodecon_query_t() {
+	apol_nodecon_query() {
 		apol_nodecon_query_t *anq;
 		BEGIN_EXCEPTION
 		anq = apol_nodecon_query_create();
@@ -1948,7 +2049,7 @@ typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 	fail:
 		return anq;
 	};
-	~apol_nodecon_query_t() {
+	~apol_nodecon_query() {
 		apol_nodecon_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -1962,7 +2063,8 @@ typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 	fail:
 		return v;
 	};
-	void set_protocol(apol_policy_t *p, int protocol) {
+	%rename(set_protocol) wrap_set_protocol;
+	void wrap_set_protocol(apol_policy_t *p, int protocol) {
 		BEGIN_EXCEPTION
 		if (apol_nodecon_query_set_protocol(p, self, protocol)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set protocol for nodecon query");
@@ -2007,7 +2109,8 @@ typedef struct apol_nodecon_query {} apol_nodecon_query_t;
 	fail:
 		return;
 	};
-	void set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
+	%rename(set_context) wrap_set_context;
+	void wrap_set_context(apol_policy_t *p, apol_context_t *ctx, int range_match) {
 		apol_nodecon_query_set_context(p, self, ctx, range_match);
 	};
 };
@@ -2017,7 +2120,7 @@ char *apol_nodecon_render(apol_policy_t * p, qpol_nodecon_t * nodecon);
 /* apol avrule query */
 typedef struct apol_avrule_query {} apol_avrule_query_t;
 %extend apol_avrule_query_t {
-	apol_avrule_query_t() {
+	apol_avrule_query() {
 		apol_avrule_query_t *avq;
 		BEGIN_EXCEPTION
 		avq = apol_avrule_query_create();
@@ -2028,7 +2131,7 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return avq;
 	};
-	~apol_avrule_query_t() {
+	~apol_avrule_query() {
 		apol_avrule_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -2053,10 +2156,12 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return v;
 	};
-	void set_rules(apol_policy_t *p, int rules) {
+	%rename(set_rules) wrap_set_rules;
+	void wrap_set_rules(apol_policy_t *p, int rules) {
 		apol_avrule_query_set_rules(p, self, rules);
 	};
-	void set_source(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_source) wrap_set_source;
+	void wrap_set_source(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_source(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source for avrule query");
@@ -2065,7 +2170,8 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return;
 	};
-	void set_source_component(apol_policy_t *p, int component) {
+	%rename(set_source_component) wrap_set_source_component;
+	void wrap_set_source_component(apol_policy_t *p, int component) {
 		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_source_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source component for avrule query");
@@ -2074,7 +2180,8 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return;
 	};
-	void set_target(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_target) wrap_set_target;
+	void wrap_set_target(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target for avrule query");
@@ -2083,7 +2190,8 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return;
 	};
-	void set_target_component(apol_policy_t *p, int component) {
+	%rename(set_target_component) wrap_set_target_component;
+	void wrap_set_target_component(apol_policy_t *p, int component) {
 		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_target_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target component for avrule query");
@@ -2092,7 +2200,8 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return;
 	};
-	void append_class(apol_policy_t *p, char *name) {
+	%rename(append_class) wrap_append_class;
+	void wrap_append_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_avrule_query_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to avrule query");
@@ -2101,7 +2210,8 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return;
 	};
-	void append_perm(apol_policy_t *p, char *name) {
+	%rename(append_perm) wrap_append_perm;
+	void wrap_append_perm(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_avrule_query_append_perm(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append permission to avrule query");
@@ -2110,7 +2220,8 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return;
 	};
-	void set_bool(apol_policy_t *p, char *name) {
+	%rename(set_bool) wrap_set_bool;
+	void wrap_set_bool(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_avrule_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set boolean for avrule query");
@@ -2119,16 +2230,20 @@ typedef struct apol_avrule_query {} apol_avrule_query_t;
 	fail:
 		return;
 	};
-	void set_enabled(apol_policy_t *p, int enabled) {
+	%rename(set_enabled) wrap_set_enabled;
+	void wrap_set_enabled(apol_policy_t *p, int enabled) {
 		apol_avrule_query_set_enabled(p, self, enabled);
 	};
-	void set_all_perms(apol_policy_t *p, int all_perms) {
+	%rename(set_all_perms) wrap_set_all_perms;
+	void wrap_set_all_perms(apol_policy_t *p, int all_perms) {
 		apol_avrule_query_set_all_perms(p, self, all_perms);
 	};
-	void set_source_any(apol_policy_t *p, int is_any) {
+	%rename(set_source_any) wrap_set_source_any;
+	void wrap_set_source_any(apol_policy_t *p, int is_any) {
 		apol_avrule_query_set_source_any(p, self, is_any);
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_avrule_query_set_regex(p, self, regex);
 	};
 };
@@ -2168,7 +2283,7 @@ char *apol_syn_avrule_render(apol_policy_t * policy, qpol_syn_avrule_t * rule);
 /* apol terule query */
 typedef struct apol_terule_query {} apol_terule_query_t;
 %extend apol_terule_query_t {
-	apol_terule_query_t() {
+	apol_terule_query() {
 		apol_terule_query_t *atq;
 		BEGIN_EXCEPTION
 		atq = apol_terule_query_create();
@@ -2179,7 +2294,7 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return atq;
 	};
-	~apol_terule_query_t() {
+	~apol_terule_query() {
 		apol_terule_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -2204,10 +2319,12 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return v;
 	};
-	void set_rules(apol_policy_t *p, int rules) {
+	%rename(set_rules) wrap_set_rules;
+	void wrap_set_rules(apol_policy_t *p, int rules) {
 		apol_terule_query_set_rules(p, self, rules);
 	};
-	void set_source(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_source) wrap_set_source;
+	void wrap_set_source(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_terule_query_set_source(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source for terule query");
@@ -2216,7 +2333,8 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return;
 	};
-	void set_source_component(apol_policy_t *p, int component) {
+	%rename(set_source_component) wrap_set_source_component;
+	void wrap_set_source_component(apol_policy_t *p, int component) {
 		BEGIN_EXCEPTION
 		if (apol_terule_query_set_source_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set source component for terule query");
@@ -2225,7 +2343,8 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return;
 	};
-	void set_target(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_target) wrap_set_target;
+	void wrap_set_target(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_terule_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target for terule query");
@@ -2234,7 +2353,8 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return;
 	};
-	void set_target_component(apol_policy_t *p, int component) {
+	%rename(set_target_component) wrap_set_target_component;
+	void wrap_set_target_component(apol_policy_t *p, int component) {
 		BEGIN_EXCEPTION
 		if (apol_terule_query_set_target_component(p, self, component)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set target component for terule query");
@@ -2243,7 +2363,8 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return;
 	};
-	void append_class(apol_policy_t *p, char *name) {
+	%rename(append_class) wrap_append_class;
+	void wrap_append_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_terule_query_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to terule query");
@@ -2252,7 +2373,8 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return;
 	};
-	void set_default(apol_policy_t *p, char *name) {
+	%rename(set_default) wrap_set_default;
+	void wrap_set_default(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_terule_query_set_default(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set default for terule query");
@@ -2261,7 +2383,8 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return;
 	};
-	void set_bool(apol_policy_t *p, char *name) {
+	%rename(set_bool) wrap_set_bool;
+	void wrap_set_bool(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_terule_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set boolean for terule query");
@@ -2270,13 +2393,16 @@ typedef struct apol_terule_query {} apol_terule_query_t;
 	fail:
 		return;
 	};
-	void set_enabled(apol_policy_t *p, int enabled) {
+	%rename(set_enabled) wrap_set_enabled;
+	void wrap_set_enabled(apol_policy_t *p, int enabled) {
 		apol_terule_query_set_enabled(p, self, enabled);
 	};
-	void set_source_any(apol_policy_t *p, int is_any) {
+	%rename(set_source_any) wrap_set_source_any;
+	void wrap_set_source_any(apol_policy_t *p, int is_any) {
 		apol_terule_query_set_source_any(p, self, is_any);
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_terule_query_set_regex(p, self, regex);
 	};
 };
@@ -2292,7 +2418,7 @@ apol_vector_t *apol_terule_list_to_syn_terules(apol_policy_t * p, apol_vector_t 
 /* apol cond rule query */
 typedef struct apol_cond_query {} apol_cond_query_t;
 %extend apol_cond_query_t {
-	apol_cond_query_t() {
+	apol_cond_query() {
 		apol_cond_query_t *acq;
 		BEGIN_EXCEPTION
 		acq = apol_cond_query_create();
@@ -2303,7 +2429,7 @@ typedef struct apol_cond_query {} apol_cond_query_t;
 	fail:
 		return acq;
 	};
-	~apol_cond_query_t() {
+	~apol_cond_query() {
 		apol_cond_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -2317,7 +2443,8 @@ typedef struct apol_cond_query {} apol_cond_query_t;
 	fail:
 		return v;
 	};
-	void set_bool(apol_policy_t *p, char *name) {
+	%rename(set_bool) wrap_set_bool;
+	void wrap_set_bool(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_cond_query_set_bool(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set boolean for condiional query");
@@ -2326,7 +2453,8 @@ typedef struct apol_cond_query {} apol_cond_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_cond_query_set_regex(p, self, regex);
 	};
 };
@@ -2336,7 +2464,7 @@ char *apol_cond_expr_render(apol_policy_t * p, qpol_cond_t * cond);
 /* apol role allow query */
 typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 %extend apol_role_allow_query_t {
-	apol_role_allow_query_t() {
+	apol_role_allow_query() {
 		apol_role_allow_query_t *arq;
 		BEGIN_EXCEPTION
 		arq = apol_role_allow_query_create();
@@ -2347,7 +2475,7 @@ typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 	fail:
 		return arq;
 	};
-	~apol_role_allow_query_t() {
+	~apol_role_allow_query() {
 		apol_role_allow_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -2361,7 +2489,8 @@ typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 	fail:
 		return v;
 	};
-	void set_source(apol_policy_t *p, char *name) {
+	%rename(set_source) wrap_set_source;
+	void wrap_set_source(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_role_allow_query_set_source(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2370,7 +2499,8 @@ typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 	fail:
 		return;
 	};
-	void set_target(apol_policy_t *p, char *name) {
+	%rename(set_target) wrap_set_target;
+	void wrap_set_target(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_role_allow_query_set_target(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2379,10 +2509,12 @@ typedef struct apol_role_allow_query {} apol_role_allow_query_t;
 	fail:
 		return;
 	};
-	void set_source_any(apol_policy_t *p, int is_any) {
+	%rename(set_source_any) wrap_set_source_any;
+	void wrap_set_source_any(apol_policy_t *p, int is_any) {
 		apol_role_allow_query_set_source_any(p, self, is_any);
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_role_allow_query_set_regex(p, self, regex);
 	};
 };
@@ -2392,7 +2524,7 @@ char *apol_role_allow_render(apol_policy_t * policy, qpol_role_allow_t * rule);
 /* apol role transition rule query */
 typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 %extend apol_role_trans_query_t {
-	apol_role_trans_query_t() {
+	apol_role_trans_query() {
 		apol_role_trans_query_t *arq;
 		BEGIN_EXCEPTION
 		arq = apol_role_trans_query_create();
@@ -2403,7 +2535,7 @@ typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 	fail:
 		return arq;
 	};
-	~apol_role_trans_query_t() {
+	~apol_role_trans_query() {
 		apol_role_trans_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -2417,7 +2549,8 @@ typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 	fail:
 		return v;
 	};
-	void set_source(apol_policy_t *p, char *name) {
+	%rename(set_source) wrap_set_source;
+	void wrap_set_source(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_role_trans_query_set_source(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2426,7 +2559,8 @@ typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 	fail:
 		return;
 	};
-	void set_target(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_target) wrap_set_target;
+	void wrap_set_target(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_role_trans_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2435,7 +2569,8 @@ typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 	fail:
 		return;
 	};
-	void set_default(apol_policy_t *p, char *name) {
+	%rename(set_default) wrap_set_default;
+	void wrap_set_default(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_role_trans_query_set_default(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2444,10 +2579,12 @@ typedef struct apol_role_trans_query {} apol_role_trans_query_t;
 	fail:
 		return;
 	};
-	void set_source_any(apol_policy_t *p, int is_any) {
+	%rename(set_source_any) wrap_set_source_any;
+	void wrap_set_source_any(apol_policy_t *p, int is_any) {
 		apol_role_trans_query_set_source_any(p, self, is_any);
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_role_trans_query_set_regex(p, self, regex);
 	};
 };
@@ -2457,7 +2594,7 @@ char *apol_role_trans_render(apol_policy_t * policy, qpol_role_trans_t * rule);
 /* apol range transition rule query */
 typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 %extend apol_range_trans_query_t {
-	apol_range_trans_query_t() {
+	apol_range_trans_query() {
 		apol_range_trans_query_t *arq;
 		BEGIN_EXCEPTION
 		arq = apol_range_trans_query_create();
@@ -2468,7 +2605,7 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 	fail:
 		return arq;
 	};
-	~apol_range_trans_query_t() {
+	~apol_range_trans_query() {
 		apol_range_trans_query_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -2482,7 +2619,8 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 	fail:
 		return v;
 	};
-	void set_source(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_source) wrap_set_source;
+	void wrap_set_source(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_range_trans_query_set_source(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2491,7 +2629,8 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 	fail:
 		return;
 	};
-	void set_target(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_target) wrap_set_target;
+	void wrap_set_target(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_range_trans_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2500,7 +2639,8 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 	fail:
 		return;
 	};
-	void append_class(apol_policy_t *p, char *name) {
+	%rename(append_class) wrap_append_class;
+	void wrap_append_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_range_trans_query_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to range transition query");
@@ -2509,7 +2649,8 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 	fail:
 		return;
 	};
-	void set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
+	%rename(set_range) wrap_set_range;
+	void wrap_set_range(apol_policy_t *p, apol_mls_range_t *rng, int range_match) {
 		BEGIN_EXCEPTION
 		if (apol_range_trans_query_set_range(p, self, rng, range_match)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2518,10 +2659,12 @@ typedef struct apol_range_trans_query {} apol_range_trans_query_t;
 	fail:
 		return;
 	};
-	void set_source_any(apol_policy_t *p, int is_any) {
+	%rename(set_source_any) wrap_set_source_any;
+	void wrap_set_source_any(apol_policy_t *p, int is_any) {
 		apol_range_trans_query_set_source_any(p, self, is_any);
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_range_trans_query_set_regex(p, self, regex);
 	};
 };
@@ -2556,7 +2699,8 @@ typedef struct apol_filename_trans_query {} apol_filename_trans_query_t;
 	fail:
 		return v;
 	};
-	void set_source(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_source) wrap_set_source;
+	void wrap_set_source(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_filename_trans_query_set_source(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2565,7 +2709,8 @@ typedef struct apol_filename_trans_query {} apol_filename_trans_query_t;
 	fail:
 		return;
 	};
-	void set_target(apol_policy_t *p, char *name, int indirect) {
+	%rename(set_target) wrap_set_target;
+	void wrap_set_target(apol_policy_t *p, char *name, int indirect) {
 		BEGIN_EXCEPTION
 		if (apol_filename_trans_query_set_target(p, self, name, indirect)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2574,7 +2719,8 @@ typedef struct apol_filename_trans_query {} apol_filename_trans_query_t;
 	fail:
 		return;
 	};
-	void append_class(apol_policy_t *p, char *name) {
+	%rename(append_class) wrap_append_class;
+	void wrap_append_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_filename_trans_query_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to filename transition query");
@@ -2584,7 +2730,8 @@ typedef struct apol_filename_trans_query {} apol_filename_trans_query_t;
 		return;
 	};
 
-	void set_default(apol_policy_t *p, char *name) {
+	%rename(set_default) wrap_set_default;
+	void wrap_set_default(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_filename_trans_query_set_default(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set default for filename transition query");
@@ -2604,10 +2751,12 @@ typedef struct apol_filename_trans_query {} apol_filename_trans_query_t;
 		return;
 	};
 
-	void set_source_any(apol_policy_t *p, int is_any) {
+	%rename(set_source_any) wrap_set_source_any;
+	void wrap_set_source_any(apol_policy_t *p, int is_any) {
 		apol_filename_trans_query_set_source_any(p, self, is_any);
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_filename_trans_query_set_regex(p, self, regex);
 	};
 };
@@ -2643,7 +2792,8 @@ typedef struct apol_permissive_query {} apol_permissive_query_t;
 		return v;
 	};
 
-	void set_name(apol_policy_t *p, char *name) {
+	%rename(set_name) wrap_set_name;
+	void wrap_set_name(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_permissive_query_set_name(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2653,7 +2803,8 @@ typedef struct apol_permissive_query {} apol_permissive_query_t;
 		return;
 	};
 
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_permissive_query_set_regex(p, self, regex);
 	};
 };
@@ -2687,7 +2838,8 @@ typedef struct apol_polcap_query {} apol_polcap_query_t;
 		return v;
 	};
 
-	void set_name(apol_policy_t *p, char *name) {
+	%rename(set_name) wrap_set_name;
+	void wrap_set_name(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_polcap_query_set_name(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2697,7 +2849,8 @@ typedef struct apol_polcap_query {} apol_polcap_query_t;
 		return;
 	};
 
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_polcap_query_set_regex(p, self, regex);
 	};
 };
@@ -2730,7 +2883,8 @@ typedef struct apol_typebounds_query {} apol_typebounds_query_t;
 	fail:
 		return v;
 	};
-	void set_name(apol_policy_t *p, char *name) {
+	%rename(set_name) wrap_set_name;
+	void wrap_set_name(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_typebounds_query_set_name(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2739,7 +2893,8 @@ typedef struct apol_typebounds_query {} apol_typebounds_query_t;
 	fail:
 		return;
 	};
-	void set_regex(apol_policy_t *p, int regex) {
+	%rename(set_regex) wrap_set_regex;
+	void wrap_set_regex(apol_policy_t *p, int regex) {
 		apol_typebounds_query_set_regex(p, self, regex);
 	};
 };
@@ -2842,7 +2997,7 @@ typedef struct apol_default_object_query {} apol_default_object_query_t;
 #define APOL_DOMAIN_TRANS_SEARCH_BOTH		(APOL_DOMAIN_TRANS_SEARCH_VALID|APOL_DOMAIN_TRANS_SEARCH_INVALID)
 typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 %extend apol_domain_trans_analysis_t {
-	apol_domain_trans_analysis_t() {
+	apol_domain_trans_analysis() {
 		apol_domain_trans_analysis_t *dta;
 		BEGIN_EXCEPTION
 		dta = apol_domain_trans_analysis_create();
@@ -2853,10 +3008,11 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return dta;
 	};
-	~apol_domain_trans_analysis_t() {
+	~apol_domain_trans_analysis() {
 		apol_domain_trans_analysis_destroy(&self);
 	};
-	void set_direction(apol_policy_t *p, int direction) {
+	%rename(set_direction) wrap_set_direction;
+	void wrap_set_direction(apol_policy_t *p, int direction) {
 		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_direction(p, self, (unsigned char)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for domain transition analysis");
@@ -2865,7 +3021,8 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return;
 	};
-	void set_valid(apol_policy_t *p, int valid) {
+	%rename(set_valid) wrap_set_valid;
+	void wrap_set_valid(apol_policy_t *p, int valid) {
 		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_valid(p, self, (unsigned char)valid)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set valid flag for domain transition analysis");
@@ -2874,7 +3031,8 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return;
 	};
-	void set_start_type(apol_policy_t *p, char *name) {
+	%rename(set_start_type) wrap_set_start_type;
+	void wrap_set_start_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_start_type(p, self, name)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2883,7 +3041,8 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return;
 	};
-	void set_result_regex(apol_policy_t *p, char *regex) {
+	%rename(set_result_regex) wrap_set_result_regex;
+	void wrap_set_result_regex(apol_policy_t *p, char *regex) {
 		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_set_result_regex(p, self, regex)) {
 			SWIG_exception(SWIG_MemoryError, "Out of memory");
@@ -2892,7 +3051,8 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return;
 	};
-	void append_access_type(apol_policy_t *p, char *name) {
+	%rename(append_access_type) wrap_append_access_type;
+	void wrap_append_access_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_append_access_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append access type for domain transition analysis");
@@ -2901,7 +3061,8 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return;
 	};
-	void append_class(apol_policy_t *p, char *class_name) {
+	%rename(append_class) wrap_append_class;
+	void wrap_append_class(apol_policy_t *p, char *class_name) {
 		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_append_class(p, self, class_name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append access class for domain transition analysis");
@@ -2910,7 +3071,8 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 	fail:
 		return;
 	};
-	void append_perm(apol_policy_t *p, char *perm_name) {
+	%rename(append_perm) wrap_append_perm;
+	void wrap_append_perm(apol_policy_t *p, char *perm_name) {
 		BEGIN_EXCEPTION
 		if (apol_domain_trans_analysis_append_perm(p, self, perm_name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append access permission for domain transition analysis");
@@ -2933,7 +3095,7 @@ typedef struct apol_domain_trans_analysis {} apol_domain_trans_analysis_t;
 };
 typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 %extend apol_domain_trans_result_t {
-	apol_domain_trans_result_t(apol_domain_trans_result_t *in) {
+	apol_domain_trans_result(apol_domain_trans_result_t *in) {
 		apol_domain_trans_result_t *dtr;
 		BEGIN_EXCEPTION
 		dtr = apol_domain_trans_result_create_from_domain_trans_result(in);
@@ -2944,37 +3106,46 @@ typedef struct apol_domain_trans_result {} apol_domain_trans_result_t;
 	fail:
 		return dtr;
 	};
-	~apol_domain_trans_result_t() {
+	~apol_domain_trans_result() {
 		apol_domain_trans_result_destroy(&self);
 	};
-	const qpol_type_t *get_start_type() {
+	%rename(get_start_type) wrap_get_start_type;
+	const qpol_type_t *wrap_get_start_type() {
 		return apol_domain_trans_result_get_start_type(self);
 	};
-	const qpol_type_t *get_entrypoint_type() {
+	%rename(get_entrypoint_type) wrap_get_entrypoint_type;
+	const qpol_type_t *wrap_get_entrypoint_type() {
 		return apol_domain_trans_result_get_entrypoint_type(self);
 	};
-	const qpol_type_t *get_end_type() {
+	%rename(get_end_type) wrap_get_end_type;
+	const qpol_type_t *wrap_get_end_type() {
 		return apol_domain_trans_result_get_end_type(self);
 	};
 	int get_is_valid() {
 		return apol_domain_trans_result_is_trans_valid(self);
 	};
-	const apol_vector_t *get_proc_trans_rules() {
+	%rename(get_proc_trans_rules) wrap_get_proc_trans_rules;
+	const apol_vector_t *wrap_get_proc_trans_rules() {
 		return apol_domain_trans_result_get_proc_trans_rules(self);
 	};
-	const apol_vector_t *get_entrypoint_rules() {
+	%rename(get_entrypoint_rules) wrap_get_entrypoint_rules;
+	const apol_vector_t *wrap_get_entrypoint_rules() {
 		return apol_domain_trans_result_get_entrypoint_rules(self);
 	};
-	const apol_vector_t *get_exec_rules() {
+	%rename(get_exec_rules) wrap_get_exec_rules;
+	const apol_vector_t *wrap_get_exec_rules() {
 		return apol_domain_trans_result_get_exec_rules(self);
 	};
-	const apol_vector_t *get_setexec_rules() {
+	%rename(get_setexec_rules) wrap_get_setexec_rules;
+	const apol_vector_t *wrap_get_setexec_rules() {
 		return apol_domain_trans_result_get_setexec_rules(self);
 	};
-	const apol_vector_t *get_type_trans_rules() {
+	%rename(get_type_trans_rules) wrap_get_type_trans_rules;
+	const apol_vector_t *wrap_get_type_trans_rules() {
 		return apol_domain_trans_result_get_type_trans_rules(self);
 	};
-	const apol_vector_t *get_access_rules() {
+	%rename(get_access_rules) wrap_get_access_rules;
+	const apol_vector_t *wrap_get_access_rules() {
 		return apol_domain_trans_result_get_access_rules(self);
 	};
 };
@@ -3016,14 +3187,14 @@ int apol_domain_trans_table_verify_trans(apol_policy_t * policy, qpol_type_t * s
 %}
 typedef struct apol_infoflow {} apol_infoflow_t;
 %extend apol_infoflow_t {
-	apol_infoflow_t() {
+	apol_infoflow() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_infoflow_t() {
+	~apol_infoflow() {
 		apol_infoflow_destroy(&self);
 	};
 	%newobject extract_graph();
@@ -3041,7 +3212,7 @@ typedef struct apol_infoflow {} apol_infoflow_t;
 };
 typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 %extend apol_infoflow_analysis_t {
-	apol_infoflow_analysis_t() {
+	apol_infoflow_analysis() {
 		apol_infoflow_analysis_t *aia;
 		BEGIN_EXCEPTION
 		aia = apol_infoflow_analysis_create();
@@ -3052,7 +3223,7 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	fail:
 		return aia;
 	};
-	~apol_infoflow_analysis_t() {
+	~apol_infoflow_analysis() {
 		apol_infoflow_analysis_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -3074,7 +3245,8 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 		apol_infoflow_destroy(&ai);
 		return NULL;
 	};
-	void set_mode(apol_policy_t *p, int mode) {
+	%rename(set_mode) wrap_set_mode;
+	void wrap_set_mode(apol_policy_t *p, int mode) {
 		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_mode(p, self, (unsigned int)mode)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set mode for information flow analysis");
@@ -3083,7 +3255,8 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	fail:
 		return;
 	};
-	void set_dir(apol_policy_t *p, int direction) {
+	%rename(set_dir) wrap_set_dir;
+	void wrap_set_dir(apol_policy_t *p, int direction) {
 		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_dir(p, self, (unsigned int)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for information flow analysis");
@@ -3092,7 +3265,8 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	fail:
 		return;
 	};
-	void set_type(apol_policy_t *p, char *name) {
+	%rename(set_type) wrap_set_type;
+	void wrap_set_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set type for information flow analysis");
@@ -3101,7 +3275,8 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	fail:
 		return;
 	};
-	void append_intermediate(apol_policy_t *p, char *name) {
+	%rename(append_intermediate) wrap_append_intermediate;
+	void wrap_append_intermediate(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_append_intermediate(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append intermediate type for information flow analysis");
@@ -3110,7 +3285,8 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	fail:
 		return;
 	};
-	void append_class_perm(apol_policy_t *p, char *class_name, char *perm_name) {
+	%rename(append_class_perm) wrap_append_class_perm;
+	void wrap_append_class_perm(apol_policy_t *p, char *class_name, char *perm_name) {
 		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_append_class_perm(p, self, class_name, perm_name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class and permission for information flow analysis");
@@ -3119,10 +3295,12 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 	fail:
 		return;
 	};
-	void set_min_weight(apol_policy_t *p, int weight) {
+	%rename(set_min_weight) wrap_set_min_weight;
+	void wrap_set_min_weight(apol_policy_t *p, int weight) {
 		apol_infoflow_analysis_set_min_weight(p, self, weight);
 	};
-	void set_result_regex(apol_policy_t *p, char *regex) {
+	%rename(set_result_regex) wrap_set_result_regex;
+	void wrap_set_result_regex(apol_policy_t *p, char *regex) {
 		BEGIN_EXCEPTION
 		if (apol_infoflow_analysis_set_result_regex(p, self, regex)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set result regular expression for information flow analysis");
@@ -3134,14 +3312,14 @@ typedef struct apol_infoflow_analysis {} apol_infoflow_analysis_t;
 };
 typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 %extend apol_infoflow_graph_t {
-	apol_infoflow_graph_t() {
+	apol_infoflow_graph() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_graph_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_infoflow_graph_t() {
+	~apol_infoflow_graph() {
 		apol_infoflow_graph_destroy(&self);
 	};
 	%newobject do_more(apol_policy_t*, char*);
@@ -3178,30 +3356,35 @@ typedef struct apol_infoflow_graph {} apol_infoflow_graph_t;
 };
 typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 %extend apol_infoflow_result_t {
-	apol_infoflow_result_t() {
+	apol_infoflow_result() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_result_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_infoflow_result_t() {
+	~apol_infoflow_result() {
 		/* no op - vector will destroy */
 		return;
 	};
-	int get_dir() {
+	%rename(get_dir) wrap_get_dir;
+	int wrap_get_dir() {
 		return (int)apol_infoflow_result_get_dir(self);
 	};
-	const qpol_type_t *get_start_type() {
+	%rename(get_start_type) wrap_get_start_type;
+	const qpol_type_t *wrap_get_start_type() {
 		return apol_infoflow_result_get_start_type(self);
 	};
-	const qpol_type_t *get_end_type() {
+	%rename(get_end_type) wrap_get_end_type;
+	const qpol_type_t *wrap_get_end_type() {
 		return apol_infoflow_result_get_end_type(self);
 	};
-	int get_length() {
+	%rename(get_length) wrap_get_length;
+	int wrap_get_length() {
 		return (int) apol_infoflow_result_get_length(self);
 	}
-	const apol_vector_t *get_steps() {
+	%rename(get_steps) wrap_get_steps;
+	const apol_vector_t *wrap_get_steps() {
 		return apol_infoflow_result_get_steps(self);
 	};
 };
@@ -3212,27 +3395,31 @@ typedef struct apol_infoflow_result {} apol_infoflow_result_t;
 %}
 typedef struct apol_infoflow_step {} apol_infoflow_step_t;
 %extend apol_infoflow_step_t {
-	apol_infoflow_step_t() {
+	apol_infoflow_step() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_infoflow_step_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_infoflow_step_t() {
+	~apol_infoflow_step() {
 		/* no op */
 		return;
 	};
-	const qpol_type_t *get_start_type() {
+	%rename(get_start_type) wrap_get_start_type;
+	const qpol_type_t *wrap_get_start_type() {
 		return apol_infoflow_step_get_start_type(self);
 	};
-	const qpol_type_t *get_end_type() {
+	%rename(get_end_type) wrap_get_end_type;
+	const qpol_type_t *wrap_get_end_type() {
 		return apol_infoflow_step_get_end_type(self);
 	};
-	int get_weight() {
+	%rename(get_weight) wrap_get_weight;
+	int wrap_get_weight() {
 		return apol_infoflow_step_get_weight(self);
 	};
-	const apol_vector_t *get_rules() {
+	%rename(get_rules) wrap_get_rules;
+	const apol_vector_t *wrap_get_rules() {
 		return apol_infoflow_step_get_rules(self);
 	};
 };
@@ -3249,7 +3436,7 @@ typedef struct apol_infoflow_step {} apol_infoflow_step_t;
 #define APOL_RELABEL_DIR_SUBJECT 0x04
 typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 %extend apol_relabel_analysis_t {
-	apol_relabel_analysis_t() {
+	apol_relabel_analysis() {
 		apol_relabel_analysis_t *ara;
 		BEGIN_EXCEPTION
 		ara = apol_relabel_analysis_create();
@@ -3260,7 +3447,7 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 	fail:
 		return ara;
 	};
-	~apol_relabel_analysis_t() {
+	~apol_relabel_analysis() {
 		apol_relabel_analysis_destroy(&self);
 	};
 	%newobject run(apol_policy_t*);
@@ -3274,7 +3461,8 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 	fail:
 		return v;
 	};
-	void set_dir(apol_policy_t *p, int direction) {
+	%rename(set_dir) wrap_set_dir;
+	void wrap_set_dir(apol_policy_t *p, int direction) {
 		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_set_dir(p, self, (unsigned int)direction)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set direction for relabel analysis");
@@ -3283,7 +3471,8 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 	fail:
 		return;
 	};
-	void set_type(apol_policy_t *p, char *name) {
+	%rename(set_type) wrap_set_type;
+	void wrap_set_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_set_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set type for relabel analysis");
@@ -3292,7 +3481,8 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 	fail:
 		return;
 	};
-	void append_class(apol_policy_t *p, char *name) {
+	%rename(append_class) wrap_append_class;
+	void wrap_append_class(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_append_class(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append class to relabel analysis");
@@ -3301,7 +3491,8 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 	fail:
 		return;
 	};
-	void append_subject(apol_policy_t *p, char *name) {
+	%rename(append_subject) wrap_append_subject;
+	void wrap_append_subject(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_append_subject(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not append subject to relabel analysis");
@@ -3310,7 +3501,8 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 	fail:
 		return;
 	};
-	void set_result_regex(apol_policy_t *p, char *regex) {
+	%rename(set_result_regex) wrap_set_result_regex;
+	void wrap_set_result_regex(apol_policy_t *p, char *regex) {
 		BEGIN_EXCEPTION
 		if (apol_relabel_analysis_set_result_regex(p, self, regex)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set result regular expression for relabel analysis");
@@ -3322,27 +3514,31 @@ typedef struct apol_relabel_analysis {} apol_relabel_analysis_t;
 };
 typedef struct apol_relabel_result {} apol_relabel_result_t;
 %extend apol_relabel_result_t {
-	apol_relabel_result_t() {
+	apol_relabel_result() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_relabel_result_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_relabel_result_t() {
+	~apol_relabel_result() {
 		/* no op - vector will destroy */
 		return;
 	};
-	const apol_vector_t *get_to() {
+	%rename(get_to) wrap_get_to;
+	const apol_vector_t *wrap_get_to() {
 		return apol_relabel_result_get_to(self);
 	};
-	const apol_vector_t *get_from() {
+	%rename(get_from) wrap_get_from;
+	const apol_vector_t *wrap_get_from() {
 		return apol_relabel_result_get_from(self);
 	};
-	const apol_vector_t *get_both() {
+	%rename(get_both) wrap_get_both;
+	const apol_vector_t *wrap_get_both() {
 		return apol_relabel_result_get_both(self);
 	};
-	const qpol_type_t *get_result_type() {
+	%rename(get_result_type) wrap_get_result_type;
+	const qpol_type_t *wrap_get_result_type() {
 		return apol_relabel_result_get_result_type(self);
 	};
 };
@@ -3353,24 +3549,27 @@ typedef struct apol_relabel_result {} apol_relabel_result_t;
 %}
 typedef struct apol_relabel_result_pair {} apol_relabel_result_pair_t;
 %extend apol_relabel_result_pair_t {
-	apol_relabel_result_pair_t() {
+	apol_relabel_result_pair() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_relabel_result_pair_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_relabel_result_pair_t() {
+	~apol_relabel_result_pair() {
 		/* no op - owned and free()'d by apol_relabel_result_t */
 		return;
 	};
-	const qpol_avrule_t *get_ruleA() {
+	%rename(get_ruleA) wrap_get_ruleA;
+	const qpol_avrule_t *wrap_get_ruleA() {
 		return apol_relabel_result_pair_get_ruleA(self);
 	};
-	const qpol_avrule_t *get_ruleB() {
+	%rename(get_ruleB) wrap_get_ruleB;
+	const qpol_avrule_t *wrap_get_ruleB() {
 		return apol_relabel_result_pair_get_ruleB(self);
 	};
-	const qpol_type_t *get_intermediate_type() {
+	%rename(get_intermediate_type) wrap_get_intermediate_type;
+	const qpol_type_t *wrap_get_intermediate_type() {
 		return apol_relabel_result_pair_get_intermediate_type(self);
 	};
 };
@@ -3395,7 +3594,7 @@ typedef struct apol_relabel_result_pair {} apol_relabel_result_pair_t;
 #define APOL_TYPES_RELATION_TRANS_FLOW_BA 0x8000
 typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 %extend apol_types_relation_analysis_t {
-	apol_types_relation_analysis_t() {
+	apol_types_relation_analysis() {
 		apol_types_relation_analysis_t *atr;
 		BEGIN_EXCEPTION
 		atr = apol_types_relation_analysis_create();
@@ -3406,7 +3605,7 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 	fail:
 		return atr;
 	};
-	~apol_types_relation_analysis_t() {
+	~apol_types_relation_analysis() {
 		apol_types_relation_analysis_destroy(&self);
 	}
 	%newobject run(apol_policy_t*);
@@ -3420,7 +3619,8 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 	fail:
 		return res;
 	};
-	void set_first_type(apol_policy_t *p, char *name) {
+	%rename(set_first_type) wrap_set_first_type;
+	void wrap_set_first_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_types_relation_analysis_set_first_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set first type for types relation analysis");
@@ -3429,7 +3629,8 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 	fail:
 		return;
 	};
-	void set_other_type(apol_policy_t *p, char *name) {
+	%rename(set_other_type) wrap_set_other_type;
+	void wrap_set_other_type(apol_policy_t *p, char *name) {
 		BEGIN_EXCEPTION
 		if (apol_types_relation_analysis_set_other_type(p, self, name)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set other type for types relation analysis");
@@ -3438,7 +3639,8 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 	fail:
 		return;
 	};
-	void set_analyses(apol_policy_t *p, int analyses) {
+	%rename(set_analyses) wrap_set_analyses;
+	void wrap_set_analyses(apol_policy_t *p, int analyses) {
 		BEGIN_EXCEPTION
 		if (apol_types_relation_analysis_set_analyses(p, self, (unsigned int)analyses)) {
 			SWIG_exception(SWIG_RuntimeError, "Could not set analyses to run for types relation analysis");
@@ -3450,76 +3652,92 @@ typedef struct apol_types_relation_analysis {} apol_types_relation_analysis_t;
 };
 typedef struct apol_types_relation_result {} apol_types_relation_result_t;
 %extend apol_types_relation_result_t {
-	apol_types_relation_result_t() {
+	apol_types_relation_result() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_types_relation_result_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_types_relation_result_t() {
+	~apol_types_relation_result() {
 		apol_types_relation_result_destroy(&self);
 	};
-	const apol_vector_t *get_attributes() {
+	%rename(get_attributes) wrap_get_attributes;
+	const apol_vector_t *wrap_get_attributes() {
 		return apol_types_relation_result_get_attributes(self);
 	};
-	const apol_vector_t *get_roles() {
+	%rename(get_roles) wrap_get_roles;
+	const apol_vector_t *wrap_get_roles() {
 		return apol_types_relation_result_get_roles(self);
 	};
-	const apol_vector_t *get_users() {
+	%rename(get_users) wrap_get_users;
+	const apol_vector_t *wrap_get_users() {
 		return apol_types_relation_result_get_users(self);
 	};
-	const apol_vector_t *get_similar_first() {
+	%rename(get_similar_first) wrap_get_similar_first;
+	const apol_vector_t *wrap_get_similar_first() {
 		return apol_types_relation_result_get_similar_first(self);
 	};
-	const apol_vector_t *get_similar_other() {
+	%rename(get_similar_other) wrap_get_similar_other;
+	const apol_vector_t *wrap_get_similar_other() {
 		return apol_types_relation_result_get_similar_other(self);
 	};
-	const apol_vector_t *get_dissimilar_first() {
+	%rename(get_dissimilar_first) wrap_get_dissimilar_first;
+	const apol_vector_t *wrap_get_dissimilar_first() {
 		return apol_types_relation_result_get_dissimilar_first(self);
 	};
-	const apol_vector_t *get_dissimilar_other() {
+	%rename(get_dissimilar_other) wrap_get_dissimilar_other;
+	const apol_vector_t *wrap_get_dissimilar_other() {
 		return apol_types_relation_result_get_dissimilar_other(self);
 	};
-	const apol_vector_t *get_allowrules() {
+	%rename(get_allowrules) wrap_get_allowrules;
+	const apol_vector_t *wrap_get_allowrules() {
 		return apol_types_relation_result_get_allowrules(self);
 	};
-	const apol_vector_t *get_typerules() {
+	%rename(get_typerules) wrap_get_typerules;
+	const apol_vector_t *wrap_get_typerules() {
 		return apol_types_relation_result_get_typerules(self);
 	};
-	const apol_vector_t *get_directflows() {
+	%rename(get_directflows) wrap_get_directflows;
+	const apol_vector_t *wrap_get_directflows() {
 		return apol_types_relation_result_get_directflows(self);
 	};
-	const apol_vector_t *get_transflowsAB() {
+	%rename(get_transflowsAB) wrap_get_transflowsAB;
+	const apol_vector_t *wrap_get_transflowsAB() {
 		return apol_types_relation_result_get_transflowsAB(self);
 	};
-	const apol_vector_t *get_transflowsBA() {
+	%rename(get_transflowsBA) wrap_get_transflowsBA;
+	const apol_vector_t *wrap_get_transflowsBA() {
 		return apol_types_relation_result_get_transflowsBA(self);
 	};
-	const apol_vector_t*get_domainsAB() {
+	%rename(get_domainsAB) wrap_get_domainsAB;
+	const apol_vector_t*wrap_get_domainsAB() {
 		return apol_types_relation_result_get_domainsAB(self);
 	};
-	const apol_vector_t*get_domainsBA() {
+	%rename(get_domainsBA) wrap_get_domainsBA;
+	const apol_vector_t*wrap_get_domainsBA() {
 		return apol_types_relation_result_get_domainsBA(self);
 	};
 };
 typedef struct apol_types_relation_access {} apol_types_relation_access_t;
 %extend apol_types_relation_access_t {
-	apol_types_relation_access_t() {
+	apol_types_relation_access() {
 		BEGIN_EXCEPTION
 		SWIG_exception(SWIG_RuntimeError, "Cannot directly create apol_types_relation_access_t objects");
 		END_EXCEPTION
 	fail:
 		return NULL;
 	};
-	~apol_types_relation_access_t() {
+	~apol_types_relation_access() {
 		/* no op - vector will destroy */
 		return;
 	};
-	const qpol_type_t *get_type() {
+	%rename(get_type) wrap_get_type;
+	const qpol_type_t *wrap_get_type() {
 		return apol_types_relation_access_get_type(self);
 	};
-	const apol_vector_t *get_rules() {
+	%rename(get_rules) wrap_get_rules;
+	const apol_vector_t *wrap_get_rules() {
 		return apol_types_relation_access_get_rules(self);
 	};
 };
