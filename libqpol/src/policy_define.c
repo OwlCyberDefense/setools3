@@ -1058,6 +1058,7 @@ int define_category(void)
 				assert(0);	/* should never get here */
 			}
 		}
+        return 0;
 	}
 
 	return 0;

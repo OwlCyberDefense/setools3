@@ -64,7 +64,7 @@ classes = $(patsubst %.java, $(package_dir)/%.class, $(java_files))
 # just depend upon the first class file, and let the Java compiler
 # create the rest of them.
 $(firstword $(classes)): $(java_files)
-	$(JAVAC) $(AM_JFLAGS) $(JAVAFLAGS) -d . $^
+	$(JAVAC) $(AM_JFLAGS) $(JAVACFLAGS) -d . $^
 
 $(wordlist 2,$(words $(classes)),$(classes)): $(firstword $(classes))
 

@@ -26,6 +26,7 @@
 /* Used by SETools to determine if source MLS or not */
 int define_mls(void);
 
+avrule_t *define_cond_filename_trans();
 avrule_t *define_cond_compute_type(int which);
 avrule_t *define_cond_pol_list(avrule_t *avlist, avrule_t *stmt);
 avrule_t *define_cond_te_avtab(int which);
