@@ -310,6 +310,7 @@ role_datum_t *declare_role(unsigned char isattr)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 type_datum_t *declare_type(unsigned char primary, unsigned char isattr)
@@ -373,6 +374,7 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 static int user_implicit_bounds(hashtab_t users_tab,
@@ -509,6 +511,7 @@ user_datum_t *declare_user(void)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 /* Return a type_datum_t for the local avrule_decl with the given ID.
@@ -927,6 +930,7 @@ static int require_role_or_attribute(int pass, unsigned char isattr)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 int require_role(int pass)
@@ -990,6 +994,7 @@ static int require_type_or_attribute(int pass, unsigned char isattr)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 int require_type(int pass)
@@ -1051,6 +1056,7 @@ int require_user(int pass)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 static int require_bool_tunable(int pass, int is_tunable)
@@ -1102,6 +1108,7 @@ static int require_bool_tunable(int pass, int is_tunable)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 int require_bool(int pass)
@@ -1175,6 +1182,7 @@ int require_sens(int pass)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 int require_cat(int pass)
@@ -1228,6 +1236,7 @@ int require_cat(int pass)
 			assert(0);	/* should never get here */
 		}
 	}
+	return 0;
 }
 
 static int is_scope_in_stack(scope_datum_t * scope, scope_stack_t * stack)
