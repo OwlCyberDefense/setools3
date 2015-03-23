@@ -27,6 +27,7 @@
 #include "result_item_render.h"
 
 #include <assert.h>
+#include <string.h>
 
 static const char *form_name_map[] = {
 	"Added", "Added New Type", "Removed", "Removed Missing Type", "Modified"
@@ -139,7 +140,7 @@ void result_item_print_string_inline(GtkTextBuffer * tb, GtkTextIter * iter, con
 		}
 		case ' ':
 		{
-			if (current_tag != "modified") {
+			if ( strcmp( current_tag, "modified") != 0 ) {
 				gtk_text_buffer_insert_with_tags_by_name(tb, iter, s + start, end - start + 1, current_tag, NULL);
 				start = end + 1;
 				current_tag = "modified";
